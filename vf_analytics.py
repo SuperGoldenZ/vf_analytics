@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-vs_image = cv2.imread('vs.png')
+vs_image = cv2.imread('assets/vs.png')
 vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
 vs_w, vs_h = vs_image_gray.shape[::-1]
 
@@ -12,26 +12,10 @@ def load_sample_with_transparency(path):
     if sample_image is None:
         raise ValueError("Sample image not found")
 
-    # Check if the image has an alpha channel
-    if sample_image.shape[2] == 4:
-        print("got alpha channel")
-        # Separate the color and alpha channels
-        #bgr = sample_image[:, :, :3]
-        #alpha = sample_image[:, :, 3]
-
-        # Create a mask from the alpha channel
-        #mask = alpha > 0
-
-        # Create a new image with the transparent areas set to black
-        #new_sample = np.zeros_like(bgr, dtype=np.uint8)
-        #new_sample[mask] = bgr[mask]
-
-        #return new_sample
-    #else:
     return sample_image
 
-player1roundwon = load_sample_with_transparency('player1roundwon.png')
-player2roundwon = load_sample_with_transparency('player2roundwon.png')
+player1roundwon = load_sample_with_transparency('assets/player1roundwon.png')
+player2roundwon = load_sample_with_transparency('assets/player2roundwon.png')
 
 
 def is_vs(roi):
@@ -176,5 +160,7 @@ def is_vf_character_name(name):
     if "Vanessa" in name:
         return True
     if "Blaze" in name:
+        return True
+    if "Akira" in name:
         return True
     return False
