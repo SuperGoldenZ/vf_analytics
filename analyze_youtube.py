@@ -18,6 +18,8 @@ import uuid
 
 ##todo: speed up especially the text recognition
 
+
+
 # Step 1: Download the YouTube video
 def download_video(url, output_path='video.mp4'):
     yt = YouTube(url)
@@ -48,9 +50,10 @@ def extract_frames(video_path, interval):
     frames = []
     frame_rate = cap.get(cv2.CAP_PROP_FPS)
     count = 0
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 35020)
+    startFrame=29280
+    cap.set(cv2.CAP_PROP_POS_FRAMES, startFrame)
     #count = 22020
-    count = 35020
+    count = startFrame
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -61,9 +64,9 @@ def extract_frames(video_path, interval):
             #cv2.imshow('Video Frame', frame)
             #cv2.waitKey()
             #break
-        #if (count > 35000):
-            #break
-    cap.release()
+        if (count > 35000):
+            break
+    cap.release() 
     return frames
 
 def all_but_grey(roi):
@@ -135,38 +138,22 @@ def perform_ocr_on_frames(frames):
 
     playerNameWidth = 136 / originalWidth
     playerNameHeight = 22 / originalHeight
-
-    # Define the coordinates of the regions to perform OCR on (x, y, width, height)
-    regions = {
-        'player1character': (int(width * p1NameX), int(p1NameY * height), int(width * playerNameWidth), int(height * playerNameHeight)),
-        'player2character': (int(width * p2NameX), int(p2NameY * height), int(width * playerNameWidth), int(height * playerNameHeight))
-    }
     
-    #alexRegions
-    regions = {
-        'player1rank': (435, 517, 25, 15)
-        ,'player1rounds': (519, 78, 106, 36)
-        ,'player2rounds': (845, 78, 106, 36)
-        ,'stage': (578, 506, 312, 39)
-        ,'player2ringname':  (1000, 535, 378, 35)
-        ,'player1character': (54,    386,   418, 76)               
-        ,'player2character': (1004,  386,    418, 76)
-        ,'player1ringname':  (75, 540, 378, 28)        
-        ,'vs': (586, 284, 308, 154)
-    }
-
     state="before"
     rounds={}
     match={}
     match["id"] = uuid.uuid4()
     for frame in frames:        
-        for region_name, (x, y, w, h) in regions.items():
+        for region_name, (x, y, w, h) in vf_analytics.regions.items():
             roi = frame[y:y+h, x:x+w]                        
             if (state=="fight" and (region_name == "player1rounds" or region_name == "player2rounds")):
                 if (region_name == "player1rounds"):
                     cnt=vf_analytics.count_rounds_won(roi, 1)
                 else:
                     cnt=vf_analytics.count_rounds_won(roi, 2)
+                    cv2.imshow('Video Frame', frame)        
+                    cv2.waitKey()
+
 
                 if (not region_name in rounds):                    
                     rounds[region_name] = 0

@@ -6,6 +6,19 @@ vs_image = cv2.imread('assets/vs.png')
 vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
 vs_w, vs_h = vs_image_gray.shape[::-1]
 
+#alexRegions
+regions = {
+    'player1rank': (435, 517, 25, 15)
+    ,'player1rounds': (519, 78, 106, 36)
+    ,'player2rounds': (845, 78, 106, 36)
+    ,'stage': (578, 506, 312, 39)
+    ,'player2ringname':  (1000, 535, 378, 35)
+    ,'player1character': (54,    386,   418, 76)               
+    ,'player2character': (1004,  386,    418, 76)
+    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'vs': (586, 284, 308, 154)
+}
+
 def load_sample_with_transparency(path):
     # Load the image with transparency
     sample_image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
@@ -112,48 +125,50 @@ def count_rounds_won(frame, playerNumber=1):
 
         # Combine masks to get the final red mask
         red_mask = mask1 | mask2
-
         # Count the number of red pixels
         red_pixel_count = np.sum(red_mask == 255)
-        print(f"Number of red pixels: {red_pixel_count}")    
+        print(f"Number of red pixels: {red_pixel_count}")
 
+        if (red_pixel_count > 2000):
+            return 0
+        
         if (red_pixel_count > 1200):
             return 3
 
-        if (red_pixel_count > 1000):
+        if (red_pixel_count > 900):
             return 2
 
         if (red_pixel_count > 400):
             return 1    
 
     else:
-        lower_1 = np.array([3, 41, 82])      # Lower bound of red color in HSV
-        upper_1 = np.array([4, 42, 83])   # Upper bound of red color in HSV
+        target_color = '#0d6ed7'  # Blue color
+        tolerance = 40  # Adjust this value as needed
 
-        lower_2 = np.array([4,  42, 83])    # Lower bound for the second range of red color
-        upper_2 = np.array([5,  43, 84])  # Upper bound for the second range of red color
+         # Convert the target color from hex to BGR
+        target_color_bgr = tuple(int(target_color[i:i+2], 16) for i in (5, 3, 1))
+        
+        # Define the lower and upper bounds for the color
+        lower_bound = np.array([max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8)
+        upper_bound = np.array([min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8)
+        
+        # Create a mask that identifies all pixels within the color range
+        mask = cv2.inRange(frame, lower_bound, upper_bound)
+        
+        # Count the number of non-zero (white) pixels in the mask
+        count = cv2.countNonZero(mask)
+        print(f"{count} blue pixels")
 
-        # Create masks for red color
-        mask1 = cv2.inRange(hsv, lower_1, upper_1)
-        mask2 = cv2.inRange(hsv, lower_2, upper_2)
-
-
-        # Combine masks to get the final red mask
-        red_mask = mask1 | mask2
-
-        # Count the number of red pixels
-        red_pixel_count = np.sum(red_mask == 255)
-        print(f"Number of blue pixels: {red_pixel_count}")    
-
-        if (red_pixel_count > 1200):
-            return 3
-
-        if (red_pixel_count > 1000):
+        if (count > 300):
             return 2
 
-        if (red_pixel_count > 400):
+        if (count > 200):
+            return 2
+
+        if (count > 100):
             return 1
-            
+
+
     return 0
 
 def is_vf_character_name(name):
