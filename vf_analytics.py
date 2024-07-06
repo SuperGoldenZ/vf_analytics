@@ -6,6 +6,10 @@ vs_image = cv2.imread('assets/vs.png')
 vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
 vs_w, vs_h = vs_image_gray.shape[::-1]
 
+ko_image = cv2.imread('assets/ko.png')
+ko_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
+ko_w, ko_h = vs_image_gray.shape[::-1]
+
 #alexRegions
 regions = {
     'player1rank': (435, 517, 25, 15)
@@ -17,6 +21,8 @@ regions = {
     ,'player2character': (1004,  386,    418, 76)
     ,'player1ringname':  (75, 540, 378, 28)        
     ,'vs': (586, 284, 308, 154)
+    ,'ko': (438, 302, 627, 237)
+    ,'excellent': (167, 341, 1146, 155)
 }
 
 def load_sample_with_transparency(path):
@@ -41,13 +47,28 @@ def is_vs(roi):
 
     return (len(loc[0]) > 0)
 
+def is_ko(roi):
+    count = count_pixels('#ce9e54', roi)
+    #print(f"is ko {count}")
+    return count > 13600
+
+def is_excellent(roi):
+    count = count_pixels('#c48e36', roi)
+    #print(f"is excellent {count}")
+    return count > 14000
+
+def is_ringout(roi):
+    count = count_pixels('#c48e36', roi)
+    #print(f"is ringout {count}")
+    return count > 400
+
 def extract_and_match_features(sample_image, frame_roi, feature_detector):
 
-    cv2.imshow('Video Frame', sample_image)
-    cv2.waitKey()
+    #cv2.imshow('Video Frame', sample_image)
+    #cv2.waitKey()
 
-    cv2.imshow('Video Frame', frame_roi)
-    cv2.waitKey()
+    #cv2.imshow('Video Frame', frame_roi)
+    #cv2.waitKey()
 
     # Convert images to HSV
     sample_hsv = cv2.cvtColor(sample_image, cv2.COLOR_BGR2HSV)
@@ -99,6 +120,23 @@ def resize_sample_if_needed(sample_image, roi):
         print (f"not resizing cause ${sample_width} ${sample_height} is in ${roi_width} {roi_height}")
     return sample_image
 
+def count_pixels(target_color, image):
+    tolerance = 40  # Adjust this value as needed
+
+        # Convert the target color from hex to BGR
+    target_color_bgr = tuple(int(target_color[i:i+2], 16) for i in (5, 3, 1))
+    
+    # Define the lower and upper bounds for the color
+    lower_bound = np.array([max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8)
+    upper_bound = np.array([min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8)
+    
+    # Create a mask that identifies all pixels within the color range
+    mask = cv2.inRange(image, lower_bound, upper_bound)
+    
+    # Count the number of non-zero (white) pixels in the mask
+    return cv2.countNonZero(mask)
+
+    
 def count_rounds_won(frame, playerNumber=1):
     # Convert BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -127,7 +165,7 @@ def count_rounds_won(frame, playerNumber=1):
         red_mask = mask1 | mask2
         # Count the number of red pixels
         red_pixel_count = np.sum(red_mask == 255)
-        print(f"Number of red pixels: {red_pixel_count}")
+        #print(f"Number of red pixels: {red_pixel_count}")
 
         if (red_pixel_count > 2000):
             return 0
@@ -142,22 +180,9 @@ def count_rounds_won(frame, playerNumber=1):
             return 1    
 
     else:
+        #ce9e54
         target_color = '#0d6ed7'  # Blue color
-        tolerance = 40  # Adjust this value as needed
-
-         # Convert the target color from hex to BGR
-        target_color_bgr = tuple(int(target_color[i:i+2], 16) for i in (5, 3, 1))
-        
-        # Define the lower and upper bounds for the color
-        lower_bound = np.array([max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8)
-        upper_bound = np.array([min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8)
-        
-        # Create a mask that identifies all pixels within the color range
-        mask = cv2.inRange(frame, lower_bound, upper_bound)
-        
-        # Count the number of non-zero (white) pixels in the mask
-        count = cv2.countNonZero(mask)
-        print(f"{count} blue pixels")
+        count = count_pixels(target_color, frame)
 
         if (count > 300):
             return 2
@@ -165,17 +190,47 @@ def count_rounds_won(frame, playerNumber=1):
         if (count > 200):
             return 2
 
-        if (count > 100):
+        if (count > 110):
             return 1
 
 
     return 0
 
 def is_vf_character_name(name):
+    if "Lau" in name:
+        return True
+    if "Lion" in name:
+        return True
+    if "Wolf" in name:
+        return True
+    if "Pai" in name:
+        return True
+    if "Jeff" in name:
+        return True
+    if "Aoi" in name:
+        return True
     if "Vanessa" in name:
         return True
     if "Blaze" in name:
         return True
     if "Akira" in name:
+        return True
+    if "Kage" in name:
+        return True
+    if "Eileen" in name:
+        return True
+    if "Lau" in name:
+        return True
+    if "Take" in name:
+        return True
+    if "Shun" in name:
+        return True
+    if "Jacky" in name:
+        return True
+    if "Sarah" in name:
+        return True
+    if "Goh" in name:
+        return True
+    if "Brad" in name:
         return True
     return False
