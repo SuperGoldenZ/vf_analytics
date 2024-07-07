@@ -4,10 +4,11 @@ from pytube import YouTube
 import os.path
 import numpy as np
 from timeit import default_timer as timer
-
+from threading import Thread
 import vf_analytics
 import vf_match
 import uuid
+import multiprocessing
 
 ##todo: get player ranks
 
@@ -40,6 +41,20 @@ def get_available_devices():
         index += 1
     return arr
 
+def get_frame(video_path, count, frames):
+    cap = cv2.VideoCapture(video_path )
+    count = int(count)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+    ret, frame = cap.read()
+    if not ret:        
+        return False
+    
+    frames[count] = frame
+    #cv2.imshow('video frfame', frame)
+    #cv2.waitKey()
+
+    cap.release()
+    
 # Step 2: Extract frames from the video
 def extract_frames(video_path, interval):
     get_available_devices()
@@ -47,26 +62,41 @@ def extract_frames(video_path, interval):
     cap = cv2.VideoCapture(video_path )
     print(cap.getBackendName())
 
-    frames = []
+    frames = [None] * 500000
     frame_rate = cap.get(cv2.CAP_PROP_FPS)
-    count = 0
-    startFrame=29280
-    cap.set(cv2.CAP_PROP_POS_FRAMES, startFrame)
-    #count = 22020
-    count = startFrame
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        count += 1
-        if count % (frame_rate * interval) == 0:
-            frames.append(frame)
-            #cv2.imshow('Video Frame', frame)
-            #cv2.waitKey()
-            #break
-        if (count > 35000):
-            break
-    cap.release() 
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    end_frame = None
+    if end_frame is None or end_frame > frame_count:
+        end_frame = frame_count
+    cap.release()
+
+    #22020
+    #startFrame = 60 * 60 * 30
+    startFrame=22020
+    count = startFrame 
+
+    caps = [None] * multiprocessing.cpu_count()
+    
+    while count < end_frame:
+        #threads = [None] * multiprocessing.cpu_count()
+        
+
+        #threads = [None] * 1
+        
+        #for i in range(len(threads)):            
+
+            #threads[i] = Thread(target=get_frame, args=[video_path+str(i), count, frames])
+            #threads[i].start()
+            #count+=(frame_rate*interval)
+        
+        #for i in range(len(threads)):
+            #threads[i].join()
+
+        get_frame(video_path, count, frames)
+        print(count)
+        count+=(frame_rate * interval)
+        if (count > 57000):
+            break    
     return frames
 
 def all_but_grey(roi):
@@ -109,109 +139,178 @@ def all_but_black(roi):
     cleaned_text = cv2.medianBlur(filled_text, 3)    
     return cleaned_text
 
-def print_csv(match, rounds):
+def print_csv(match, round, round_num):
     print(match["id"], end = ",")
     print(match["stage"], end = ",")
     print(match["player1ringname"], end = ",")
     print(match["player1character"], end = ",")
     print(match["player2ringname"], end = ",")
     print(match["player2character"], end = ",")
-    print(rounds["player1rounds"], end = ",")
-    print(rounds["player2rounds"])
+    print(round_num, end = ",")
+    print(round["player1_rounds"], end = ",")
+    print(round["player1_ko"], end = ",")
+    print(round["player1_ringout"], end = ",")
+    print(round["player1_excellent"], end = ",")
+    print(round["player2_rounds"], end = ',')
+    print(round["player2_ko"], end = ",")
+    print(round["player2_ringout"], end = ",")
+    print(round["player2_excellent"])
 
+def new_round():
+    round = {}
+    round["player1_excellent"] = 0
+    round["player2_excellent"] = 0
+    round["player1_ko"] = 0
+    round["player2_ko"] = 0
+    round["player1_ringout"] = 0
+    round["player2_ringout"] = 0    
+    round["player1_rounds"] = 0
+    round["player2_rounds"] = 0
+    return round
+
+def get_character_name(region_name, match, frame):
+    if (region_name in match):
+        return
+    (x, y, w, h) = vf_analytics.regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    
+    white_only_roi = all_but_white(roi)
+    text = pytesseract.image_to_string(white_only_roi)
+    if (vf_analytics.is_vf_character_name(text)):
+        text = str.replace(text, "\n\x0c", "")                
+    if (text == "EI Blaze"):
+        text = "El Blaze"
+    if (text != ""):
+        match[region_name] = text
+
+def get_ringname(region_name, match, frame):
+    if (region_name in match):
+        return
+    (x, y, w, h) = vf_analytics.regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    
+    text = pytesseract.image_to_string(roi)
+    text = str.replace(text, "\n\x0c", "")
+    if (not " " in text):                    
+        match[region_name] = text                
+
+def get_stage(region_name, match, frame):
+    if (region_name in match):
+        return
+    
+    (x, y, w, h) = vf_analytics.regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    text = pytesseract.image_to_string(roi)
+    text = str.replace(text, "\n\x0c", "")
+
+    if (text != "" and not region_name in match):
+        match[region_name] = text                
+
+def got_all_vs_info(match):
+    if (not "stage" in match):
+        return False
+    if (not "player1character" in match):
+        return False
+    if (not "player2character" in match):
+        return False
+    if (not "player1ringname" in match):
+        return False
+    if (not "player2ringname" in match):
+        return False
+            
+    return True
+
+def get_rounds_won(player_num, frame):
+    (x, y, w, h) = vf_analytics.regions[f"player{player_num}_rounds"]
+    roi = frame[y:y+h, x:x+w]                        
+    return vf_analytics.count_rounds_won(roi, player_num)    
+
+def process_excellent(player_num, frame, round):
+    (x, y, w, h) = vf_analytics.regions['excellent']                    
+    roi = frame[y:y+h, x:x+w]
+    if (vf_analytics.is_excellent(roi)):
+        round[f"player{player_num}_excellent"] = 1
+
+def process_ko(player_num, frame, round):
+    (x, y, w, h) = vf_analytics.regions['ko']                    
+    roi = frame[y:y+h, x:x+w]
+    if (vf_analytics.is_ko(roi)):
+        round[f"player{player_num}_ko"] = 1
+
+def process_ringout(player_num, frame, round):
+    (x, y, w, h) = vf_analytics.regions['excellent']
+    roi = frame[y:y+h, x:x+w]
+    if (vf_analytics.is_ringout(roi)):
+        round[f"player{player_num}_ringout"] = 1
 
 # Step 3: Perform OCR on specific regions
 def perform_ocr_on_frames(frames):
     results = []
 
-    height, width, _ = frames[0].shape  # Get the dimensions of the frame
-    print(f"{width} x {height}")
+    #height, width = list(frames.keys())[0].shape
 
-    originalWidth=640
-    originalHeight=359
+    #height, width, _ = frames[0].shape  # Get the dimensions of the frame
+    #print(f"{width} x {height}")
 
-    p1NameX = 22 / originalWidth
-    p1NameY = 134/originalHeight
+    #originalWidth=640
+    #originalHeight=359
 
-    p2NameX = 365/originalWidth
-    p2NameY = 134/originalHeight
-
-    playerNameWidth = 136 / originalWidth
-    playerNameHeight = 22 / originalHeight
     
-    state="before"
-    rounds={}
+    state="before"    
+    round=new_round()
+    rounds_won=[0, 0]
     match={}
+    round_num = 1
+
     match["id"] = uuid.uuid4()
     for frame in frames:        
-        for region_name, (x, y, w, h) in vf_analytics.regions.items():
+        if frame is None:
+            continue
+
+        if (state == "before"):
+            (x, y, w, h) = vf_analytics.regions["vs"]
             roi = frame[y:y+h, x:x+w]                        
-            if (state=="fight" and (region_name == "player1rounds" or region_name == "player2rounds")):
-                if (region_name == "player1rounds"):
-                    cnt=vf_analytics.count_rounds_won(roi, 1)
-                else:
-                    cnt=vf_analytics.count_rounds_won(roi, 2)
-                    cv2.imshow('Video Frame', frame)        
-                    cv2.waitKey()
-
-
-                if (not region_name in rounds):                    
-                    rounds[region_name] = 0
-                elif (cnt > 0 and (cnt-rounds[region_name]) == 1):
-                    rounds[region_name]=cnt
-                    print_csv(match, rounds)
-                if (rounds[region_name] == 3):                                        
-                    return True
-                    state="before"
-                    rounds={}
-                    match={}
-                    print(f"done -> {state}")   
-                    
-                    continue
-                #cv2.imshow('Video Frame', roi)        
-                #cv2.waitKey()
-            #if (state=="fight"):
-                #continue
-
-            #if (region_name == "player1rank" and not "player1rank" in match) :                
-                #white_only_roi = all_but_grey(roi)
-                #text = pytesseract.image_to_string(white_only_roi)
-                #cv2.imshow('Video Frame', white_only_roi)        
-                #cv2.waitKey()                        
-            if (region_name == "vs" and vf_analytics.is_vs(roi)):
+            if (vf_analytics.is_vs(roi)):
                 state="vs"                
                 continue
-            
-            if (state == "begin"):                
+
+        if (state == "vs"):                                                
+            get_character_name("player1character", match, frame)
+            get_character_name("player2character", match, frame)
+
+            get_ringname("player1ringname", match, frame)
+            get_ringname("player2ringname", match, frame)
+
+            get_stage("stage", match, frame)
+        
+            if (got_all_vs_info(match)):
+                state="fight"                
                 continue
-            
-            # Get info from the VS scren
-            if (state == "vs"):                                                
-                #Ger
-                if ("character" in region_name and not region_name in match):
-                    white_only_roi = all_but_white(roi)
-                    text = pytesseract.image_to_string(white_only_roi)
-                    if (vf_analytics.is_vf_character_name(text)):
-                        text = str.replace(text, "\n\x0c", "")                
-                    if (text == "EI Blaze"):
-                        text = "El Blaze"
-                    if (text != ""):
-                        match[region_name] = text                
-                if ("ringname" in region_name and not region_name in match):
-                    text = pytesseract.image_to_string(roi)
-                    text = str.replace(text, "\n\x0c", "")
-                    if (not " " in text):                    
-                        match[region_name] = text                
-                if ("stage" in region_name and not region_name in match):
-                    text = pytesseract.image_to_string(roi)
-                    text = str.replace(text, "\n\x0c", "")
+        
+        if (state == "fight"):            
+            #Check if match is over
+            for player_num in range(1, 3):
+                cnt=get_rounds_won(player_num, frame)
+                
+                if (cnt > 0 and cnt - rounds_won[player_num-1] == 1):
+                    process_excellent(player_num, frame, round)
+                    process_ko(player_num, frame, round)
+                    process_ringout(player_num, frame, round)
+                    round[f"player{player_num}_rounds"] = cnt
+                    rounds_won[player_num-1]=cnt
+                    
+                    print_csv(match, round, round_num)
+                    if (cnt < 3):
+                        round=new_round()
+                        round_num+=1
 
-                    if (text != "" and not region_name in match):
-                        match[region_name] = text                
-            
-                if ("stage" in match and "player1character" in match and "player2character" in match and "player1ringname" in match and "player2ringname" in match):
-                    state="fight"
-
+            if (round["player1_rounds"] == 3 or round["player2_rounds"] == 3):                                                                                                
+                state="before"                
+                round=new_round()
+                rounds_won=[0, 0]
+                round_num = 1
+                match={}                                        
+                match["id"] = uuid.uuid4()                
 
     return results
 
@@ -222,9 +321,11 @@ def main():
     #if not (os.path.isfile(video_path)):
         #download_video(video_url, video_path)
     print("Extracting frames")
+    start = timer()
     frames = extract_frames(video_path, 1)  # Extract a frame every 7 seconds
-
-    print("Extracting results")
+    elapsed_time = timer() - start # in seconds
+    print(f"{elapsed_time} seconds to read video ")
+    
     start = timer()
     results = perform_ocr_on_frames(frames)
     elapsed_time = timer() - start # in seconds

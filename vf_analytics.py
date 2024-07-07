@@ -13,8 +13,8 @@ ko_w, ko_h = vs_image_gray.shape[::-1]
 #alexRegions
 regions = {
     'player1rank': (435, 517, 25, 15)
-    ,'player1rounds': (519, 78, 106, 36)
-    ,'player2rounds': (845, 78, 106, 36)
+    ,'player1_rounds': (519, 78, 106, 36)
+    ,'player2_rounds': (845, 78, 106, 36)
     ,'stage': (578, 506, 312, 39)
     ,'player2ringname':  (1000, 535, 378, 35)
     ,'player1character': (54,    386,   418, 76)               
@@ -58,9 +58,8 @@ def is_excellent(roi):
     return count > 14000
 
 def is_ringout(roi):
-    count = count_pixels('#c48e36', roi)
-    #print(f"is ringout {count}")
-    return count > 400
+    count = count_pixels('#07a319', roi)    
+    return count > 8200
 
 def extract_and_match_features(sample_image, frame_roi, feature_detector):
 
