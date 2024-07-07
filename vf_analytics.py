@@ -14,7 +14,7 @@ ko_w, ko_h = vs_image_gray.shape[::-1]
 regions = {
     'player1rank': (125, 156, 22, 18)
     ,'player2rank': (1410, 158, 22, 18)
-    ,'player1rank_vftv': (145, 165, 25, 20)
+    ,'player1rank_vftv': (147, 165, 25, 18)
     ,'player2rank_vftv': (1382, 167, 22, 18)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (845, 78, 106, 36)
@@ -45,15 +45,22 @@ def get_player_rank(player_num, frame, vftv=False):
 
     imagem = cv2.bitwise_not(all_white_roi)
 
-    #cv2.imshow("rank", imagem)
+    #cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255,0,0), thickness=10)
+    #cv2.imshow("rank", frame)    
     #cv2.waitKey()
+
+
 
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
 
     text = str.replace(text, "\n\x0c", "")
+    text = str.replace(text, "\x0c", "")
     text = str.replace(text, "?", "")
-    
+
+    #cv2.imshow("rank", imagem)
+    #cv2.waitKey()
     #print(text)
+
     return int(text)        
 
 def load_sample_with_transparency(path):
@@ -363,7 +370,7 @@ def get_ringname(player_num, frame):
     text = str.replace(text, "\n\x0c", "")
     text = str.replace(text, " ", "")
     text = str.replace(text, "‘", "")
-
+    text = str.replace(text, ":", "-")
     if ("\"" in text):
         return None
 
@@ -398,6 +405,18 @@ def get_stage(frame):
     if (text == "Island"):
         return "Island"
     
+    if ("Arena" in text):
+        return "Arena"
+    
+    if ("Palace" in text):
+        return "Palace"
+
+    if ("Aurora" in text):
+        return "Aurora"
+    
+    if ("Temple" in text):
+        return "Temple"
+    
     if (len(text) >= 7):
         return text
     
@@ -408,8 +427,6 @@ def get_character_name(player_num, frame):
     (x, y, w, h) = regions[region_name]
     roi = frame[y:y+h, x:x+w]                        
     
-    #cv2.imshow("charname", roi)
-    #cv2.waitKey()
     white_only_roi = all_but_white(roi)
     text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
 

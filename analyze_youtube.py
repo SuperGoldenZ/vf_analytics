@@ -1,6 +1,7 @@
 import cv2
-import pytesseract
+from urllib.parse import urlparse, parse_qs
 from pytube import YouTube
+from pytube import Playlist
 import os.path
 import numpy as np
 from timeit import default_timer as timer
@@ -9,6 +10,8 @@ import vf_analytics
 import vf_match
 import uuid
 import multiprocessing
+
+
 
 #####todo: resize others to be width 1467x824
 # for the VF part only
@@ -94,7 +97,7 @@ def get_frame(video_path, count, frames, resize=False):
     cap.release()
     
 # Step 2: Extract frames from the video
-def extract_frames(video_path, interval):
+def extract_frames(video_path, interval, video_folder=None):
     #get_available_devices()
     
     cap = cv2.VideoCapture(video_path )
@@ -140,6 +143,9 @@ def extract_frames(video_path, interval):
 
         get_frame(video_path, count, frames, True)
         
+        if (video_folder is not None):
+            count_int = int(count)
+            cv2.imwrite(video_folder + "/" + str(f"{count_int:06}") + ".png", frames[count_int])
         #cv2.imshow("v", frames[int(count)])
         #cv2.waitKey()
         
@@ -171,9 +177,11 @@ def all_but_black(roi):
     cleaned_text = cv2.medianBlur(filled_text, 3)    
     return cleaned_text
 
-def print_csv(match, round, round_num):
+def print_csv(match, round, round_num, video_id):
     f = open("match_data.csv", "a")    
-    
+        
+    f.write(video_id)
+    f.write(",")
     f.write(str(match["id"]))
     f.write(",")
     f.write(match["stage"])
@@ -261,7 +269,7 @@ def process_ringout(player_num, frame, round):
         round[f"player{player_num}_ringout"] = 1
 
 # Step 3: Perform OCR on specific regions
-def perform_ocr_on_frames(frames):
+def perform_ocr_on_frames(frames, video_id="n/a"):
     results = []
 
     #height, width = list(frames.keys())[0].shape
@@ -340,7 +348,7 @@ def perform_ocr_on_frames(frames):
                 if (cnt > 0 and cnt - rounds_won[player_num-1] == 1):
                     round[f"player{player_num}_rounds"] = cnt
                     rounds_won[player_num-1]=cnt
-                    print_csv(match, round, round_num)
+                    print_csv(match, round, round_num, video_id)
                     if (cnt < 3):
                         round=new_round()
                         round["player1_rounds"]=rounds_won[0]
@@ -357,35 +365,60 @@ def perform_ocr_on_frames(frames):
 
     return results
 
+def get_playlist(playlists):
+    urls=[]
+
+    for playlist in playlists:
+        playlist_urls = Playlist(playlist)
+
+        for url in playlist_urls:
+            urls.append(url)
+
+    return urls
+
+#print(urls)
+
+
 # Main function to run the whole process
 def main():
     #video_url = 'https://www.youtube.com/watch?v=641FbPAGjto'
     video_path = '/home/alex/2024-04-20 14-29-03.mkv'
     
     video_path = '/home/alex/vf_analytics/blaze01.mp4'
-    video_url = 'https://www.youtube.com/watch?v=ukTR1jyBC1Y'
-    if not (os.path.isfile(video_path)):
-        download_video(video_url, video_path)
+    #video_url = 'https://www.youtube.com/watch?v=ukTR1jyBC1Y'
 
+    playlists=["https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"]
+    urls = get_playlist(playlists)
 
-    print("Extracting frames")
-    start = timer()
-    frames = extract_frames(video_path, 1)  # Extract a frame every 7 seconds
-    elapsed_time = timer() - start # in seconds
-    print(f"{elapsed_time} seconds to read video ")
-    
-    start = timer()
-    results = perform_ocr_on_frames(frames)
-    elapsed_time = timer() - start # in seconds
-    print(f"{elapsed_time} seconds to run")
+    for url in urls:
+        # Parse the URL
+        parsed_url = urlparse(url)
 
-    #for i, result in enumerate(results):
-        #print(f"Frame {i}:")
-        #for region, text in result.items():
-            #print(f"  {region}: {text}")
-    
-    # Clean up by removing the downloaded video file
-    #os.remove(video_path)
+        # Extract the query parameters
+        query_params = parse_qs(parsed_url.query)
+
+        # Get the value of the 'v' parameter
+        video_id = query_params.get('v', [None])[0]
+        
+        if (os.path.isfile(video_path)):
+            os.remove(video_path)
+
+        video_folder=f"/home/alex/vf_analytics/assets/videos/{video_id}"        
+        if not os.path.exists(video_folder):
+            os.makedirs(video_folder)
+        video_path = video_folder + "/video.mp4"
+        download_video(url, video_path)
+
+        print("Extracting frames")
+        start = timer()
+        frames = extract_frames(video_path, 1, video_folder)  # Extract a frame every 7 seconds
+        elapsed_time = timer() - start # in seconds
+        print(f"{elapsed_time} seconds to read video ")
+        
+        start = timer()
+        perform_ocr_on_frames(frames, video_id)
+        elapsed_time = timer() - start # in seconds
+        print(f"{elapsed_time} seconds to run")
 
 if __name__ == '__main__':
     main()

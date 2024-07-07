@@ -122,6 +122,20 @@ class TestVFCV(unittest.TestCase):
         self.assertTrue(result)
 
     def test_get_player_rank(self):
+        vs_image = cv2.imread('assets/test_images/rank/32_30.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(32, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(30, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/42_39.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(42, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(39, rank)
+
         vs_image = cv2.imread('assets/test_images/player1_two_rounds_won.png')
         rank=vf_analytics.get_player_rank(1, vs_image)
         self.assertEqual(37, rank)
@@ -152,6 +166,13 @@ class TestVFCV(unittest.TestCase):
         ringname=vf_analytics.get_ringname(2, vs_image)
         self.assertEqual("Namflow_Gx2", ringname)
 
+        vs_image = cv2.imread('assets/test_images/ringnames/ringnames-001.png')
+        ringname=vf_analytics.get_ringname(1, vs_image)
+        self.assertEqual("mepadeth-INeking", ringname)
+
+        ringname=vf_analytics.get_ringname(2, vs_image)
+        self.assertEqual("tan-jet6", ringname)
+
     def test_get_stage(self):
         vs_image = cv2.imread('assets/test_images/vs_pai.png')
         ringname=vf_analytics.get_stage(vs_image)
@@ -172,3 +193,19 @@ class TestVFCV(unittest.TestCase):
         vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
         ringname=vf_analytics.get_stage(vs_image)
         self.assertEqual("Island", ringname)
+
+        vs_image = cv2.imread('assets/test_images/vs_jacky.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Arena", ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/palace.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Palace", ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/temple.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Temple", ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/aurora.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Aurora", ringname)
