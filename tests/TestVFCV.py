@@ -135,6 +135,10 @@ class TestVFCV(unittest.TestCase):
         self.assertEqual("Dynamite-Sikoku4", ringname)
 
     def test_get_stage(self):
+        vs_image = cv2.imread('assets/test_images/vs_pai.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Statues", ringname)
+
         vs_image = cv2.imread('assets/test_images/vs_akira.png')
         ringname=vf_analytics.get_stage(vs_image)
         self.assertEqual("Great Wall", ringname)

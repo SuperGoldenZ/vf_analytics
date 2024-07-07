@@ -79,7 +79,7 @@ def extract_frames(video_path, interval):
     #pai start fraame
     startFrame=60 * 60 * 24 + (16 * 60)
 
-    startFrame=22020
+    #startFrame=22020
 
     #startFrame=60*60*11+(20*60)
     count = startFrame 
@@ -103,13 +103,13 @@ def extract_frames(video_path, interval):
 
         get_frame(video_path, count, frames)
         
-        #cv2.imshow("v", frames[int(count)])
-        #cv2.waitKey()
+        cv2.imshow("v", frames[int(count)])
+        cv2.waitKey()
         
         print(count)
         count+=(frame_rate * interval)
-        #if (count > 44000):
-            #break    
+        if (count > startFrame + 5000):
+            break    
     return frames
 
 def all_but_black(roi):
