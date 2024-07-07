@@ -10,6 +10,9 @@ import vf_match
 import uuid
 import multiprocessing
 
+#####todo: resize others to be width 1467x824
+# for the VF part only
+
 ##todo: get player ranks
 
 ##todo: get knockout or ring out
@@ -57,7 +60,7 @@ def get_frame(video_path, count, frames):
     
 # Step 2: Extract frames from the video
 def extract_frames(video_path, interval):
-    get_available_devices()
+    #get_available_devices()
     
     cap = cv2.VideoCapture(video_path )
     print(cap.getBackendName())
@@ -71,8 +74,14 @@ def extract_frames(video_path, interval):
     cap.release()
 
     #22020
-    #startFrame = 60 * 60 * 30
+    #startFrame = 60 * 60 * 28
+
+    #pai start fraame
+    startFrame=60 * 60 * 24 + (16 * 60)
+
     startFrame=22020
+
+    #startFrame=60*60*11+(20*60)
     count = startFrame 
 
     caps = [None] * multiprocessing.cpu_count()
@@ -93,29 +102,15 @@ def extract_frames(video_path, interval):
             #threads[i].join()
 
         get_frame(video_path, count, frames)
+        
+        #cv2.imshow("v", frames[int(count)])
+        #cv2.waitKey()
+        
         print(count)
         count+=(frame_rate * interval)
-        if (count > 57000):
-            break    
+        #if (count > 44000):
+            #break    
     return frames
-
-def all_but_grey(roi):
-    lower_white = np.array([175, 175, 175])  # Lower bound of white color
-    upper_white = np.array([255, 255, 255])  # Upper bound of white color
-    mask = cv2.inRange(roi, lower_white, upper_white)
-
-    # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
-    return white_only_roi
-
-def all_but_white(roi):
-    lower_white = np.array([235, 235, 235])  # Lower bound of white color
-    upper_white = np.array([255, 255, 255])  # Upper bound of white color
-    mask = cv2.inRange(roi, lower_white, upper_white)
-
-    # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
-    return white_only_roi
 
 def all_but_black(roi):
     lower_black = np.array([0, 0, 0])  # Lower bound of white color
@@ -143,8 +138,10 @@ def print_csv(match, round, round_num):
     print(match["id"], end = ",")
     print(match["stage"], end = ",")
     print(match["player1ringname"], end = ",")
+    print(match["player1rank"], end = ",")
     print(match["player1character"], end = ",")
     print(match["player2ringname"], end = ",")
+    print(match["player2rank"], end = ",")
     print(match["player2character"], end = ",")
     print(round_num, end = ",")
     print(round["player1_rounds"], end = ",")
@@ -168,43 +165,6 @@ def new_round():
     round["player2_rounds"] = 0
     return round
 
-def get_character_name(region_name, match, frame):
-    if (region_name in match):
-        return
-    (x, y, w, h) = vf_analytics.regions[region_name]
-    roi = frame[y:y+h, x:x+w]                        
-    
-    white_only_roi = all_but_white(roi)
-    text = pytesseract.image_to_string(white_only_roi)
-    if (vf_analytics.is_vf_character_name(text)):
-        text = str.replace(text, "\n\x0c", "")                
-    if (text == "EI Blaze"):
-        text = "El Blaze"
-    if (text != ""):
-        match[region_name] = text
-
-def get_ringname(region_name, match, frame):
-    if (region_name in match):
-        return
-    (x, y, w, h) = vf_analytics.regions[region_name]
-    roi = frame[y:y+h, x:x+w]                        
-    
-    text = pytesseract.image_to_string(roi)
-    text = str.replace(text, "\n\x0c", "")
-    if (not " " in text):                    
-        match[region_name] = text                
-
-def get_stage(region_name, match, frame):
-    if (region_name in match):
-        return
-    
-    (x, y, w, h) = vf_analytics.regions[region_name]
-    roi = frame[y:y+h, x:x+w]                        
-    text = pytesseract.image_to_string(roi)
-    text = str.replace(text, "\n\x0c", "")
-
-    if (text != "" and not region_name in match):
-        match[region_name] = text                
 
 def got_all_vs_info(match):
     if (not "stage" in match):
@@ -268,26 +228,49 @@ def perform_ocr_on_frames(frames):
             continue
 
         if (state == "before"):
-            (x, y, w, h) = vf_analytics.regions["vs"]
-            roi = frame[y:y+h, x:x+w]                        
-            if (vf_analytics.is_vs(roi)):
-                state="vs"                
-                continue
+            if (vf_analytics.is_vs(frame)):
+                state="vs"                                                
 
-        if (state == "vs"):                                                
-            get_character_name("player1character", match, frame)
-            get_character_name("player2character", match, frame)
+        if (state == "vs"):
+            player1character = vf_analytics.get_character_name(1, frame)
+            if (player1character is not None):
+                match["player1character"] = player1character
 
-            get_ringname("player1ringname", match, frame)
-            get_ringname("player2ringname", match, frame)
+            player2character = vf_analytics.get_character_name(2, frame)
+            if (player2character is not None):
+                match["player2character"] = player2character
 
-            get_stage("stage", match, frame)
-        
+            if (not "player1ringname" in match or match["player1ringname"] is None):
+                player1ringname = vf_analytics.get_ringname(1, frame)                
+                match["player1ringname"] = player1ringname
+                    
+
+            if (not "player2ringname" in match or match["player2ringname"] is None):
+                player2ringname = vf_analytics.get_ringname(2, frame)                
+                match["player2ringname"] = player2ringname
+
+            if ("stage" not in match):
+                stage=vf_analytics.get_stage(frame)
+                if (stage is not None):
+                    match["stage"] = stage
+                                
             if (got_all_vs_info(match)):
                 state="fight"                
                 continue
         
         if (state == "fight"):            
+            if (not "player1rank" in match or match["player1rank"] == 0):
+                try:
+                    match["player1rank"] = vf_analytics.get_player_rank(1, frame)
+                except:
+                    match["player1rank"] = 0
+
+            if (not "player2rank" in match or match["player2rank"] == 0):
+                try:
+                    match["player2rank"] = vf_analytics.get_player_rank(2, frame)
+                except:
+                    match["player2rank"] = 0
+
             #Check if match is over
             for player_num in range(1, 3):
                 cnt=get_rounds_won(player_num, frame)
@@ -302,6 +285,8 @@ def perform_ocr_on_frames(frames):
                     print_csv(match, round, round_num)
                     if (cnt < 3):
                         round=new_round()
+                        round["player1_rounds"]=rounds_won[0]
+                        round["player2_rounds"]=rounds_won[1]
                         round_num+=1
 
             if (round["player1_rounds"] == 3 or round["player2_rounds"] == 3):                                                                                                

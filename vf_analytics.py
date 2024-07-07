@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import pytesseract
 
 vs_image = cv2.imread('assets/vs.png')
 vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
@@ -12,7 +12,8 @@ ko_w, ko_h = vs_image_gray.shape[::-1]
 
 #alexRegions
 regions = {
-    'player1rank': (435, 517, 25, 15)
+    'player1rank': (125, 156, 22, 18)
+    ,'player2rank': (1410, 158, 22, 18)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (845, 78, 106, 36)
     ,'stage': (578, 506, 312, 39)
@@ -24,6 +25,18 @@ regions = {
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
 }
+
+def get_player_rank(player_num, frame):
+    (x, y, w, h) = regions[f"player{player_num}rank"]
+    roi = frame[y:y+h, x:x+w]                        
+
+    all_white_roi = all_but_grey(roi)
+    imagem = cv2.bitwise_not(all_white_roi)
+
+    #cv2.imshow("video", imagem)
+    #cv2.waitKey()
+    text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 6")    
+    return int(text)        
 
 def load_sample_with_transparency(path):
     # Load the image with transparency
@@ -37,15 +50,43 @@ player1roundwon = load_sample_with_transparency('assets/player1roundwon.png')
 player2roundwon = load_sample_with_transparency('assets/player2roundwon.png')
 
 
-def is_vs(roi):
-    main_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    result = cv2.matchTemplate(main_gray, vs_image_gray, cv2.TM_CCOEFF_NORMED)
+def is_vs(frame):
+    (x, y, w, h) = regions["vs"]
+    roi = frame[y:y+h, x:x+w]                        
+
+    all_white_roi = all_but_black(roi)
+    text = pytesseract.image_to_string(all_white_roi, config="--psm 7")
+    
+    #cv2.imshow("roi", all_white_roi)
+    #cv2.waitKey()
+    #imagem = cv2.bitwise_not(all_white_roi)
+
+    if ("WS" in text):
+        return True
+    if ("VS" in text):
+        return True
+    return False
+    #print(text)
+    #cv2.imshow("vs", all_white_roi)
+    
+    #cv2.waitKey()
+
+    #text = str.replace(text, "\n\x0c", "")    
+    
+    #print(text)
+    #return "VS" in text or "WS" in text
+
+    #cv2.imshow("video", roi)
+    #cv2.waitKey()
+    #main_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    #result = cv2.matchTemplate(main_gray, vs_image_gray, cv2.TM_CCOEFF_NORMED)
 
     # Set a threshold for the match
-    threshold = 0.8
-    loc = np.where(result >= threshold)
+    #threshold = 0.8
+    
+    #loc = np.where(result >= threshold)
 
-    return (len(loc[0]) > 0)
+    #return (len(loc[0]) > 0)
 
 def is_ko(roi):
     count = count_pixels('#ce9e54', roi)
@@ -233,3 +274,124 @@ def is_vf_character_name(name):
     if "Brad" in name:
         return True
     return False
+
+def all_but_white(roi):
+    lower_white = np.array([235, 235, 235])  # Lower bound of white color
+    upper_white = np.array([255, 255, 255])  # Upper bound of white color
+    mask = cv2.inRange(roi, lower_white, upper_white)
+
+    # Apply the mask to keep only white areas in the ROI
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    return white_only_roi
+
+def all_but_black(image):
+    image = cv2.bitwise_not(image)
+    return all_but_white(image)
+    
+    inverted_image = PIL.ImageOps.invert(image)
+    lower_white = np.array([0, 0, 0])  # Lower bound of white color
+    upper_white = np.array([1, 1, 1])  # Upper bound of white color
+    mask = cv2.inRange(image, lower_white, upper_white)
+    return mask
+    # Apply the mask to keep only white areas in the ROI
+    #white_only_roi = cv2.bitwise_and(image, image, mask=mask)            
+
+    # Convert to grayscale (optional, if your image is colored)
+    #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Create a mask where black pixels are identified (thresholding)
+    # The threshold can be adjusted if needed; here we assume an intensity of 0 is black
+    #_, mask = cv2.threshold(image, 2, 255, cv2.THRESH_BINARY_INV)
+
+    # Create an output image, initialized to white
+    #output = np.ones_like(image) * 255
+
+    # Copy the black pixels from the original image to the output image using the mask
+    #output[mask == 255] = image[mask == 255]    
+
+    return output
+
+def all_but_grey(roi):
+    lower_white = np.array([170, 170, 170])  # Lower bound of white color
+    upper_white = np.array([255, 255, 255])  # Upper bound of white color
+    mask = cv2.inRange(roi, lower_white, upper_white)
+
+    # Apply the mask to keep only white areas in the ROI
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    return white_only_roi
+
+def get_ringname(player_num, frame):
+    region_name=f"player{player_num}ringname"
+
+    (x, y, w, h) = regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    
+    all_white_roi = all_but_grey(roi)
+    imagem = cv2.bitwise_not(all_white_roi)
+
+    text = pytesseract.image_to_string(imagem, config="--psm 6")
+    text = str.replace(text, "\n\x0c", "")
+    text = str.replace(text, " ", "")
+
+    if ("\"" in text):
+        return None
+
+    if ("\n" in text):
+        return None
+    
+    if ("=" in text):
+        return None
+    
+    if (len(text) > 5):
+        return text
+    return None
+
+def get_stage(frame):
+    region_name="stage"
+    (x, y, w, h) = regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    all_white_roi = all_but_grey(roi)
+    imagem = cv2.bitwise_not(all_white_roi)
+
+    text = pytesseract.image_to_string(imagem, config="--psm 6")
+
+    text = str.replace(text, "\n\x0c", "")    
+    
+    #print(text)
+    #cv2.imshow("stage", imagem)
+    #cv2.waitKey()
+    
+    if (text == "Water falls"):
+        return "Waterfalls"
+    
+    if (text == "Island"):
+        return "Island"
+    
+    if (len(text) >= 7):
+        return text
+    
+    return None
+
+def get_character_name(player_num, frame):
+    region_name = f"player{player_num}character"
+    (x, y, w, h) = regions[region_name]
+    roi = frame[y:y+h, x:x+w]                        
+    
+    #cv2.imshow("charname", roi)
+    #cv2.waitKey()
+    white_only_roi = all_but_white(roi)
+    text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
+
+    if ("Akira" in text):
+        text = "Akira"
+    if ("Blaze" in text):
+        text = "Blaze"
+    if ("Wolf" in text):
+        text = "Wolf"
+    if (text == "EI Blaze"):
+        text = "Blaze"
+
+    if (is_vf_character_name(text)):
+        return str.replace(text, "\n\x0c", "")                
+    
+    return None

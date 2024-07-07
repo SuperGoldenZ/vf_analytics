@@ -5,7 +5,10 @@ import pytesseract
 
 class TestVFCV(unittest.TestCase):
     def test_is_vs(self):
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')        
+        self.assertTrue(vf_analytics.is_vs(vs_image))
+
+        vs_image = cv2.imread('assets/test_images/vs_vanessa_two.png')        
         self.assertTrue(vf_analytics.is_vs(vs_image))
 
         not_vs_image = cv2.imread('assets/test_images/ko.png')
@@ -114,3 +117,36 @@ class TestVFCV(unittest.TestCase):
 
         result=vf_analytics.is_ringout(roi)        
         self.assertTrue(result)
+
+    def test_get_player_rank(self):
+        vs_image = cv2.imread('assets/test_images/player1_two_rounds_won.png')
+        rank=vf_analytics.get_player_rank(1, vs_image)
+        self.assertEqual(37, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image)
+        self.assertEqual(36, rank)        
+
+    def test_get_player_ringname(self):
+        vs_image = cv2.imread('assets/test_images/vs_akira.png')
+        ringname=vf_analytics.get_ringname(1, vs_image)
+        self.assertEqual("Namflow_Gx2", ringname)
+        
+        ringname=vf_analytics.get_ringname(2, vs_image)
+        self.assertEqual("Dynamite-Sikoku4", ringname)
+
+    def test_get_stage(self):
+        vs_image = cv2.imread('assets/test_images/vs_akira.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Great Wall", ringname)
+                
+        vs_image = cv2.imread('assets/test_images/vs_wolf.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Sumo Ring", ringname)
+
+        vs_image = cv2.imread('assets/test_images/vs_vanessa_two.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Waterfalls", ringname)
+
+        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Island", ringname)
