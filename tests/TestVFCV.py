@@ -11,6 +11,9 @@ class TestVFCV(unittest.TestCase):
         vs_image = cv2.imread('assets/test_images/vs_vanessa_two.png')        
         self.assertTrue(vf_analytics.is_vs(vs_image))
 
+        vs_image = cv2.imread('assets/test_images/vs_pai.png')        
+        self.assertTrue(vf_analytics.is_vs(vs_image))
+
         not_vs_image = cv2.imread('assets/test_images/ko.png')
         self.assertFalse(vf_analytics.is_vs(not_vs_image))
 
@@ -126,6 +129,13 @@ class TestVFCV(unittest.TestCase):
         rank=vf_analytics.get_player_rank(2, vs_image)
         self.assertEqual(36, rank)        
 
+        vs_image = cv2.imread('assets/test_images/vftv_blaze_vs_blaze.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(27, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(25, rank)
+
     def test_get_player_ringname(self):
         vs_image = cv2.imread('assets/test_images/vs_akira.png')
         ringname=vf_analytics.get_ringname(1, vs_image)
@@ -133,6 +143,14 @@ class TestVFCV(unittest.TestCase):
         
         ringname=vf_analytics.get_ringname(2, vs_image)
         self.assertEqual("Dynamite-Sikoku4", ringname)
+
+        vs_image = cv2.imread('assets/test_images/vs_pai.png')
+        ringname=vf_analytics.get_ringname(1, vs_image)
+        self.assertEqual("migu_garden", ringname)
+
+        vs_image = cv2.imread('assets/test_images/vs_pai.png')
+        ringname=vf_analytics.get_ringname(2, vs_image)
+        self.assertEqual("Namflow_Gx2", ringname)
 
     def test_get_stage(self):
         vs_image = cv2.imread('assets/test_images/vs_pai.png')

@@ -14,6 +14,8 @@ ko_w, ko_h = vs_image_gray.shape[::-1]
 regions = {
     'player1rank': (125, 156, 22, 18)
     ,'player2rank': (1410, 158, 22, 18)
+    ,'player1rank_vftv': (145, 165, 25, 20)
+    ,'player2rank_vftv': (1382, 167, 22, 18)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (845, 78, 106, 36)
     ,'stage': (578, 506, 312, 39)
@@ -21,21 +23,37 @@ regions = {
     ,'player1character': (54,    386,   418, 76)               
     ,'player2character': (1004,  386,    418, 76)
     ,'player1ringname':  (75, 540, 378, 28)        
-    ,'vs': (586, 284, 308, 154)
+    ,'vs': (586+12, 284+10, 308-45, 154-20)
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
 }
 
-def get_player_rank(player_num, frame):
+def get_player_rank(player_num, frame, vftv=False):
+
     (x, y, w, h) = regions[f"player{player_num}rank"]
+    if (vftv):
+        (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+
     roi = frame[y:y+h, x:x+w]                        
 
+    #cv2.imshow("rank", roi  )
+    #cv2.waitKey()
+    
     all_white_roi = all_but_grey(roi)
+    if (vftv):
+        all_white_roi = all_but_white_vftv(roi)
+
     imagem = cv2.bitwise_not(all_white_roi)
 
-    #cv2.imshow("video", imagem)
+    #cv2.imshow("rank", imagem)
     #cv2.waitKey()
-    text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 6")    
+
+    text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+
+    text = str.replace(text, "\n\x0c", "")
+    text = str.replace(text, "?", "")
+    
+    #print(text)
     return int(text)        
 
 def load_sample_with_transparency(path):
@@ -55,38 +73,32 @@ def is_vs(frame):
     roi = frame[y:y+h, x:x+w]                        
 
     all_white_roi = all_but_black(roi)
-    text = pytesseract.image_to_string(all_white_roi, config="--psm 7")
+    text = pytesseract.image_to_string(all_white_roi, config="--psm 6")
     
     #cv2.imshow("roi", all_white_roi)
     #cv2.waitKey()
+    #print(text)
     #imagem = cv2.bitwise_not(all_white_roi)
 
+    if ("AS" in text):
+        return True
+    if ("NS" in text):
+        return True
     if ("WS" in text):
         return True
     if ("VS" in text):
         return True
+    
+    grey_pixels = count_pixels('#a4a09a', roi)
+    white_pixels = count_pixels('#fffffb', roi)
+
+    if (grey_pixels > 5700 and grey_pixels < 6000 and
+        white_pixels > 2300 and white_pixels < 2600
+        ):
+        return True
+    
+
     return False
-    #print(text)
-    #cv2.imshow("vs", all_white_roi)
-    
-    #cv2.waitKey()
-
-    #text = str.replace(text, "\n\x0c", "")    
-    
-    #print(text)
-    #return "VS" in text or "WS" in text
-
-    #cv2.imshow("video", roi)
-    #cv2.waitKey()
-    #main_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    #result = cv2.matchTemplate(main_gray, vs_image_gray, cv2.TM_CCOEFF_NORMED)
-
-    # Set a threshold for the match
-    #threshold = 0.8
-    
-    #loc = np.where(result >= threshold)
-
-    #return (len(loc[0]) > 0)
 
 def is_ko(roi):
     count = count_pixels('#ce9e54', roi)
@@ -276,7 +288,16 @@ def is_vf_character_name(name):
     return False
 
 def all_but_white(roi):
-    lower_white = np.array([235, 235, 235])  # Lower bound of white color
+    lower_white = np.array([230, 230, 230])  # Lower bound of white color
+    upper_white = np.array([255, 255, 255])  # Upper bound of white color
+    mask = cv2.inRange(roi, lower_white, upper_white)
+
+    # Apply the mask to keep only white areas in the ROI
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    return white_only_roi
+
+def all_but_white_strict(roi):
+    lower_white = np.array([236, 236, 236])  # Lower bound of white color
     upper_white = np.array([255, 255, 255])  # Upper bound of white color
     mask = cv2.inRange(roi, lower_white, upper_white)
 
@@ -312,7 +333,16 @@ def all_but_black(image):
     return output
 
 def all_but_grey(roi):
-    lower_white = np.array([170, 170, 170])  # Lower bound of white color
+    lower_white = np.array([165, 165, 165])  # Lower bound of white color
+    upper_white = np.array([255, 255, 255])  # Upper bound of white color
+    mask = cv2.inRange(roi, lower_white, upper_white)
+
+    # Apply the mask to keep only white areas in the ROI
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    return white_only_roi
+
+def all_but_white_vftv(roi):
+    lower_white = np.array([100, 100, 100])  # Lower bound of white color
     upper_white = np.array([255, 255, 255])  # Upper bound of white color
     mask = cv2.inRange(roi, lower_white, upper_white)
 
@@ -332,6 +362,7 @@ def get_ringname(player_num, frame):
     text = pytesseract.image_to_string(imagem, config="--psm 6")
     text = str.replace(text, "\n\x0c", "")
     text = str.replace(text, " ", "")
+    text = str.replace(text, "‘", "")
 
     if ("\"" in text):
         return None

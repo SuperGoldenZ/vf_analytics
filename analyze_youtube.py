@@ -44,14 +44,49 @@ def get_available_devices():
         index += 1
     return arr
 
-def get_frame(video_path, count, frames):
+def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # calculate the ratio of the height and construct the
+        # dimensions
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # calculate the ratio of the width and construct the
+        # dimensions
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+
+    # return the resized image
+    return resized
+
+def get_frame(video_path, count, frames, resize=False):
     cap = cv2.VideoCapture(video_path )
     count = int(count)
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
     ret, frame = cap.read()
+
     if not ret:        
         return False
-    
+
+    if (resize):
+        frame=image_resize(frame, width=1467)
+
     frames[count] = frame
     #cv2.imshow('video frfame', frame)
     #cv2.waitKey()
@@ -77,11 +112,13 @@ def extract_frames(video_path, interval):
     #startFrame = 60 * 60 * 28
 
     #pai start fraame
-    startFrame=60 * 60 * 24 + (16 * 60)
+    #startFrame=60 * 60 * 24 + (16 * 60)
 
     #startFrame=22020
 
     #startFrame=60*60*11+(20*60)
+
+    startFrame=1
     count = startFrame 
 
     caps = [None] * multiprocessing.cpu_count()
@@ -101,15 +138,15 @@ def extract_frames(video_path, interval):
         #for i in range(len(threads)):
             #threads[i].join()
 
-        get_frame(video_path, count, frames)
+        get_frame(video_path, count, frames, True)
         
-        cv2.imshow("v", frames[int(count)])
-        cv2.waitKey()
+        #cv2.imshow("v", frames[int(count)])
+        #cv2.waitKey()
         
-        print(count)
+        print(count) 
         count+=(frame_rate * interval)
-        if (count > startFrame + 5000):
-            break    
+        #if (count > startFrame + 5000):
+            #break    
     return frames
 
 def all_but_black(roi):
@@ -135,23 +172,43 @@ def all_but_black(roi):
     return cleaned_text
 
 def print_csv(match, round, round_num):
-    print(match["id"], end = ",")
-    print(match["stage"], end = ",")
-    print(match["player1ringname"], end = ",")
-    print(match["player1rank"], end = ",")
-    print(match["player1character"], end = ",")
-    print(match["player2ringname"], end = ",")
-    print(match["player2rank"], end = ",")
-    print(match["player2character"], end = ",")
-    print(round_num, end = ",")
-    print(round["player1_rounds"], end = ",")
-    print(round["player1_ko"], end = ",")
-    print(round["player1_ringout"], end = ",")
-    print(round["player1_excellent"], end = ",")
-    print(round["player2_rounds"], end = ',')
-    print(round["player2_ko"], end = ",")
-    print(round["player2_ringout"], end = ",")
-    print(round["player2_excellent"])
+    f = open("match_data.csv", "a")    
+    
+    f.write(str(match["id"]))
+    f.write(",")
+    f.write(match["stage"])
+    f.write(",")
+    f.write(match["player1ringname"])
+    f.write(",")
+    f.write(str(match["player1rank"]))
+    f.write(",")
+    f.write(match["player1character"])
+    f.write(",")
+    f.write(match["player2ringname"])
+    f.write(",")
+    f.write(str(match["player2rank"]))
+    f.write(",")
+    f.write(match["player2character"])
+    f.write(",")
+    f.write(str(round_num))
+    f.write(",")
+    f.write(str(round["player1_rounds"]))
+    f.write(",")
+    f.write(str(round["player1_ko"]))
+    f.write(",")
+    f.write(str(round["player1_ringout"]))
+    f.write(",")
+    f.write(str(round["player1_excellent"]))
+    f.write(",")
+    f.write(str(round["player2_rounds"]))
+    f.write(",")
+    f.write(str(round["player2_ko"]))
+    f.write(",")
+    f.write(str(round["player2_ringout"]))
+    f.write(",")
+    f.write(str(round["player2_excellent"]))
+    f.write("\n")
+    f.close()
 
 def new_round():
     round = {}
@@ -261,27 +318,28 @@ def perform_ocr_on_frames(frames):
         if (state == "fight"):            
             if (not "player1rank" in match or match["player1rank"] == 0):
                 try:
-                    match["player1rank"] = vf_analytics.get_player_rank(1, frame)
+                    match["player1rank"] = vf_analytics.get_player_rank(1, frame, True)
                 except:
                     match["player1rank"] = 0
 
             if (not "player2rank" in match or match["player2rank"] == 0):
                 try:
-                    match["player2rank"] = vf_analytics.get_player_rank(2, frame)
+                    match["player2rank"] = vf_analytics.get_player_rank(2, frame, True)
                 except:
                     match["player2rank"] = 0
+
 
             #Check if match is over
             for player_num in range(1, 3):
                 cnt=get_rounds_won(player_num, frame)
-                
+
+                process_excellent(player_num-1, frame, round)
+                process_ko(player_num-1, frame, round)
+                process_ringout(player_num-1, frame, round)
+                                    
                 if (cnt > 0 and cnt - rounds_won[player_num-1] == 1):
-                    process_excellent(player_num, frame, round)
-                    process_ko(player_num, frame, round)
-                    process_ringout(player_num, frame, round)
                     round[f"player{player_num}_rounds"] = cnt
                     rounds_won[player_num-1]=cnt
-                    
                     print_csv(match, round, round_num)
                     if (cnt < 3):
                         round=new_round()
@@ -303,8 +361,13 @@ def perform_ocr_on_frames(frames):
 def main():
     #video_url = 'https://www.youtube.com/watch?v=641FbPAGjto'
     video_path = '/home/alex/2024-04-20 14-29-03.mkv'
-    #if not (os.path.isfile(video_path)):
-        #download_video(video_url, video_path)
+    
+    video_path = '/home/alex/vf_analytics/blaze01.mp4'
+    video_url = 'https://www.youtube.com/watch?v=ukTR1jyBC1Y'
+    if not (os.path.isfile(video_path)):
+        download_video(video_url, video_path)
+
+
     print("Extracting frames")
     start = timer()
     frames = extract_frames(video_path, 1)  # Extract a frame every 7 seconds
