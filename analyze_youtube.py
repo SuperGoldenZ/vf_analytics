@@ -387,7 +387,7 @@ def main():
     video_path = '/home/alex/vf_analytics/blaze01.mp4'
     #video_url = 'https://www.youtube.com/watch?v=ukTR1jyBC1Y'
 
-    playlists=["https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"]
+    playlists=["https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K", "https://www.youtube.com/playlist?list=PLIYqlJQujs8YRfPjQuHcjVbffN46jiOsY"]
     urls = get_playlist(playlists)
 
     for url in urls:
@@ -400,14 +400,19 @@ def main():
         # Get the value of the 'v' parameter
         video_id = query_params.get('v', [None])[0]
         
-        if (os.path.isfile(video_path)):
-            os.remove(video_path)
+        #if (os.path.isfile(video_path)):
+            #os.remove(video_path)
 
         video_folder=f"/home/alex/vf_analytics/assets/videos/{video_id}"        
         if not os.path.exists(video_folder):
             os.makedirs(video_folder)
         video_path = video_folder + "/video.mp4"
-        download_video(url, video_path)
+
+        if (not os.path.isfile(video_path)):
+            download_video(url, video_path)
+            print(f"Downloading video because not exists: {video_path}")
+        else:
+            print(f"Not downloading because exists: {video_path}")
 
         print("Extracting frames")
         start = timer()

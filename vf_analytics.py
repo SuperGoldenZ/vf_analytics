@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import pytesseract
+import re
 
 vs_image = cv2.imread('assets/vs.png')
 vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
@@ -14,7 +15,7 @@ ko_w, ko_h = vs_image_gray.shape[::-1]
 regions = {
     'player1rank': (125, 156, 22, 18)
     ,'player2rank': (1410, 158, 22, 18)
-    ,'player1rank_vftv': (147, 165, 25, 18)
+    ,'player1rank_vftv': (149, 165, 25, 18)
     ,'player2rank_vftv': (1382, 167, 22, 18)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (845, 78, 106, 36)
@@ -53,9 +54,12 @@ def get_player_rank(player_num, frame, vftv=False):
 
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
 
-    text = str.replace(text, "\n\x0c", "")
-    text = str.replace(text, "\x0c", "")
-    text = str.replace(text, "?", "")
+    #text = str.replace(text, "\n\x0c", "")
+    #text = str.replace(text, "\x0c", "")
+    #text = str.replace(text, "?", "")
+    #text = str.replace(text, "‘", "")
+
+    text = re.sub("[^0-9]", "", text)
 
     #cv2.imshow("rank", imagem)
     #cv2.waitKey()
@@ -371,6 +375,9 @@ def get_ringname(player_num, frame):
     text = str.replace(text, " ", "")
     text = str.replace(text, "‘", "")
     text = str.replace(text, ":", "-")
+    text = str.replace(text, "{", "")
+    text = str.replace(text, "|", "")
+    
     if ("\"" in text):
         return None
 
@@ -430,6 +437,10 @@ def get_character_name(player_num, frame):
     white_only_roi = all_but_white(roi)
     text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
 
+    if ("Brad" in text):
+        text="Brad"
+    if ("Kage" in text):
+        text="Kage"
     if ("Akira" in text):
         text = "Akira"
     if ("Blaze" in text):

@@ -122,6 +122,27 @@ class TestVFCV(unittest.TestCase):
         self.assertTrue(result)
 
     def test_get_player_rank(self):
+        vs_image = cv2.imread('assets/test_images/rank/34_37.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(34, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(37, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/42_44.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(42, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(44, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/43_43.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(43, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(43, rank)
+
         vs_image = cv2.imread('assets/test_images/rank/32_30.png')
         rank=vf_analytics.get_player_rank(1, vs_image, True)
         self.assertEqual(32, rank)
