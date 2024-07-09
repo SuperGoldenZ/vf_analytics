@@ -16,9 +16,9 @@ regions = {
     'player1rank': (125, 156, 22, 18)
     ,'player2rank': (1410, 158, 22, 18)
     ,'player1rank_vftv': (149, 165, 25, 18)
-    ,'player2rank_vftv': (1382, 167, 22, 18)
+    ,'player2rank_vftv': (1382, 167, 23, 15)
     ,'player1_rounds': (519, 78, 106, 36)
-    ,'player2_rounds': (845, 78, 106, 36)
+    ,'player2_rounds': (840, 78, 106, 36)
     ,'stage': (578, 506, 312, 39)
     ,'player2ringname':  (1000, 535, 378, 35)
     ,'player1character': (54,    386,   418, 76)               
@@ -29,11 +29,14 @@ regions = {
     ,'excellent': (167, 341, 1146, 155)
 }
 
-def get_player_rank(player_num, frame, vftv=False):
-
+def get_player_rank(player_num, frame, vftv=False, retry=False):
+    
     (x, y, w, h) = regions[f"player{player_num}rank"]
     if (vftv):
         (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+
+    if (retry):
+        w = w -1
 
     roi = frame[y:y+h, x:x+w]                        
 
@@ -64,6 +67,60 @@ def get_player_rank(player_num, frame, vftv=False):
     #cv2.imshow("rank", imagem)
     #cv2.waitKey()
     #print(text)
+
+    if (int(text) < 10):
+        return 0
+    greyCount = count_pixels("#7c7a82", roi)
+    if (int(text) >= 40 and greyCount > 130):
+        return (int(text)-10)
+    if (int(text) > 46 and not retry):
+        return get_player_rank(player_num, frame, vftv, True)
+
+    if (int(text) > 46):
+        return 0
+
+    if (int(text) < 0):
+        return 0
+
+    return int(text)        
+
+def get_player_rank_black(player_num, frame, vftv=False):
+
+    (x, y, w, h) = regions[f"player{player_num}rank"]
+    if (vftv):
+        (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+
+    roi = frame[y:y+h, x:x+w]                        
+
+    #cv2.imshow("rank", roi  )
+    #cv2.waitKey()
+    
+    all_white_roi = all_but_grey(roi)
+    if (vftv):
+        all_white_roi = all_but_black_range(roi)
+
+    
+    imagem = cv2.bitwise_not(all_white_roi)
+
+    imagem = all_white_roi
+    #cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255,0,0), thickness=10)
+    #cv2.imshow("rank", frame)    
+    #cv2.waitKey()
+
+
+
+    text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+
+    #text = str.replace(text, "\n\x0c", "")
+    #text = str.replace(text, "\x0c", "")
+    #text = str.replace(text, "?", "")
+    #text = str.replace(text, "‘", "")
+
+    text = re.sub("[^0-9]", "", text)
+
+    cv2.imshow("rank", imagem)
+    cv2.waitKey()
+    print(text)
 
     return int(text)        
 
@@ -200,60 +257,56 @@ def count_pixels(target_color, image):
     return cv2.countNonZero(mask)
 
     
-def count_rounds_won(frame, playerNumber=1):
-    # Convert BGR to HSV
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+def count_rounds_won(frame, playerNumber=1, vftv=False):
 
-    
+    region=regions[f"player{playerNumber}_rounds"]
+
+    (x, y, w, h) = region        
+    if (vftv):
+        y+=10
+        x+=10
+        w-=10
+
+    roi = frame[y:y+h, x:x+w]
+
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+
     # Define range of red color in HSV
     if (playerNumber == 1):
-        #resized = resize_sample_if_needed(player1roundwon, frame)
+        red_pixel_count = count_pixels("#e02958", roi)
 
-        #keypoints_sample, descriptors_sample = orb.detectAndCompute(resized, None)
-        #matches, kp_sample, kp_frame, roi_h = extract_and_match_features(, frame, orb)
-        #print (matches)
-
-        lower_1 = np.array([0, 50, 50])      # Lower bound of red color in HSV
-        upper_1 = np.array([10, 255, 255])   # Upper bound of red color in HSV
-
-        lower_2 = np.array([170, 50, 50])    # Lower bound for the second range of red color
-        upper_2 = np.array([180, 255, 255])  # Upper bound for the second range of red color
-
-        # Create masks for red color
-        mask1 = cv2.inRange(hsv, lower_1, upper_1)
-        mask2 = cv2.inRange(hsv, lower_2, upper_2)
-
-
-        # Combine masks to get the final red mask
-        red_mask = mask1 | mask2
-        # Count the number of red pixels
-        red_pixel_count = np.sum(red_mask == 255)
-        #print(f"Number of red pixels: {red_pixel_count}")
-
-        if (red_pixel_count > 2000):
-            return 0
-        
-        if (red_pixel_count > 1200):
+        #print(red_pixel_count)
+        #cv2.imshow("roi", roi)
+        #cv2.waitKey()
+                
+        if (red_pixel_count > 700):
             return 3
 
-        if (red_pixel_count > 900):
+        if (red_pixel_count > 380):
             return 2
 
-        if (red_pixel_count > 400):
+        if (red_pixel_count >= 231):
             return 1    
 
     else:
         #ce9e54
-        target_color = '#0d6ed7'  # Blue color
-        count = count_pixels(target_color, frame)
 
+        target_color = '#0d6ed7'  # Blue color
+        count = count_pixels(target_color, roi)
+
+        #print(count)
+        #cv2.imshow("roi", roi)
+        #cv2.waitKey()
+        
         if (count > 300):
-            return 2
+            return 3
 
         if (count > 200):
             return 2
 
-        if (count > 110):
+        if (count > 100):
             return 1
 
 
@@ -294,6 +347,8 @@ def is_vf_character_name(name):
         return True
     if "Goh" in name:
         return True
+    if "Lei Fei" in name:
+        return True
     if "Brad" in name:
         return True
     return False
@@ -315,6 +370,16 @@ def all_but_white_strict(roi):
     # Apply the mask to keep only white areas in the ROI
     white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
     return white_only_roi
+
+def all_but_black_range(roi):
+    lower_white = np.array([0, 0, 0])  # Lower bound of white color
+    upper_white = np.array([120, 120, 120])  # Upper bound of white color
+    mask = cv2.inRange(roi, lower_white, upper_white)
+
+    # Apply the mask to keep only white areas in the ROI
+    #white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    return mask
+
 
 def all_but_black(image):
     image = cv2.bitwise_not(image)
@@ -377,7 +442,7 @@ def get_ringname(player_num, frame):
     text = str.replace(text, ":", "-")
     text = str.replace(text, "{", "")
     text = str.replace(text, "|", "")
-    
+        
     if ("\"" in text):
         return None
 
@@ -387,7 +452,7 @@ def get_ringname(player_num, frame):
     if ("=" in text):
         return None
     
-    if (len(text) > 5):
+    if (len(text) >= 3):
         return text
     return None
 
@@ -412,6 +477,9 @@ def get_stage(frame):
     if (text == "Island"):
         return "Island"
     
+    if ("Snow" in text):
+        return "Snow Mountain"
+    
     if ("Arena" in text):
         return "Arena"
     
@@ -424,19 +492,63 @@ def get_stage(frame):
     if ("Temple" in text):
         return "Temple"
     
-    if (len(text) >= 7):
-        return text
+    if ("Sumo" in text):
+        return "Sumo Ring"
     
+    if ("Ruin" in text):
+        return "Ruins"
+    
+    if ("Statue" in text):
+        return "Statues"
+
+    if ("Great" in text):
+        return "Great Wall"
+
+    if ("Wall" in text):
+        return "Great Wall"
+
+    if ("City" in text):
+        return "City"
+    
+    if ("Terrace" in text):
+        return "Terrace"
+    
+    if ("Waterfalls" in text):
+        return "Waterfalls"
+    
+    if ("River" in text):
+        return "River"
+    
+    if ("Grass" in text):
+        return "Grassland"
+
+    if ("Deep" in text):
+        return "Deep Mountaun"
+    
+    if ("\n" in text):
+        return None
+
+    if ("$" in text):
+        return None
+
     return None
 
-def get_character_name(player_num, frame):
+def get_character_name(player_num, frame, retry=False):
     region_name = f"player{player_num}character"
     (x, y, w, h) = regions[region_name]
+    if (retry):
+        w = w - 75
+        h = h - 15
     roi = frame[y:y+h, x:x+w]                        
-    
+            
+
     white_only_roi = all_but_white(roi)
     text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
-
+    
+    #print(text)
+    #cv2.imshow("roi", roi)
+    #cv2.waitKey()
+    
     if ("Brad" in text):
         text="Brad"
     if ("Kage" in text):
@@ -447,10 +559,24 @@ def get_character_name(player_num, frame):
         text = "Blaze"
     if ("Wolf" in text):
         text = "Wolf"
+    if ("Lei" in text):
+        return "Lei Fei"
+    if ("Aoi" in text):
+        return "Aoi"
+    if ("Akira" in text):
+        return "Akira"
+    if ("Jean" in text):
+        return "Jean"
+    if ("Lau" in text):
+        return "Lau"
+    if ("Taka" in text):
+        return "Taka"
     if (text == "EI Blaze"):
         text = "Blaze"
 
     if (is_vf_character_name(text)):
         return str.replace(text, "\n\x0c", "")                
     
+    if (retry is False):
+        return get_character_name(player_num, frame, True)
     return None

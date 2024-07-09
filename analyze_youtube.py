@@ -10,7 +10,7 @@ import vf_analytics
 import vf_match
 import uuid
 import multiprocessing
-
+import psutil
 
 
 #####todo: resize others to be width 1467x824
@@ -140,12 +140,14 @@ def extract_frames(video_path, interval, video_folder=None):
         
         #for i in range(len(threads)):
             #threads[i].join()
-
-        get_frame(video_path, count, frames, True)
         
-        if (video_folder is not None):
-            count_int = int(count)
-            cv2.imwrite(video_folder + "/" + str(f"{count_int:06}") + ".png", frames[count_int])
+        count_int = int(count)
+        if (os.path.isfile(video_folder + "/" + str(f"{count_int:06}") + ".png")):
+            frames[count_int] = cv2.imread(video_folder + "/" + str(f"{count_int:06}") + ".png")
+        else:
+            get_frame(video_path, count, frames, True)            
+            if (video_folder is not None and hdd.free > 10567308288):                                
+                cv2.imwrite(video_folder + "/" + str(f"{count_int:06}") + ".png", frames[count_int])
         #cv2.imshow("v", frames[int(count)])
         #cv2.waitKey()
         
@@ -153,6 +155,11 @@ def extract_frames(video_path, interval, video_folder=None):
         count+=(frame_rate * interval)
         #if (count > startFrame + 5000):
             #break    
+    hdd = psutil.disk_usage('/')
+
+    if (hdd.free < 10567308288):
+        os.remove(video_path)
+
     return frames
 
 def all_but_black(roi):
@@ -184,7 +191,10 @@ def print_csv(match, round, round_num, video_id):
     f.write(",")
     f.write(str(match["id"]))
     f.write(",")
-    f.write(match["stage"])
+    if (not "stage" in match or match["stage"] is None):
+        f.write("n/a")
+    else:
+        f.write(match["stage"])
     f.write(",")
     f.write(match["player1ringname"])
     f.write(",")
@@ -245,11 +255,6 @@ def got_all_vs_info(match):
             
     return True
 
-def get_rounds_won(player_num, frame):
-    (x, y, w, h) = vf_analytics.regions[f"player{player_num}_rounds"]
-    roi = frame[y:y+h, x:x+w]                        
-    return vf_analytics.count_rounds_won(roi, player_num)    
-
 def process_excellent(player_num, frame, round):
     (x, y, w, h) = vf_analytics.regions['excellent']                    
     roi = frame[y:y+h, x:x+w]
@@ -288,58 +293,78 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
     round_num = 1
 
     match["id"] = uuid.uuid4()
-    for frame in frames:        
+
+    skipFrames = 0
+    for count, frame in enumerate(frames):                
         if frame is None:
             continue
 
+        if (skipFrames > 0):
+            skipFrames-=1
+            continue
+
+
         if (state == "before"):
             if (vf_analytics.is_vs(frame)):
-                state="vs"                                                
+                state="vs"
+                print(f"{video_id} {count:06} - vs")
 
         if (state == "vs"):
-            player1character = vf_analytics.get_character_name(1, frame)
-            if (player1character is not None):
-                match["player1character"] = player1character
+            if (match.get('player1character') is None):
+                player1character = vf_analytics.get_character_name(1, frame)
+                if (player1character is not None):
+                    match["player1character"] = player1character
+                    print(f"{video_id} {count:06} - player 1 character {player1character}")
 
-            player2character = vf_analytics.get_character_name(2, frame)
-            if (player2character is not None):
-                match["player2character"] = player2character
+            if (match.get('player2character') is None):
+                player2character = vf_analytics.get_character_name(2, frame)
+                if (player2character is not None):
+                    match["player2character"] = player2character
+                    print(f"{video_id} {count:06} - player 2 character {player2character}")
 
             if (not "player1ringname" in match or match["player1ringname"] is None):
                 player1ringname = vf_analytics.get_ringname(1, frame)                
                 match["player1ringname"] = player1ringname
-                    
+                print(f"{video_id} {count:06} - player 1 is {player1ringname}")                
 
             if (not "player2ringname" in match or match["player2ringname"] is None):
                 player2ringname = vf_analytics.get_ringname(2, frame)                
                 match["player2ringname"] = player2ringname
+                print(f"{video_id} {count:06} - player 2 is {player2ringname}")
 
             if ("stage" not in match):
                 stage=vf_analytics.get_stage(frame)
                 if (stage is not None):
                     match["stage"] = stage
-                                
+                    print(f"{video_id} {count:06} - stage {stage}")
+
             if (got_all_vs_info(match)):
                 state="fight"                
+                print(f"{video_id} {count:06} - fight")
+                skipFrames=22
                 continue
         
         if (state == "fight"):            
             if (not "player1rank" in match or match["player1rank"] == 0):
                 try:
-                    match["player1rank"] = vf_analytics.get_player_rank(1, frame, True)
+                    player1rank = vf_analytics.get_player_rank(1, frame, True)
+                    match["player1rank"] = player1rank                                                                        
+                    print(f"{video_id} {count:06} - player1rank {player1rank}")
                 except:
                     match["player1rank"] = 0
 
             if (not "player2rank" in match or match["player2rank"] == 0):
                 try:
-                    match["player2rank"] = vf_analytics.get_player_rank(2, frame, True)
+                    player2rank = vf_analytics.get_player_rank(2, frame, True)
+                    match["player2rank"] = player2rank
+                    print(f"{video_id} {count:06} - player2rank {player2rank}")
                 except:
                     match["player2rank"] = 0
 
 
             #Check if match is over
             for player_num in range(1, 3):
-                cnt=get_rounds_won(player_num, frame)
+                cnt=vf_analytics.count_rounds_won(frame, player_num, True)
 
                 process_excellent(player_num-1, frame, round)
                 process_ko(player_num-1, frame, round)
@@ -348,7 +373,11 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
                 if (cnt > 0 and cnt - rounds_won[player_num-1] == 1):
                     round[f"player{player_num}_rounds"] = cnt
                     rounds_won[player_num-1]=cnt
-                    print_csv(match, round, round_num, video_id)
+                    try:
+                        print_csv(match, round, round_num, video_id)
+                    except:
+                        print(f"{video_id} {count:06} ERROR write to csv")
+                    print(f"{video_id} {count:06} - round {round_num} finished player {player_num} won")
                     if (cnt < 3):
                         round=new_round()
                         round["player1_rounds"]=rounds_won[0]
@@ -361,7 +390,8 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
                 rounds_won=[0, 0]
                 round_num = 1
                 match={}                                        
-                match["id"] = uuid.uuid4()                
+                match["id"] = uuid.uuid4()
+                print(f"{video_id} {count:06} - match finished")
 
     return results
 
@@ -409,7 +439,11 @@ def main():
         video_path = video_folder + "/video.mp4"
 
         if (not os.path.isfile(video_path)):
-            download_video(url, video_path)
+            try:
+                download_video(url, video_path)
+            except:
+                print(f"Skipping video due to error {url}")
+                continue
             print(f"Downloading video because not exists: {video_path}")
         else:
             print(f"Not downloading because exists: {video_path}")
@@ -424,6 +458,6 @@ def main():
         perform_ocr_on_frames(frames, video_id)
         elapsed_time = timer() - start # in seconds
         print(f"{elapsed_time} seconds to run")
-
+                
 if __name__ == '__main__':
     main()

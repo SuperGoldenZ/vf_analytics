@@ -4,6 +4,41 @@ import vf_analytics
 import pytesseract
 
 class TestVFCV(unittest.TestCase):
+    def test_get_character(self):
+        vs_image = cv2.imread('assets/test_images/characters/blaze_vs_akira.png')
+        self.assertEqual("Blaze", vf_analytics.get_character_name(1, vs_image))
+
+    def test_player2_rounds_won(self):
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_008.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_009.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_010.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_004.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/3_1_001.png')
+        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_2_001.png')
+        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_3_001.png')
+        self.assertEqual(3, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 2, True))
+
+        vs_image = cv2.imread('assets/test_images/player2_one_round_won.png')
+        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 2, True))        
+
+        vs_image = cv2.imread('assets/test_images/player2_two_round_won.png')
+        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 2, True))             
+
     def test_is_vs(self):
         vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')        
         self.assertTrue(vf_analytics.is_vs(vs_image))
@@ -18,43 +53,61 @@ class TestVFCV(unittest.TestCase):
         self.assertFalse(vf_analytics.is_vs(not_vs_image))
 
     def test_player1_rounds_won(self):
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_008.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_009.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_010.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
         vs_image = cv2.imread('assets/test_images/player1_two_rounds_won.png')
-        region=vf_analytics.regions['player1_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(2, vf_analytics.count_rounds_won(roi, 1))
+        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 1))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_007.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_006.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_005.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_004.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_001.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_002.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_003.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/1_0_002.png')
+        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/3_1_001.png')
+        self.assertEqual(3, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/1_0_001.png')
+        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/2_0_001.png')
+        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 1, True))
+
+        vs_image = cv2.imread('assets/test_images/rounds_won/0_2_001.png')
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
 
         vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        region=vf_analytics.regions['player1_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(0, vf_analytics.count_rounds_won(roi, 1))
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1))
 
         vs_image = cv2.imread('assets/test_images/player2_one_round_won.png')
-        region=vf_analytics.regions['player1_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(0, vf_analytics.count_rounds_won(roi, 1))
+        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1))
     
-    def test_player2_rounds_won(self):
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        region=vf_analytics.regions['player2_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(0, vf_analytics.count_rounds_won(roi, 2))
-
-        vs_image = cv2.imread('assets/test_images/player2_one_round_won.png')
-        region=vf_analytics.regions['player2_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(1, vf_analytics.count_rounds_won(roi, 2))        
-
-        vs_image = cv2.imread('assets/test_images/player2_two_round_won.png')
-        region=vf_analytics.regions['player2_rounds']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertEqual(2, vf_analytics.count_rounds_won(roi, 2))             
-
     def test_is_excellent(self):
         vs_image = cv2.imread('assets/test_images/player1_three_rounds_won.png')
         region=vf_analytics.regions['excellent']
@@ -122,6 +175,34 @@ class TestVFCV(unittest.TestCase):
         self.assertTrue(result)
 
     def test_get_player_rank(self):
+        vs_image = cv2.imread('assets/test_images/rank/36_34.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(36, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(34, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/26_33_01.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(26, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(33, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/26_33.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(26, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(33, rank)
+
+        vs_image = cv2.imread('assets/test_images/rank/32_29.png')
+        rank=vf_analytics.get_player_rank(1, vs_image, True)
+        self.assertEqual(32, rank)
+
+        rank=vf_analytics.get_player_rank(2, vs_image, True)
+        self.assertEqual(29, rank)
+
         vs_image = cv2.imread('assets/test_images/rank/34_37.png')
         rank=vf_analytics.get_player_rank(1, vs_image, True)
         self.assertEqual(34, rank)
@@ -172,6 +253,13 @@ class TestVFCV(unittest.TestCase):
         self.assertEqual(25, rank)
 
     def test_get_player_ringname(self):
+        vs_image = cv2.imread('assets/test_images/ringnames/ringnames-002.png')
+        ringname=vf_analytics.get_ringname(1, vs_image)
+        self.assertEqual("ONSUakr", ringname)
+
+        ringname=vf_analytics.get_ringname(2, vs_image)
+        self.assertEqual("kiri", ringname)
+
         vs_image = cv2.imread('assets/test_images/vs_akira.png')
         ringname=vf_analytics.get_ringname(1, vs_image)
         self.assertEqual("Namflow_Gx2", ringname)
@@ -195,6 +283,18 @@ class TestVFCV(unittest.TestCase):
         self.assertEqual("tan-jet6", ringname)
 
     def test_get_stage(self):
+        vs_image = cv2.imread('assets/test_images/stage/snow.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Snow Mountain", ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/terrace01.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertIsNone(ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/terrace02.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Terrace", ringname)
+
         vs_image = cv2.imread('assets/test_images/vs_pai.png')
         ringname=vf_analytics.get_stage(vs_image)
         self.assertEqual("Statues", ringname)
@@ -230,3 +330,7 @@ class TestVFCV(unittest.TestCase):
         vs_image = cv2.imread('assets/test_images/stage/aurora.png')
         ringname=vf_analytics.get_stage(vs_image)
         self.assertEqual("Aurora", ringname)
+
+        vs_image = cv2.imread('assets/test_images/stage/ruins.png')
+        ringname=vf_analytics.get_stage(vs_image)
+        self.assertEqual("Ruins", ringname)
