@@ -536,9 +536,13 @@ def get_stage(frame):
 def get_character_name(player_num, frame, retry=False):
     region_name = f"player{player_num}character"
     (x, y, w, h) = regions[region_name]
-    if (retry):
+    if (retry and player_num == 1):
         w = w - 75
         h = h - 15
+    elif (retry and player_num == 2):
+        x = x - 20
+        w = w + 20
+
     roi = frame[y:y+h, x:x+w]                        
             
 
