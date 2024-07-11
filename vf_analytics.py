@@ -29,14 +29,30 @@ regions = {
     ,'excellent': (167, 341, 1146, 155)
 }
 
-def get_player_rank(player_num, frame, vftv=False, retry=False):
+def get_player_rank(player_num, frame, vftv=False, retry=0):
+    if (retry > 5):
+        return 0
     
     (x, y, w, h) = regions[f"player{player_num}rank"]
     if (vftv):
         (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+    
+    #print(f"retru{retry}")
 
-    if (retry):
+    if (retry == 1):
         w = w -1
+    elif (retry ==2):
+        x = x - 29
+        y = y - 10
+    elif (retry ==3):
+        x = x + 29
+        y = y - 10
+    elif (retry ==4):
+        x = x - 20
+        y = y - 10
+    elif (retry ==5):
+        x = x + 26
+        y = y - 8
 
     roi = frame[y:y+h, x:x+w]                        
 
@@ -53,8 +69,7 @@ def get_player_rank(player_num, frame, vftv=False, retry=False):
     #cv2.imshow("rank", frame)    
     #cv2.waitKey()
 
-
-
+    
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
 
     #text = str.replace(text, "\n\x0c", "")
@@ -64,17 +79,22 @@ def get_player_rank(player_num, frame, vftv=False, retry=False):
 
     text = re.sub("[^0-9]", "", text)
 
-    #cv2.imshow("rank", imagem)
-    #cv2.waitKey()
+    #cv2.imshow("rank", roi)    
     #print(text)
+    #cv2.waitKey()
 
+    if (not text.isnumeric()):
+        return get_player_rank(player_num, frame, vftv, retry+1);
+    
     if (int(text) < 10):
         return 0
+            
+
     greyCount = count_pixels("#7c7a82", roi)
     if (int(text) >= 40 and greyCount > 130):
         return (int(text)-10)
-    if (int(text) > 46 and not retry):
-        return get_player_rank(player_num, frame, vftv, True)
+    if (int(text) > 46 and retry < 3):
+        return get_player_rank(player_num, frame, vftv, retry+1)
 
     if (int(text) > 46):
         return 0
@@ -442,6 +462,13 @@ def get_ringname(player_num, frame):
     text = str.replace(text, ":", "-")
     text = str.replace(text, "{", "")
     text = str.replace(text, "|", "")
+    text = str.replace(text, ",", "")
+    text = str.replace(text, "?", "")
+    text = str.replace(text, "(", "")
+    text = str.replace(text, ")", "")
+    text = str.replace(text, "}", "")
+    text = str.replace(text, "{", "")
+    text = str.replace(text, "!", "")
         
     if ("\"" in text):
         return None
@@ -468,7 +495,7 @@ def get_stage(frame):
     text = str.replace(text, "\n\x0c", "")    
     
     #print(text)
-    #cv2.imshow("stage", imagem)
+    #cv2.imshow("stage", imagem)    
     #cv2.waitKey()
     
     if (text == "Water falls"):
@@ -525,6 +552,12 @@ def get_stage(frame):
     if ("Deep" in text):
         return "Deep Mountaun"
     
+    if ("Broken" in text or "House" in text):
+        return "Broken House"
+    
+    if ("Genesis" in text):
+        return "Genesis"
+    
     if ("\n" in text):
         return None
 
@@ -533,15 +566,33 @@ def get_stage(frame):
 
     return None
 
-def get_character_name(player_num, frame, retry=False):
+def get_character_name(player_num, frame, retry=0):
     region_name = f"player{player_num}character"
     (x, y, w, h) = regions[region_name]
-    if (retry and player_num == 1):
+    if (retry == 1 and player_num == 1):
         w = w - 75
         h = h - 15
-    elif (retry and player_num == 2):
+    elif (retry == 1 and player_num == 2):
         x = x - 20
         w = w + 20
+
+    if (retry == 2 and player_num == 1):
+        x = x + 20
+        w = w - 100
+        h = h - 20
+    elif (retry == 2 and player_num == 2):
+        x = x + 50
+        w = w - 100
+
+    if (retry == 3 and player_num == 1):
+        x = x + 20
+        w = w - 100
+        h = h - 20
+    elif (retry == 3 and player_num == 2):
+        x = x + 175
+        w = w - 175
+        y = y + 10
+        h = h - 10
 
     roi = frame[y:y+h, x:x+w]                        
             
@@ -575,12 +626,33 @@ def get_character_name(player_num, frame, retry=False):
         return "Lau"
     if ("Taka" in text):
         return "Taka"
+    if ("Sarah" in text):
+        return "Sarah"
+    if ("Jacky" in text):
+        return "Jacky"
+    if ("Shun" in text):
+        return "Shun"
+    if ("Goh" in text):
+        return "Goh"
+    if ("Lion" in text):
+        return "Lion"
+    if ("Vanessa" in text):
+        return "Vanessa"
+    if ("Jeffry" in text):
+        return "Jeffry"
+    if ("Pai" in text):
+        return "Pai"
+    if ("Goh" in text):
+        return "Goh"
+    if ("Eileen" in text):
+        return "Eileen"
+
     if (text == "EI Blaze"):
         text = "Blaze"
 
     if (is_vf_character_name(text)):
         return str.replace(text, "\n\x0c", "")                
     
-    if (retry is False):
-        return get_character_name(player_num, frame, True)
+    if (retry < 3):
+        return get_character_name(player_num, frame, retry+1)
     return None
