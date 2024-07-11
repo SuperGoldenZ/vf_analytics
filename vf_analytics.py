@@ -558,6 +558,9 @@ def get_stage(frame):
     if ("Genesis" in text):
         return "Genesis"
     
+    if ("Shrine" in text):
+        return "Shrine"
+
     if ("\n" in text):
         return None
 
