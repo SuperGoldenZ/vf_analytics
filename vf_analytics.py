@@ -2,14 +2,9 @@ import cv2
 import numpy as np
 import pytesseract
 import re
+import logging
 
-vs_image = cv2.imread('assets/vs.png')
-vs_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
-vs_w, vs_h = vs_image_gray.shape[::-1]
-
-ko_image = cv2.imread('assets/ko.png')
-ko_image_gray = cv2.cvtColor(vs_image, cv2.COLOR_BGR2GRAY)
-ko_w, ko_h = vs_image_gray.shape[::-1]
+# PS4 Resolution is 1920 x 1080 1080P
 
 #alexRegions
 regions = {
@@ -19,7 +14,7 @@ regions = {
     ,'player2rank_vftv': (1382, 167, 23, 15)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (840, 78, 106, 36)
-    ,'stage': (578, 506, 312, 39)
+    ,'stage': (619, 503, 240, 39)
     ,'player2ringname':  (1000, 535, 378, 35)
     ,'player1character': (54,    386,   418, 76)               
     ,'player2character': (1004,  386,    418, 76)
@@ -29,15 +24,69 @@ regions = {
     ,'excellent': (167, 341, 1146, 155)
 }
 
-def get_player_rank(player_num, frame, vftv=False, retry=0):
+regions_1080p = {
+    'player1rank': (162, 204, 37, 28)
+    ,'player2rank': (1842, 204, 37, 28)
+    ,'player1_rounds': (519, 78, 106, 36)
+    ,'player2_rounds': (840, 78, 106, 36)
+    ,'stage': (793, 660, 350, 50)
+    ,'player2ringname':  (1000, 535, 378, 35)
+    ,'player1character': (54,    386,   418, 76)               
+    ,'player2character': (1004,  386,    418, 76)
+    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'vs': (790, 383, 350, 186)
+    ,'ko': (438, 302, 627, 237)
+    ,'excellent': (167, 341, 1146, 155)
+}
+
+regions_480p = {
+    'player1rank': (72, 91, 14, 10)
+    ,'player2rank': (820, 91, 14, 10)
+    ,'player1_rounds': (519, 78, 106, 36)
+    ,'player2_rounds': (840, 78, 106, 36)
+    ,'stage': (619, 503, 240, 39)
+    ,'player2ringname':  (1000, 535, 378, 35)
+    ,'player1character': (54,    386,   418, 76)               
+    ,'player2character': (1004,  386,    418, 76)
+    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'vs': (586+12, 284+10, 308-45, 154-20)
+    ,'ko': (438, 302, 627, 237)
+    ,'excellent': (167, 341, 1146, 155)
+}
+
+regions_360p = {
+    'player1rank': (53, 68, 13, 8)
+    ,'player2rank': (614, 68, 13, 8)
+    ,'player1_rounds': (519, 78, 106, 36)
+    ,'player2_rounds': (840, 78, 106, 36)
+    ,'stage': (619, 503, 240, 39)
+    ,'player2ringname':  (1000, 535, 378, 35)
+    ,'player1character': (54,    386,   418, 76)               
+    ,'player2character': (1004,  386,    418, 76)
+    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'vs': (586+12, 284+10, 308-45, 154-20)
+    ,'ko': (438, 302, 627, 237)
+    ,'excellent': (167, 341, 1146, 155)
+}
+
+# min width 25
+def get_player_rank(player_num, frame, vftv=False, retry=0, override_regions=None):    
     if (retry > 5):
         return 0
     
-    (x, y, w, h) = regions[f"player{player_num}rank"]
-    if (vftv):
-        (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+    local_regions = None
     
-    #print(f"retru{retry}")
+    if (not override_regions is None):        
+        local_regions = override_regions
+    else:
+        local_regions = regions
+
+    (x, y, w, h) = local_regions[f"player{player_num}rank"]
+    
+    if (vftv and override_regions is None):
+        (x, y, w, h) = local_regions[f"player{player_num}rank_vftv"]        
+
+    #print(f"retry: {retry}")
 
     if (retry == 1):
         w = w -1
@@ -79,25 +128,22 @@ def get_player_rank(player_num, frame, vftv=False, retry=0):
 
     text = re.sub("[^0-9]", "", text)
 
-    #cv2.imshow("rank", roi)    
+    #cv2.imshow("rank", roi)
     #print(text)
     #cv2.waitKey()
 
     if (not text.isnumeric()):
-        return get_player_rank(player_num, frame, vftv, retry+1);
+        return get_player_rank(player_num, frame, vftv, retry+1, override_regions);
     
     if (int(text) < 10):
         return 0
             
-
     greyCount = count_pixels("#7c7a82", roi)
+    if (int(text) > 46 and retry < 3):
+        return get_player_rank(player_num, frame, vftv, retry+1, override_regions)
+
     if (int(text) >= 40 and greyCount > 130):
         return (int(text)-10)
-    if (int(text) > 46 and retry < 3):
-        return get_player_rank(player_num, frame, vftv, retry+1)
-
-    if (int(text) > 46):
-        return 0
 
     if (int(text) < 0):
         return 0
@@ -156,19 +202,58 @@ player1roundwon = load_sample_with_transparency('assets/player1roundwon.png')
 player2roundwon = load_sample_with_transparency('assets/player2roundwon.png')
 
 
-def is_vs(frame):
-    (x, y, w, h) = regions["vs"]
-    roi = frame[y:y+h, x:x+w]                        
-
-    all_white_roi = all_but_black(roi)
-    text = pytesseract.image_to_string(all_white_roi, config="--psm 6")
+#min width = 50
+def is_vs(frame, retry = 0, override_regions = None):
+    if (retry == 3):
+        return False
     
-    #cv2.imshow("roi", all_white_roi)
+    (x, y, w, h) = regions["vs"]
+
+    if (override_regions is not None):
+        (x, y, w, h) = override_regions["vs"]
+
+    if (retry == 1):
+        x += 8
+        y += 3
+        w -= 13
+        h -= 8
+    if (retry == 2):
+        x -= 20
+        y -= 20
+        w += 30
+        h += 30
+        
+    roi = frame[y:y+h, x:x+w]
+
+    all_white_roi = all_but_black_range(roi,
+            np.array([0,0,0]),
+            np.array([25,25,10])
+            )
+
+    if (override_regions == regions_1080p):
+        all_white_roi = all_but_black_range(roi,
+            np.array([0,0,0]),
+            np.array([25,25,15])
+            )
+
+    #if (retry == 0):
+        #all_white_roi = image_resize(all_white_roi, width=50)
+        
+    text = pytesseract.image_to_string(all_white_roi, config="--psm 7")
+
+    #cv2.imshow('Video Frame', all_white_roi)            
     #cv2.waitKey()
     #print(text)
-    #imagem = cv2.bitwise_not(all_white_roi)
 
-    if ("AS" in text):
+    text = text.strip()
+
+    if (len(text) > 20):
+        return False
+    if ("WIS" in text):
+        return True
+    if ("WES" in text):
+        return True
+    if ("WAS" in text):
         return True
     if ("NS" in text):
         return True
@@ -176,17 +261,27 @@ def is_vs(frame):
         return True
     if ("VS" in text):
         return True
+
     
+    blue_pixel_count = count_pixels("#0b0e91", roi)
+    red_pixel_count = count_pixels("#880807", roi)
+
+
+    if (blue_pixel_count > 500):
+        return False
+
+    #if (red_pixel_count > 500):
+        #return False
+
     grey_pixels = count_pixels('#a4a09a', roi)
     white_pixels = count_pixels('#fffffb', roi)
 
-    if (grey_pixels > 5700 and grey_pixels < 6000 and
-        white_pixels > 2300 and white_pixels < 2600
-        ):
-        return True
+    #if (grey_pixels > 5700 and grey_pixels < 6000 and
+        #white_pixels > 2300 and white_pixels < 2600
+        #):
+        #return True
     
-
-    return False
+    return is_vs(frame, retry+1)
 
 def is_ko(roi):
     count = count_pixels('#ce9e54', roi)
@@ -286,7 +381,7 @@ def count_rounds_won(frame, playerNumber=1, vftv=False):
         y+=10
         x+=10
         w-=10
-
+        
     roi = frame[y:y+h, x:x+w]
 
     # Convert BGR to HSV
@@ -320,7 +415,7 @@ def count_rounds_won(frame, playerNumber=1, vftv=False):
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
         
-        if (count > 300):
+        if (count > 305):
             return 3
 
         if (count > 200):
@@ -391,10 +486,12 @@ def all_but_white_strict(roi):
     white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
     return white_only_roi
 
-def all_but_black_range(roi):
-    lower_white = np.array([0, 0, 0])  # Lower bound of white color
-    upper_white = np.array([120, 120, 120])  # Upper bound of white color
-    mask = cv2.inRange(roi, lower_white, upper_white)
+def all_but_black_range(roi, low = np.array([0,0,0]), high=np.array([120,120,120])):
+    image_rgb = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
+
+    lower_white = low  # Lower bound of white color
+    upper_white = high  # Upper bound of white color
+    mask = cv2.inRange(image_rgb, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
     #white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
@@ -483,89 +580,114 @@ def get_ringname(player_num, frame):
         return text
     return None
 
-def get_stage(frame):
+# Min width of frame is 85
+def get_stage(frame, override_region=None):
     region_name="stage"
+
     (x, y, w, h) = regions[region_name]
-    roi = frame[y:y+h, x:x+w]                        
+    if (override_region is not None):
+        (x, y, w, h) = override_region[region_name]
+        
+    roi = frame[y:y+h, x:x+w]
+
     all_white_roi = all_but_grey(roi)
+    #all_white_roi = image_resize(all_white_roi, width = 85)
+
     imagem = cv2.bitwise_not(all_white_roi)
 
-    text = pytesseract.image_to_string(imagem, config="--psm 6")
+    text = pytesseract.image_to_string(imagem, config="--psm 6", nice=-20)
+    text = str.replace(text, "\n\x0c", "")        
 
-    text = str.replace(text, "\n\x0c", "")    
-    
+    #cv2.imshow("roi", roi)    
     #print(text)
-    #cv2.imshow("stage", imagem)    
     #cv2.waitKey()
-    
+
     if (text == "Water falls"):
         return "Waterfalls"
+    
+    if (text == "Ssfand"):
+        return "Island"
+    
+    if (text == "Tampia"):
+        return "Temple"
     
     if (text == "Island"):
         return "Island"
     
-    if ("Snow" in text):
-        return "Snow Mountain"
-    
-    if ("Arena" in text):
+    if ("Arena" == text):
         return "Arena"
     
-    if ("Palace" in text):
+    if ("Palace" == text):
         return "Palace"
 
-    if ("Aurora" in text):
+    if ("Aurora" == text):
         return "Aurora"
     
-    if ("Temple" in text):
+    if ("Temple" == text):
         return "Temple"
     
-    if ("Sumo" in text):
+    if ("Sumo Ring" == text):
         return "Sumo Ring"
     
-    if ("Ruin" in text):
+    if ("Ruins" == text):
         return "Ruins"
     
-    if ("Statue" in text):
+    if ("Statues" == text):
         return "Statues"
 
-    if ("Great" in text):
+    if ("Great Wall" == text):
         return "Great Wall"
 
     if ("Wall" in text):
         return "Great Wall"
 
-    if ("City" in text):
+    if ("City" == text):
         return "City"
     
-    if ("Terrace" in text):
+    if ("Terrace" == text):
         return "Terrace"
     
+    if ("River" == text):
+        return "River"
+
+    if ("fall" in text):
+        return "Waterfalls"
+
+    if ("Water" in text):
+        return "Waterfalls"
+
     if ("Waterfalls" in text):
         return "Waterfalls"
-    
-    if ("River" in text):
-        return "River"
-    
+        
     if ("Grass" in text):
         return "Grassland"
 
     if ("Deep" in text):
-        return "Deep Mountaun"
+        return "Deep Mountain"
     
     if ("Broken" in text or "House" in text):
         return "Broken House"
     
-    if ("Genesis" in text):
+    if ("Genesis" == text):
         return "Genesis"
     
-    if ("Shrine" in text):
+    if ("Shrine" == text):
         return "Shrine"
 
-    if ("\n" in text):
-        return None
+    if (text == "Training Room"):
+        return "Training Room"
 
-    if ("$" in text):
-        return None
+    if ("Snow" in text):
+        return "Snow Mountain"        
+
+    if ("Palace" in text):
+        return "Palace"
+
+    if ("Temple" in text):
+        return "Temple"
+
+    if ("Ruins" in text):
+        return "Ruins"
 
     return None
 
@@ -659,3 +781,34 @@ def get_character_name(player_num, frame, retry=0):
     if (retry < 3):
         return get_character_name(player_num, frame, retry+1)
     return None
+
+def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # calculate the ratio of the height and construct the
+        # dimensions
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # calculate the ratio of the width and construct the
+        # dimensions
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+
+    # return the resized image
+    return resized
