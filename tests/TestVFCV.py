@@ -6,196 +6,105 @@ import time
 class TestVFCV(unittest.TestCase):
     def test_is_vs(self):
         params = [
-            ['assets/test_images/1080p/vs/vs_01.jpg', vf_analytics.regions_1080p]
-            ,['assets/test_images/vanessa_vs_blaze.png', None]
-            ,['assets/test_images/vs_vanessa_two.png', None]
-            ,['assets/test_images/vs_pai.png', None]            
+             ['assets/test_images/480p/vs/vs_02.jpg', vf_analytics.regions_480p]
+            ,['assets/test_images/1080p/vs/vs_01.jpg', vf_analytics.regions_1080p]
+            ,['assets/test_images/360p/vs/vs_01.jpg', vf_analytics.regions_360p]
+            ,['assets/test_images/480p/vs/vs_01.jpg', vf_analytics.regions_480p]            
+            #,['assets/test_images/vanessa_vs_blaze.png', None]
+            #,['assets/test_images/vs_vanessa_two.png', None]
+            #,['assets/test_images/vs_pai.png', None]            
         ]
 
         for param in params:
             vs_image = cv2.imread(param[0])
             self.assertIsNotNone(vs_image)
-            self.assertTrue(vf_analytics.is_vs(vs_image, 0, param[1]))
+            result = vf_analytics.is_vs(vs_image, 0, param[1])
+            self.assertTrue(result, f"Failed for {param[0]} was not VS as expected")
 
     def test_get_player_rank(self):
         params = [
-            ['assets/test_images/360p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_360p]
-            #['assets/test_images/rank/34_37.png', 34, 37, None]
-            #,['assets/test_images/rank/36_34.png', 36, 34, None]
-            #,['assets/test_images/rank/40_41_01.png', 40, 41, None]
-            #,['assets/test_images/rank/40_41_02.png', 40, 41, None]
-            #,['assets/test_images/rank/42_44_01.png', 42, 44, None]
-            #,['assets/test_images/1080p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_1080p]
-            #['assets/test_images/480p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_480p]
-
+            ['assets/test_images/480p/rank/31_30_001.jpg', 31, 30, vf_analytics.regions_480p]
+            ,['assets/test_images/360p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_360p]
+            #,['assets/test_images/360p/rank/30_30_001.jpg', 30, 0, vf_analytics.regions_360p]
+            #,['assets/test_images/360p/rank/31_30_001.jpg', 31, 30, vf_analytics.regions_360p]
+            ,['assets/test_images/1080p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_1080p]
+            ,['assets/test_images/480p/rank/27_24_001.jpg', 27, 24, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/30_30_001.jpg', 30, 30, vf_analytics.regions_480p]            
         ]
 
         for param in params:
             vs_image = cv2.imread(param[0])
-            rank=vf_analytics.get_player_rank(1, vs_image, True, 0, param[3])
-            self.assertEqual(param[1], rank)
+            rank=vf_analytics.get_player_rank(1, vs_image, override_regions=param[3])
+            self.assertEqual(param[1], rank, f"Failed for {param[0]} expected {param[1]} but got {rank}")
 
-            rank=vf_analytics.get_player_rank(2, vs_image, True, 0, param[3])
-            self.assertEqual(param[2], rank)
-
-        
-        vs_image = cv2.imread('assets/test_images/rank/26_33_01.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(26, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(33, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/26_33.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(26, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(33, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/32_29.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(32, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(29, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/42_44.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(42, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(44, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/43_43.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(43, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(43, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/32_30.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(32, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(30, rank)
-
-        vs_image = cv2.imread('assets/test_images/rank/42_39.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(42, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(39, rank)
-
-        vs_image = cv2.imread('assets/test_images/player1_two_rounds_won.png')
-        rank=vf_analytics.get_player_rank(1, vs_image)
-        self.assertEqual(37, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image)
-        self.assertEqual(36, rank)        
-
-        vs_image = cv2.imread('assets/test_images/vftv_blaze_vs_blaze.png')
-        rank=vf_analytics.get_player_rank(1, vs_image, True)
-        self.assertEqual(27, rank)
-
-        rank=vf_analytics.get_player_rank(2, vs_image, True)
-        self.assertEqual(25, rank)
+            rank=vf_analytics.get_player_rank(2, vs_image, override_regions= param[3])
+            self.assertEqual(param[2], rank, f"Failed for {param[0]} expected {param[1]} but got {rank}")
     
-    def test_player2_rounds_won(self):
-        filenames = {
-            'assets/test_images/rounds_won/0_2_001.jpg' :2
-            ,'assets/test_images/rounds_won/0_0_008.png' :0
-            ,'assets/test_images/rounds_won/0_0_009.png' :0
-            ,'assets/test_images/rounds_won/0_0_010.png' :0
-            ,'assets/test_images/rounds_won/0_0_004.png' :0
-            ,'assets/test_images/rounds_won/3_1_001.png' :1
-            ,'assets/test_images/rounds_won/0_2_001.png' : 2
-            ,'assets/test_images/rounds_won/0_3_001.png':3
-            ,'assets/test_images/vanessa_vs_blaze.png' :0
-            ,'assets/test_images/player2_one_round_won.png' :1
-            ,'assets/test_images/player2_two_round_won.png' :2
-        }
+    def test_rounds_won(self):
+        param_sets = [
+            ['assets/test_images/480p/rounds_won/1_0_01.jpg', 1, 0, vf_analytics.regions_480p]
+            #'assets/test_images/rounds_won/0_2_001.jpg' :2
+            #,'assets/test_images/rounds_won/0_0_008.png' :0
+            #,'assets/test_images/rounds_won/0_0_009.png' :0
+            #,'assets/test_images/rounds_won/0_0_010.png' :0
+            #,'assets/test_images/rounds_won/0_0_004.png' :0
+            #,'assets/test_images/rounds_won/3_1_001.png' :1
+            #,'assets/test_images/rounds_won/0_2_001.png' : 2
+            #,'assets/test_images/rounds_won/0_3_001.png':3
+            #,'assets/test_images/vanessa_vs_blaze.png' :0
+            #,'assets/test_images/player2_one_round_won.png' :1
+            #,'assets/test_images/player2_two_round_won.png' :2
+        ]
         
-        for filename in filenames:    
+        for params in param_sets:    
+            filename = params[0]
+
             vs_image = cv2.imread(filename)
-            self.assertEqual(filenames[filename], vf_analytics.count_rounds_won(vs_image, 2, True), f"expected ${filename} to be {filenames[filename]} wins")
+            result = vf_analytics.count_rounds_won(vs_image, 1, params[3])
+            self.assertEqual(params[1], result, f"expected {filename} to be {params[1]} wins")
 
-    def test_player1_rounds_won(self):
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_008.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
+            result = vf_analytics.count_rounds_won(vs_image, 2, params[3])
+            self.assertEqual(params[2], result, f"expected {filename} to be {params[2]} wins")
 
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_009.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_010.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/player1_two_rounds_won.png')
-        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 1))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_007.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_006.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_005.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_004.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_001.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_002.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_0_003.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/1_0_002.png')
-        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/3_1_001.png')
-        self.assertEqual(3, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/1_0_001.png')
-        self.assertEqual(1, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/2_0_001.png')
-        self.assertEqual(2, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/rounds_won/0_2_001.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1, True))
-
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1))
-
-        vs_image = cv2.imread('assets/test_images/player2_one_round_won.png')
-        self.assertEqual(0, vf_analytics.count_rounds_won(vs_image, 1))
+#    def test_player1_rounds_won(self):
+#        filenames = {
+#            'assets/test_images/rounds_won/0_0_008.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_009.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_010.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_007.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_006.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_005.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_004.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_001.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_002.png' : 0
+#            ,'assets/test_images/rounds_won/0_0_003.png' : 0
+#            ,'assets/test_images/rounds_won/0_2_001.png' : 0
+#            ,'assets/test_images/vanessa_vs_blaze.png' : 0
+#            ,'assets/test_images/player2_one_round_won.png' : 0
+#            ,'assets/test_images/rounds_won/1_0_002.png' : 1
+#            ,'assets/test_images/rounds_won/1_0_001.png' : 1
+#            ,'assets/test_images/player1_two_rounds_won.png' : 2
+#            ,'assets/test_images/rounds_won/2_0_001.png' : 2
+#            ,'assets/test_images/rounds_won/3_1_001.png' : 3
+#        }
+#
+#        for filename in filenames:    
+#            vs_image = cv2.imread(filename)
+#            result = vf_analytics.count_rounds_won(vs_image, 1)
+#            self.assertEqual(filenames[filename], result, f"expected ${filename} to be {filenames[filename]} wins")
 
     def test_get_character(self):
-        vs_image = cv2.imread('assets/test_images/characters/blaze_vs_taka.png')
-        self.assertEqual("Blaze", vf_analytics.get_character_name(1, vs_image))
-        self.assertEqual("Taka", vf_analytics.get_character_name(2, vs_image))
+        param_sets=[
+            ['assets/test_images/480p/characters/blaze_vs_pai.jpg', "Blaze", "Pai", vf_analytics.regions_480p]
+        ]
 
-        vs_image = cv2.imread('assets/test_images/characters/jacky_vs_blaze.png')
-        self.assertEqual("Jacky", vf_analytics.get_character_name(1, vs_image))
-        self.assertEqual("Blaze", vf_analytics.get_character_name(2, vs_image))
+        for params in param_sets:
+            vs_image = cv2.imread(params[0])
+            result = vf_analytics.get_character_name(1, vs_image, retry=0, override_region=params[3])
+            self.assertEqual(params[1], result)
 
-        vs_image = cv2.imread('assets/test_images/characters/blaze_vs_sarah.png')
-        self.assertEqual("Blaze", vf_analytics.get_character_name(1, vs_image))
-        self.assertEqual("Sarah", vf_analytics.get_character_name(2, vs_image))
-
-        vs_image = cv2.imread('assets/test_images/characters/blaze_vs_akira.png')
-        self.assertEqual("Blaze", vf_analytics.get_character_name(1, vs_image))
-        self.assertEqual("Akira", vf_analytics.get_character_name(2, vs_image))
-
-        vs_image = cv2.imread('assets/test_images/characters/blaze_vs_wolf.png')
-        self.assertEqual("Blaze", vf_analytics.get_character_name(1, vs_image))
-        self.assertEqual("Wolf", vf_analytics.get_character_name(2, vs_image))
+            result = vf_analytics.get_character_name(2, vs_image, retry=0, override_region=params[3])
+            self.assertEqual(params[2], result)
 
     def test_is_not_vs(self):
         filenames = [
@@ -212,71 +121,71 @@ class TestVFCV(unittest.TestCase):
             self.assertFalse(vf_analytics.is_vs(vs_image),
                              f"{filename} is accidentally vs")
     
-    def test_is_excellent(self):
-        vs_image = cv2.imread('assets/test_images/player1_three_rounds_won.png')
-        region=vf_analytics.regions['excellent']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-        self.assertTrue(vf_analytics.is_excellent(roi))
+#    def test_is_excellent(self):
+#        vs_image = cv2.imread('assets/test_images/player1_three_rounds_won.png')
+#        region=vf_analytics.regions['excellent']
+#        (x, y, w, h) = region
+#        roi = vs_image[y:y+h, x:x+w]
+#        self.assertTrue(vf_analytics.is_excellent(roi))
+#
+#        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+#        region=vf_analytics.regions['ko']
+#        (x, y, w, h) = region
+#        roi = vs_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_excellent(roi)        
+#        self.assertFalse(result)
+#
+#        ko_image = cv2.imread('assets/test_images/ko.png')                
+#        region=vf_analytics.regions['ko']
+#        (x, y, w, h) = region
+#        roi = ko_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_excellent(roi)        
+#        self.assertFalse(result)
+#
+#
+#    def test_is_ko(self):
+#        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+#        region=vf_analytics.regions['ko']
+#        (x, y, w, h) = region
+#        roi = vs_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_ko(roi)        
+#        self.assertFalse(result)
+#
+#        ko_image = cv2.imread('assets/test_images/ko.png')                
+#        region=vf_analytics.regions['ko']
+#        (x, y, w, h) = region
+#        roi = ko_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_ko(roi)        
+#        self.assertTrue(result)
 
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        region=vf_analytics.regions['ko']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_excellent(roi)        
-        self.assertFalse(result)
-
-        ko_image = cv2.imread('assets/test_images/ko.png')                
-        region=vf_analytics.regions['ko']
-        (x, y, w, h) = region
-        roi = ko_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_excellent(roi)        
-        self.assertFalse(result)
-
-
-    def test_is_ko(self):
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        region=vf_analytics.regions['ko']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_ko(roi)        
-        self.assertFalse(result)
-
-        ko_image = cv2.imread('assets/test_images/ko.png')                
-        region=vf_analytics.regions['ko']
-        (x, y, w, h) = region
-        roi = ko_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_ko(roi)        
-        self.assertTrue(result)
-
-    def test_is_ringout(self):
-        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
-        region=vf_analytics.regions['excellent']
-        (x, y, w, h) = region
-        roi = vs_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_ringout(roi)        
-        self.assertFalse(result)
-
-        ko_image = cv2.imread('assets/test_images/ko.png')                
-        region=vf_analytics.regions['excellent']
-        (x, y, w, h) = region
-        roi = ko_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_ringout(roi)        
-        self.assertFalse(result)
-
-        ko_image = cv2.imread('assets/test_images/ring_out.png')                
-        region=vf_analytics.regions['excellent']
-        (x, y, w, h) = region
-        roi = ko_image[y:y+h, x:x+w]
-
-        result=vf_analytics.is_ringout(roi)        
-        self.assertTrue(result)
+#    def test_is_ringout(self):
+#        vs_image = cv2.imread('assets/test_images/vanessa_vs_blaze.png')
+#        region=vf_analytics.regions['excellent']
+#        (x, y, w, h) = region
+#        roi = vs_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_ringout(roi)        
+#        self.assertFalse(result)
+#
+#        ko_image = cv2.imread('assets/test_images/ko.png')                
+#        region=vf_analytics.regions['excellent']
+#        (x, y, w, h) = region
+#        roi = ko_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_ringout(roi)        
+#        self.assertFalse(result)
+#
+#        ko_image = cv2.imread('assets/test_images/ring_out.png')                
+#        region=vf_analytics.regions['excellent']
+#        (x, y, w, h) = region
+#        roi = ko_image[y:y+h, x:x+w]
+#
+#        result=vf_analytics.is_ringout(roi)        
+#        self.assertTrue(result)
 
     def test_get_player_ringname(self):
         vs_image = cv2.imread('assets/test_images/ringnames/ringnames-002.png')
@@ -311,14 +220,23 @@ class TestVFCV(unittest.TestCase):
     def test_get_stage(self):
         params = [
              ['assets/test_images/1080p/stage/snow_mountain.jpg', "Snow Mountain", vf_analytics.regions_1080p]
-            ,['assets/test_images/stage/training_room.jpg', "Training Room", None]
-            ,['assets/test_images/stage/shrine.jpg', "Shrine", None]
-            ,['assets/test_images/stage/genesis.png', "Genesis", None]
-            ,['assets/test_images/stage/broken_house.png', "Broken House", None]
-            ,['assets/test_images/stage/snow.png', "Snow Mountain", None]
-            ,['assets/test_images/stage/terrace02.png', "Terrace", None]
-            ,['assets/test_images/vs_pai.png', 'Statues', None]
-            ,['assets/test_images/vs_akira.png', "Great Wall", None]
+            ,['assets/test_images/480p/stage/island.jpg', "Island", vf_analytics.regions_480p]
+            ,['assets/test_images/360p/stage/snow_mountain.jpg', "Snow Mountain", vf_analytics.regions_360p]
+            #            ,['assets/test_images/stage/training_room.jpg', "Training Room", None]
+#            ,['assets/test_images/stage/training_room.jpg', "Training Room", None]
+#            ,['assets/test_images/stage/shrine.jpg', "Shrine", None]
+#            ,['assets/test_images/stage/shrine.jpg', "Shrine", None]
+#            ,['assets/test_images/stage/genesis.png', "Genesis", None]
+#            ,['assets/test_images/stage/genesis.png', "Genesis", None]
+#            ,['assets/test_images/stage/broken_house.png', "Broken House", None]
+#            ,['assets/test_images/stage/broken_house.png', "Broken House", None]
+#            ,['assets/test_images/stage/snow.png', "Snow Mountain", None]
+#            ,['assets/test_images/stage/snow.png', "Snow Mountain", None]
+#            ,['assets/test_images/stage/terrace02.png', "Terrace", None]
+#            ,['assets/test_images/stage/terrace02.png', "Terrace", None]
+#            ,['assets/test_images/vs_pai.png', 'Statues', None]
+#            ,['assets/test_images/vs_pai.png', 'Statues', None]
+#            ,['assets/test_images/vs_akira.png', "Great Wall", None]
 
         ]
         

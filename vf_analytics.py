@@ -6,19 +6,19 @@ import logging
 
 # PS4 Resolution is 1920 x 1080 1080P
 
+resolution='1080p'
+
 #alexRegions
-regions = {
+regions_default = {
     'player1rank': (125, 156, 22, 18)
     ,'player2rank': (1410, 158, 22, 18)
-    ,'player1rank_vftv': (149, 165, 25, 18)
-    ,'player2rank_vftv': (1382, 167, 23, 15)
     ,'player1_rounds': (519, 78, 106, 36)
     ,'player2_rounds': (840, 78, 106, 36)
     ,'stage': (619, 503, 240, 39)
     ,'player2ringname':  (1000, 535, 378, 35)
-    ,'player1character': (54,    386,   418, 76)               
+    ,'player1character': (54,    386,   418, 76)
     ,'player2character': (1004,  386,    418, 76)
-    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'player1ringname':  (75, 540, 378, 28)
     ,'vs': (586+12, 284+10, 308-45, 154-20)
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
@@ -31,94 +31,87 @@ regions_1080p = {
     ,'player2_rounds': (840, 78, 106, 36)
     ,'stage': (793, 660, 350, 50)
     ,'player2ringname':  (1000, 535, 378, 35)
-    ,'player1character': (54,    386,   418, 76)               
+    ,'player1character': (54,    386,   418, 76)
     ,'player2character': (1004,  386,    418, 76)
-    ,'player1ringname':  (75, 540, 378, 28)        
+    ,'player1ringname':  (75, 540, 378, 28)
     ,'vs': (790, 383, 350, 186)
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
 }
 
 regions_480p = {
-    'player1rank': (72, 91, 14, 10)
-    ,'player2rank': (820, 91, 14, 10)
-    ,'player1_rounds': (519, 78, 106, 36)
-    ,'player2_rounds': (840, 78, 106, 36)
-    ,'stage': (619, 503, 240, 39)
-    ,'player2ringname':  (1000, 535, 378, 35)
-    ,'player1character': (54,    386,   418, 76)               
-    ,'player2character': (1004,  386,    418, 76)
-    ,'player1ringname':  (75, 540, 378, 28)        
-    ,'vs': (586+12, 284+10, 308-45, 154-20)
+    'player1rank': (72, 91, 14, 12)
+    ,'player2rank': (820, 91, 14, 12)
+    ,'player1_rounds': (303, 50, 63, 20)
+    ,'player2_rounds': (493, 50, 63, 20)
+    ,'stage': (342, 295, 200, 25)
+    ,'player1ringname':  (43, 315, 209, 18)
+    ,'player2ringname':  (589, 315, 209, 18)
+    ,'player1character': (27,   228,   209, 32)
+    ,'player2character': (584,  228,   209, 32)    
+    ,'vs': (343, 173, 172, 85)
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
 }
 
+# 1/3rd of 1080P
 regions_360p = {
     'player1rank': (53, 68, 13, 8)
+    ,'stage': (266, 223, 117, 22)
     ,'player2rank': (614, 68, 13, 8)
     ,'player1_rounds': (519, 78, 106, 36)
-    ,'player2_rounds': (840, 78, 106, 36)
-    ,'stage': (619, 503, 240, 39)
+    ,'player2_rounds': (838, 78, 106, 36)    
     ,'player2ringname':  (1000, 535, 378, 35)
-    ,'player1character': (54,    386,   418, 76)               
+    ,'player1character': (54,    386,   418, 76)
     ,'player2character': (1004,  386,    418, 76)
-    ,'player1ringname':  (75, 540, 378, 28)        
-    ,'vs': (586+12, 284+10, 308-45, 154-20)
+    ,'player1ringname':  (75, 540, 378, 28)
+    ,'vs': (260, 125, 117, 63)
     ,'ko': (438, 302, 627, 237)
     ,'excellent': (167, 341, 1146, 155)
 }
 
 # min width 25
-def get_player_rank(player_num, frame, vftv=False, retry=0, override_regions=None):    
+def get_player_rank(player_num, frame, retry=0, override_regions=None):
     if (retry > 5):
         return 0
-    
-    local_regions = None
-    
-    if (not override_regions is None):        
-        local_regions = override_regions
-    else:
-        local_regions = regions
 
-    (x, y, w, h) = local_regions[f"player{player_num}rank"]
-    
-    if (vftv and override_regions is None):
-        (x, y, w, h) = local_regions[f"player{player_num}rank_vftv"]        
+    if (not override_regions is None):
+        (x, y, w, h) = override_regions[f"player{player_num}rank"]
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p[f"player{player_num}rank"]
 
     #print(f"retry: {retry}")
 
     if (retry == 1):
-        w = w -1
+        w = w -3
+        x = x + 2
     elif (retry ==2):
         x = x - 29
         y = y - 10
-    elif (retry ==3):
+    elif (retry ==3  and override_regions != regions_360p):
         x = x + 29
         y = y - 10
-    elif (retry ==4):
+    elif (retry ==4  and override_regions != regions_360p):
         x = x - 20
         y = y - 10
-    elif (retry ==5):
+    elif (retry ==5 and override_regions != regions_360p):
         x = x + 26
         y = y - 8
 
-    roi = frame[y:y+h, x:x+w]                        
+    roi = frame[y:y+h, x:x+w]
 
     #cv2.imshow("rank", roi  )
     #cv2.waitKey()
-    
-    all_white_roi = all_but_grey(roi)
-    if (vftv):
-        all_white_roi = all_but_white_vftv(roi)
+
+    all_white_roi = all_but_white_vftv(roi)
 
     imagem = cv2.bitwise_not(all_white_roi)
 
     #cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255,0,0), thickness=10)
-    #cv2.imshow("rank", frame)    
+    #cv2.imshow("rank", all_white_roi)
     #cv2.waitKey()
 
-    
+
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
 
     #text = str.replace(text, "\n\x0c", "")
@@ -128,19 +121,17 @@ def get_player_rank(player_num, frame, vftv=False, retry=0, override_regions=Non
 
     text = re.sub("[^0-9]", "", text)
 
-    #cv2.imshow("rank", roi)
-    #print(text)
+    #cv2.imshow("roi", roi)
+    #cv2.imshow("rank", imagem)
+    #print(f"{text} for {player_num} player")
     #cv2.waitKey()
 
-    if (not text.isnumeric()):
-        return get_player_rank(player_num, frame, vftv, retry+1, override_regions);
-    
-    if (int(text) < 10):
-        return 0
-            
+    if (not text.isnumeric() or int(text) < 10):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions);
+
     greyCount = count_pixels("#7c7a82", roi)
     if (int(text) > 46 and retry < 3):
-        return get_player_rank(player_num, frame, vftv, retry+1, override_regions)
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     if (int(text) >= 40 and greyCount > 130):
         return (int(text)-10)
@@ -148,29 +139,24 @@ def get_player_rank(player_num, frame, vftv=False, retry=0, override_regions=Non
     if (int(text) < 0):
         return 0
 
-    return int(text)        
+    return int(text)
 
-def get_player_rank_black(player_num, frame, vftv=False):
+def get_player_rank_black(player_num, frame):
 
-    (x, y, w, h) = regions[f"player{player_num}rank"]
-    if (vftv):
-        (x, y, w, h) = regions[f"player{player_num}rank_vftv"]
+    (x, y, w, h) = regions_default[f"player{player_num}rank"]
 
-    roi = frame[y:y+h, x:x+w]                        
+    roi = frame[y:y+h, x:x+w]
 
     #cv2.imshow("rank", roi  )
     #cv2.waitKey()
-    
-    all_white_roi = all_but_grey(roi)
-    if (vftv):
-        all_white_roi = all_but_black_range(roi)
 
-    
+    all_white_roi = all_but_black_range(roi)
+
     imagem = cv2.bitwise_not(all_white_roi)
 
     imagem = all_white_roi
     #cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255,0,0), thickness=10)
-    #cv2.imshow("rank", frame)    
+    #cv2.imshow("rank", frame)
     #cv2.waitKey()
 
 
@@ -188,7 +174,7 @@ def get_player_rank_black(player_num, frame, vftv=False):
     cv2.waitKey()
     print(text)
 
-    return int(text)        
+    return int(text)
 
 def load_sample_with_transparency(path):
     # Load the image with transparency
@@ -204,13 +190,15 @@ player2roundwon = load_sample_with_transparency('assets/player2roundwon.png')
 
 #min width = 50
 def is_vs(frame, retry = 0, override_regions = None):
-    if (retry == 3):
+    if (retry == 4):
         return False
     
-    (x, y, w, h) = regions["vs"]
+    (x, y, w, h) = (0, 0, 0, 0)
 
-    if (override_regions is not None):
+    if (override_regions is not None):        
         (x, y, w, h) = override_regions["vs"]
+    elif (resolution == '480p'):        
+        (x, y, w, h) = regions_480p["vs"]
 
     if (retry == 1):
         x += 8
@@ -222,7 +210,12 @@ def is_vs(frame, retry = 0, override_regions = None):
         y -= 20
         w += 30
         h += 30
-        
+    if (retry == 3):
+        x += 8
+        #y += 8
+        w -= 15
+        h -= 8
+
     roi = frame[y:y+h, x:x+w]
 
     all_white_roi = all_but_black_range(roi,
@@ -230,25 +223,33 @@ def is_vs(frame, retry = 0, override_regions = None):
             np.array([25,25,10])
             )
 
-    if (override_regions == regions_1080p):
+    if (override_regions == regions_1080p) :
         all_white_roi = all_but_black_range(roi,
             np.array([0,0,0]),
             np.array([25,25,15])
             )
 
+    if (override_regions == regions_360p or override_regions==regions_480p or resolution=='480p') :
+        all_white_roi = all_but_black_range(roi,
+                np.array([100,100,100]),
+                np.array([255,255,255])
+        )
+
     #if (retry == 0):
         #all_white_roi = image_resize(all_white_roi, width=50)
-        
+
     text = pytesseract.image_to_string(all_white_roi, config="--psm 7")
 
-    #cv2.imshow('Video Frame', all_white_roi)            
-    #cv2.waitKey()
+    #cv2.imshow('Video Frame', all_white_roi)
     #print(text)
+    #cv2.waitKey()
 
     text = text.strip()
 
     if (len(text) > 20):
         return False
+    if ("Wiss" in text):
+        return True
     if ("WIS" in text):
         return True
     if ("WES" in text):
@@ -261,8 +262,9 @@ def is_vs(frame, retry = 0, override_regions = None):
         return True
     if ("VS" in text):
         return True
+    if ("AS" in text):
+        return True
 
-    
     blue_pixel_count = count_pixels("#0b0e91", roi)
     red_pixel_count = count_pixels("#880807", roi)
 
@@ -280,69 +282,52 @@ def is_vs(frame, retry = 0, override_regions = None):
         #white_pixels > 2300 and white_pixels < 2600
         #):
         #return True
-    
-    return is_vs(frame, retry+1)
 
-def is_ko(roi):
+    return is_vs(frame, retry+1, override_regions)
+
+def is_ko(frame, override_region=None):
+    (x, y, w, h) = (0, 0, 0, 0)
+
+    if (not override_region is None):
+        (x, y, w, h) = override_region['ko']
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p['ko']
+    
+    roi = frame[y:y+h, x:x+w]
+
     count = count_pixels('#ce9e54', roi)
     #print(f"is ko {count}")
     return count > 13600
 
-def is_excellent(roi):
+def is_excellent(frame, override_region=None):
+    (x, y, w, h) = (0, 0, 0, 0)
+
+    if (not override_region is None):
+        (x, y, w, h) = override_region['excellent']
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p['excellent']
+
+    roi = frame[y:y+h, x:x+w]
     count = count_pixels('#c48e36', roi)
-    #print(f"is excellent {count}")
+        
+    
     return count > 14000
 
-def is_ringout(roi):
-    count = count_pixels('#07a319', roi)    
+def is_ringout(frame, override_region=None):
+    (x, y, w, h) = (0, 0, 0, 0)
+    if (not override_region is None):
+        (x, y, w, h) = override_region['excellent']
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p['excellent']
+    
+    roi = frame[y:y+h, x:x+w]
+    count = count_pixels('#07a319', roi)
     return count > 8200
-
-def extract_and_match_features(sample_image, frame_roi, feature_detector):
-
-    #cv2.imshow('Video Frame', sample_image)
-    #cv2.waitKey()
-
-    #cv2.imshow('Video Frame', frame_roi)
-    #cv2.waitKey()
-
-    # Convert images to HSV
-    sample_hsv = cv2.cvtColor(sample_image, cv2.COLOR_BGR2HSV)
-    frame_hsv = cv2.cvtColor(frame_roi, cv2.COLOR_BGR2HSV)
-
-    # Split into channels
-    sample_h, sample_s, sample_v = cv2.split(sample_hsv)
-    frame_h, frame_s, frame_v = cv2.split(frame_hsv)
-
-    # Detect and compute keypoints and descriptors for each channel
-    kp_sample_h, des_sample_h = feature_detector.detectAndCompute(sample_h, None)
-    kp_frame_h, des_frame_h = feature_detector.detectAndCompute(frame_h, None)
-
-    kp_sample_s, des_sample_s = feature_detector.detectAndCompute(sample_s, None)
-    kp_frame_s, des_frame_s = feature_detector.detectAndCompute(frame_s, None)
-
-    kp_sample_v, des_sample_v = feature_detector.detectAndCompute(sample_v, None)
-    kp_frame_v, des_frame_v = feature_detector.detectAndCompute(frame_v, None)
-
-    # BFMatcher to match descriptors
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-
-    matches_h = bf.knnMatch(des_sample_h, des_frame_h, k=2)
-    matches_s = bf.knnMatch(des_sample_s, des_frame_s, k=2)
-    matches_v = bf.knnMatch(des_sample_v, des_frame_v, k=2)
-
-    # Combine matches from all channels
-    matches = matches_h + matches_s + matches_v
-    matches = sorted(matches, key=lambda x: x.distance)
-
-    return matches, kp_sample_h, kp_frame_h, frame_h
-
-# Initialize the ORB detector
-orb = cv2.ORB_create()
 
 def resize_sample_if_needed(sample_image, roi):
     roi_height, roi_width = roi.shape[:2]
     sample_height, sample_width = sample_image.shape[:2]
-    
+
     if sample_width > roi_width or sample_height > roi_height:
         print ("resizing")
         scale_width = roi_width / sample_width
@@ -360,33 +345,31 @@ def count_pixels(target_color, image):
 
         # Convert the target color from hex to BGR
     target_color_bgr = tuple(int(target_color[i:i+2], 16) for i in (5, 3, 1))
-    
+
     # Define the lower and upper bounds for the color
     lower_bound = np.array([max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8)
     upper_bound = np.array([min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8)
-    
+
     # Create a mask that identifies all pixels within the color range
     mask = cv2.inRange(image, lower_bound, upper_bound)
-    
+
     # Count the number of non-zero (white) pixels in the mask
     return cv2.countNonZero(mask)
 
-    
-def count_rounds_won(frame, playerNumber=1, vftv=False):
 
-    region=regions[f"player{playerNumber}_rounds"]
+def count_rounds_won(frame, playerNumber, override_region=None):
 
-    (x, y, w, h) = region        
-    if (vftv):
-        y+=10
-        x+=10
-        w-=10
-        
+    (x, y, w, h) = (0,0,0,0)
+
+    if (not override_region is None):
+        (x, y, w, h)=override_region[f"player{playerNumber}_rounds"]
+    elif (resolution == "480p"):
+        (x, y, w, h)=regions_480p[f"player{playerNumber}_rounds"]
+         
     roi = frame[y:y+h, x:x+w]
 
     # Convert BGR to HSV
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-
 
     # Define range of red color in HSV
     if (playerNumber == 1):
@@ -395,7 +378,20 @@ def count_rounds_won(frame, playerNumber=1, vftv=False):
         #print(red_pixel_count)
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
-                
+
+        if (override_region == regions_480p or resolution == '480p'):
+            if (red_pixel_count > 290):
+                return 0
+
+            if (red_pixel_count > 210):
+                return 3
+
+            if (red_pixel_count > 140):
+                return 2
+
+            if (red_pixel_count > 70):
+                return 1
+            
         if (red_pixel_count > 700):
             return 3
 
@@ -403,7 +399,7 @@ def count_rounds_won(frame, playerNumber=1, vftv=False):
             return 2
 
         if (red_pixel_count >= 231):
-            return 1    
+            return 1
 
     else:
         #ce9e54
@@ -414,7 +410,20 @@ def count_rounds_won(frame, playerNumber=1, vftv=False):
         #print(count)
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
-        
+
+        if (override_region == regions_480p or resolution == '480p'):
+            if (count > 290):
+                return 0
+
+            if (count > 210):
+                return 3
+
+            if (count > 140):
+                return 2
+
+            if (count > 70):
+                return 1
+
         if (count > 305):
             return 3
 
@@ -474,7 +483,7 @@ def all_but_white(roi):
     mask = cv2.inRange(roi, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
     return white_only_roi
 
 def all_but_white_strict(roi):
@@ -483,7 +492,7 @@ def all_but_white_strict(roi):
     mask = cv2.inRange(roi, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
     return white_only_roi
 
 def all_but_black_range(roi, low = np.array([0,0,0]), high=np.array([120,120,120])):
@@ -494,21 +503,21 @@ def all_but_black_range(roi, low = np.array([0,0,0]), high=np.array([120,120,120
     mask = cv2.inRange(image_rgb, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
-    #white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    #white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
     return mask
 
 
 def all_but_black(image):
     image = cv2.bitwise_not(image)
     return all_but_white(image)
-    
+
     inverted_image = PIL.ImageOps.invert(image)
     lower_white = np.array([0, 0, 0])  # Lower bound of white color
     upper_white = np.array([1, 1, 1])  # Upper bound of white color
     mask = cv2.inRange(image, lower_white, upper_white)
     return mask
     # Apply the mask to keep only white areas in the ROI
-    #white_only_roi = cv2.bitwise_and(image, image, mask=mask)            
+    #white_only_roi = cv2.bitwise_and(image, image, mask=mask)
 
     # Convert to grayscale (optional, if your image is colored)
     #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -521,7 +530,7 @@ def all_but_black(image):
     #output = np.ones_like(image) * 255
 
     # Copy the black pixels from the original image to the output image using the mask
-    #output[mask == 255] = image[mask == 255]    
+    #output[mask == 255] = image[mask == 255]
 
     return output
 
@@ -531,7 +540,7 @@ def all_but_grey(roi):
     mask = cv2.inRange(roi, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
     return white_only_roi
 
 def all_but_white_vftv(roi):
@@ -540,15 +549,20 @@ def all_but_white_vftv(roi):
     mask = cv2.inRange(roi, lower_white, upper_white)
 
     # Apply the mask to keep only white areas in the ROI
-    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)            
+    white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
     return white_only_roi
 
-def get_ringname(player_num, frame):
+def get_ringname(player_num, frame, region_override=None):
     region_name=f"player{player_num}ringname"
 
-    (x, y, w, h) = regions[region_name]
-    roi = frame[y:y+h, x:x+w]                        
-    
+    (x, y, w, h) = (0, 0, 0 ,0)
+    if (region_override is not None):
+        (x, y, w, h) = regions_default[region_name]
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p[region_name]
+
+    roi = frame[y:y+h, x:x+w]
+
     all_white_roi = all_but_grey(roi)
     imagem = cv2.bitwise_not(all_white_roi)
 
@@ -566,28 +580,33 @@ def get_ringname(player_num, frame):
     text = str.replace(text, "}", "")
     text = str.replace(text, "{", "")
     text = str.replace(text, "!", "")
-        
+    text = str.replace(text, "”", "")
+
     if ("\"" in text):
-        return None
+        return "n/a"
 
     if ("\n" in text):
-        return None
-    
+        return "n/a"
+
     if ("=" in text):
-        return None
-    
+        return "n/a"
+
     if (len(text) >= 3):
         return text
-    return None
+    
+    return "n/a"
 
 # Min width of frame is 85
 def get_stage(frame, override_region=None):
     region_name="stage"
 
-    (x, y, w, h) = regions[region_name]
+    (x, y, w, h) = (0, 0, 0, 0)
+
     if (override_region is not None):
         (x, y, w, h) = override_region[region_name]
-        
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p[region_name]
+
     roi = frame[y:y+h, x:x+w]
 
     all_white_roi = all_but_grey(roi)
@@ -596,104 +615,111 @@ def get_stage(frame, override_region=None):
     imagem = cv2.bitwise_not(all_white_roi)
 
     text = pytesseract.image_to_string(imagem, config="--psm 6", nice=-20)
-    text = str.replace(text, "\n\x0c", "")        
+    text = str.replace(text, "\n\x0c", "").upper()
 
-    #cv2.imshow("roi", roi)    
+    #cv2.imshow("roi", roi)
     #print(text)
     #cv2.waitKey()
 
-    if (text == "Water falls"):
+    if (text == "WATER FALLS"):
         return "Waterfalls"
-    
-    if (text == "Ssfand"):
+
+    if (text == "ISLAND"):
         return "Island"
     
-    if (text == "Tampia"):
+    if (text == "SSFAND"):
+        return "Island"
+
+    if (text == "TAMPIA"):
         return "Temple"
-    
-    if (text == "Island"):
-        return "Island"
-    
-    if ("Arena" == text):
+
+    if ("ARENA" == text):
         return "Arena"
-    
-    if ("Palace" == text):
+
+    if ("PALCE" == text):
         return "Palace"
 
-    if ("Aurora" == text):
+    if ("AURORA" == text):
         return "Aurora"
-    
-    if ("Temple" == text):
+
+    if ("TEMPLE" == text):
         return "Temple"
-    
-    if ("Sumo Ring" == text):
+
+    if ("SUMO RING" == text):
         return "Sumo Ring"
-    
-    if ("Ruins" == text):
+
+    if ("RUINS" == text):
         return "Ruins"
-    
-    if ("Statues" == text):
+
+    if ("STATUES" == text):
         return "Statues"
 
-    if ("Great Wall" == text):
+    if ("GREAT WALL" == text):
         return "Great Wall"
 
-    if ("Wall" in text):
+    if ("WALL" in text):
         return "Great Wall"
 
-    if ("City" == text):
+    if ("CITY" == text):
         return "City"
-    
-    if ("Terrace" == text):
+
+    if ("TERRACE" == text):
         return "Terrace"
-    
-    if ("River" == text):
+
+    if ("RIVER" == text):
         return "River"
 
-    if ("fall" in text):
+    if ("FALL" in text):
         return "Waterfalls"
 
-    if ("Water" in text):
+    if ("WATER" in text):
         return "Waterfalls"
 
-    if ("Waterfalls" in text):
+    if ("WATERFALLS" in text):
         return "Waterfalls"
-        
-    if ("Grass" in text):
+
+    if ("GRASS" in text):
         return "Grassland"
 
-    if ("Deep" in text):
+    if ("DEEP" in text):
         return "Deep Mountain"
-    
-    if ("Broken" in text or "House" in text):
+
+    if ("BROKEN" in text or "House" in text):
         return "Broken House"
-    
-    if ("Genesis" == text):
+
+    if ("GENESIS" == text):
         return "Genesis"
-    
-    if ("Shrine" == text):
+
+    if ("SHRINE" == text):
         return "Shrine"
 
-    if (text == "Training Room"):
+    if (text == "TRAINING ROOM"):
         return "Training Room"
 
-    if ("Snow" in text):
-        return "Snow Mountain"        
+    if ("SNOW" in text):
+        return "Snow Mountain"
 
-    if ("Palace" in text):
+    if ("PALACE" in text):
         return "Palace"
 
-    if ("Temple" in text):
+    if ("TEMPLE" in text):
         return "Temple"
 
-    if ("Ruins" in text):
+    if ("RUINS" in text):
         return "Ruins"
 
     return None
 
-def get_character_name(player_num, frame, retry=0):
+def get_character_name(player_num, frame, retry=0, override_region=None):
     region_name = f"player{player_num}character"
-    (x, y, w, h) = regions[region_name]
+
+    (x, y, w, h) = (0,0,0,0)
+
+    if (not override_region is None):
+        (x, y, w, h) = override_region[region_name]
+    elif (resolution == '480p'):
+        (x, y, w, h) = regions_480p[region_name]
+
     if (retry == 1 and player_num == 1):
         w = w - 75
         h = h - 15
@@ -719,16 +745,16 @@ def get_character_name(player_num, frame, retry=0):
         y = y + 10
         h = h - 10
 
-    roi = frame[y:y+h, x:x+w]                        
-            
+    roi = frame[y:y+h, x:x+w]
+
 
     white_only_roi = all_but_white(roi)
     text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
-    
+
     #print(text)
-    #cv2.imshow("roi", roi)
+    #cv2.imshow("roi", white_only_roi)
     #cv2.waitKey()
-    
+
     if ("Brad" in text):
         text="Brad"
     if ("Kage" in text):
@@ -776,10 +802,10 @@ def get_character_name(player_num, frame, retry=0):
         text = "Blaze"
 
     if (is_vf_character_name(text)):
-        return str.replace(text, "\n\x0c", "")                
-    
+        return str.replace(text, "\n\x0c", "")
+
     if (retry < 3):
-        return get_character_name(player_num, frame, retry+1)
+        return get_character_name(player_num, frame, retry+1, override_region)
     return None
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
