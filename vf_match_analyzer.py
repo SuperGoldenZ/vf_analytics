@@ -103,7 +103,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         frame = None
         if (skipFrames > 0):
             skipFrames-=1
-            count+=(frame_rate * interval)           
+            count+=int(frame_rate * interval)           
             logger.debug(f"skipping frames {skipFrames} left")
             continue
 
@@ -248,9 +248,9 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 skipFrames=2
 
         if (state == "before"):
-            count+=(frame_rate * interval*4)
+            count+=int(frame_rate * interval*4)
         else:
-            count+=(frame_rate * interval)
+            count+=int(frame_rate * interval)
 
     if (state != "before"):
         logger.error(f"{video_id} {count:10} - premature match aborted")
@@ -431,7 +431,7 @@ def analyze_video(url):
     vf_analytics.resolution = "480p"
     resolution = "480p"
 
-    extract_frames(video_path, 1, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
+    extract_frames(video_path, 0.75, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
     
     
     start = timer()
