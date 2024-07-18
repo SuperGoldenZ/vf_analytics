@@ -136,6 +136,9 @@ class TestVFCV(unittest.TestCase):
             ,"assets/test_images/480p/knockout/knockout_04.png"
             ,"assets/test_images/480p/knockout/knockout_05.png"
             ,"assets/test_images/480p/ringout/ringout_01.jpg"
+            ,"assets/test_images/480p/excellent/not_excellent_01.png"
+            ,"assets/test_images/480p/excellent/not_excellent_02.png"
+            ,"assets/test_images/480p/excellent/not_excellent_03.png"
         ]
         vf_analytics.resolution="480p"
 
