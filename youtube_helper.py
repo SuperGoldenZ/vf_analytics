@@ -12,8 +12,8 @@ playlists=[
     #Akira
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeYys2x49se6u7C-Uyx9zuJ"
     #Blaze
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"        
-    #Shun        
+    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"
+    #Shun
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdeiiO3OkwlxHpwETQU-irP"
     #Brad
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBetzQbU72GsYT4d9mn1LCEn"
@@ -24,8 +24,8 @@ playlists=[
     #Taka
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBen06zc2hbkZuaz9JdW4weF"
     #Goh
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcWX8I6I49Rch1xDcZRaUGe"        
-    #Jean        
+    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcWX8I6I49Rch1xDcZRaUGe"
+    #Jean
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeZaLqzgehiwSqFlVcLzhU3"
     #Lau
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBei5K68iaf9_7TzbLNGmjax"
@@ -61,8 +61,8 @@ playlists = [
     #Akira
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeYys2x49se6u7C-Uyx9zuJ"
     #Blaze
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"        
-    #Shun        
+    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"
+    #Shun
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdeiiO3OkwlxHpwETQU-irP"
     #Brad
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBetzQbU72GsYT4d9mn1LCEn"
@@ -73,8 +73,8 @@ playlists = [
     #Taka
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBen06zc2hbkZuaz9JdW4weF"
     #Goh
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcWX8I6I49Rch1xDcZRaUGe"        
-    #Jean        
+    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcWX8I6I49Rch1xDcZRaUGe"
+    #Jean
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeZaLqzgehiwSqFlVcLzhU3"
     #Lau
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBei5K68iaf9_7TzbLNGmjax"
@@ -156,13 +156,29 @@ playlists = [
 #panchan_videos = [
 #]
 
+def get_stream(url, resolution="480p"):
+    yt = YouTube(url, use_oauth=True)
+    fps = 30
+    if (resolution=="720p"):
+        fps=30
+
+    try:
+        ys = yt.streams.filter(res=resolution, fps=fps).first()
+        if (ys is None and resolution == "480p"):
+            return get_stream(url, '720p')
+        return ys
+    except:
+        if (resolution == '480p'):
+            print("no 480p so trying 720p")
+            return get_stream(url, '720p')
+    raise Exception(f"Resolution not found for {url} {resolution}")
+
 # Step 1: Download the YouTube video
-def download_video(url, output_path='video.mp4', resolution='1080p'):
-    print(f"Downloading {url} to {output_path}")
-    yt = YouTube(url)    
-    ys = yt.streams.filter(res=resolution).first()
+def download_video(ys, resolution="480p"):
+    output_path = "/tmp/video.mp4"
+
     ys.download(filename=output_path)
-    print(f"... done! Downloaded {url} to {output_path}")
+    return output_path
 
 def get_youtube_video_id(url):
     # Parse the URL
@@ -177,7 +193,7 @@ def get_youtube_video_id(url):
 
 def get_video_urls_from_playlist(playlist):
     urls=[]
-        
+
     print(f"Processing  playlist {playlist}")
     parsed_url = urlparse(playlist)
 
@@ -190,7 +206,7 @@ def get_video_urls_from_playlist(playlist):
     if (os.path.isfile(f"playlist-{playlist_id}")):
         print(f"reading from playlist file playlist-{playlist_id}")
         with open (f"assets/playlist-{playlist_id}") as fp:
-            for line in fp:                    
+            for line in fp:
                 urls.append(line.strip())
         return urls
 
@@ -203,7 +219,7 @@ def get_video_urls_from_playlist(playlist):
         print(f"saving to playlist file playlist-{playlist_id}")
         for url in urls:
             f.write(f"{url}\n")
-    
-    
+
+
     return urls
 
