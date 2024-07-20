@@ -2,6 +2,10 @@ from pytube import YouTube
 from pytube import Playlist
 from urllib.parse import urlparse, parse_qs
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.DEBUG)
 
 RESOLUTION_720P='720p'
 RESOLUTION_360P='360p'
@@ -119,6 +123,7 @@ playlists_streamer = [
 #]
 
 def get_stream(url, resolution="480p"):
+    logger.debug(f"get_stream {url} {resolution}" )
     yt = YouTube(url, use_oauth=True)
     fps = 30
     if (resolution=="720p"):
@@ -130,8 +135,7 @@ def get_stream(url, resolution="480p"):
             return get_stream(url, '720p')
         return ys
     except:
-        if (resolution == '480p'):
-            print("no 480p so trying 720p")
+        if (resolution == '480p'):            
             return get_stream(url, '720p')
     raise Exception(f"Resolution not found for {url} {resolution}")
 
@@ -156,7 +160,7 @@ def get_youtube_video_id(url):
 def get_video_urls_from_playlist(playlist):
     urls=[]
 
-    print(f"Processing  playlist {playlist}")
+    logger.debug(f"Processing  playlist {playlist}")
     parsed_url = urlparse(playlist)
 
     # Extract the query parameters
@@ -166,7 +170,7 @@ def get_video_urls_from_playlist(playlist):
     playlist_id = query_params.get('list', [None])[0]
 
     if (os.path.isfile(f"playlist-{playlist_id}")):
-        print(f"reading from playlist file playlist-{playlist_id}")
+        logger.debug(f"reading from playlist file playlist-{playlist_id}")
         with open (f"assets/playlist-{playlist_id}") as fp:
             for line in fp:
                 urls.append(line.strip())
@@ -178,10 +182,9 @@ def get_video_urls_from_playlist(playlist):
         urls.append(url)
 
     with open(f"assets/playlist-{playlist_id}", 'w') as f:
-        print(f"saving to playlist file playlist-{playlist_id}")
+        logger.debug(f"saving to playlist file playlist-{playlist_id}")
         for url in urls:
             f.write(f"{url}\n")
-
 
     return urls
 
