@@ -122,14 +122,15 @@ playlists_streamer = [
 #panchan_videos = [
 #]
 
-def get_stream(url, resolution="480p"):
+def get_stream(url, resolution="480p", youtube_auth=False):
     logger.debug(f"get_stream {url} {resolution}" )
-    yt = YouTube(url, use_oauth=True)
+    yt = YouTube(url, use_oauth=youtube_auth)
     fps = 30
     if (resolution=="720p"):
         fps=30
 
     try:
+        logger.debug(f"got streams {yt.streams}")
         ys = yt.streams.filter(res=resolution, fps=fps).first()
         if (ys is None and resolution == "480p"):
             return get_stream(url, '720p')

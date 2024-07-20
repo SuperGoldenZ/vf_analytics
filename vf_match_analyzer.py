@@ -15,6 +15,7 @@ import ffmpeg
 
 logger = None
 resize_video = False
+youtube_auth = False
 
 #65661
 
@@ -404,7 +405,7 @@ def analyze_video(url):
             print(f"Skipping {video_id} since it's already in match data")
             return
 
-    ys = youtube_helper.get_stream(url)
+    ys = youtube_helper.get_stream(url, youtube_auth=youtube_auth)
     resolution = ys.resolution
     vf_analytics.resolution = resolution
 
@@ -485,6 +486,7 @@ if __name__ == '__main__':
     logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.DEBUG)
 
     parser=argparse.ArgumentParser(description="Download and extract match data from VF5ES videos")
+    parser.add_argument('--youtube-auth', default=False)
     #parser.add_argument('--video_url')
     #parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
     #args = parser.parse_args()
