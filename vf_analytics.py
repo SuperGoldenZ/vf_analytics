@@ -52,7 +52,7 @@ regions_480p = {
     ,'player1ringname':  (43, 315, 209, 18)
     ,'player2ringname':  (589, 315, 209, 18)
     ,'player1character': (27,   228,   245, 32)
-    ,'player2character': (584,  228,   245, 32)    
+    ,'player2character': (584,  228,   245, 32)
     ,'vs': (343, 173, 172, 85)
     ,'ko': (250, 170, 350, 140)
     ,'excellent': (75, 200, 275, 80)
@@ -68,7 +68,7 @@ regions_480p = {
     #,'player1ringname':  (43, 315, 209, 18)
     #,'player2ringname':  (589, 315, 209, 18)
     #,'player1character': (27,   228,   245, 32)
-    #,'player2character': (584,  228,   245, 32)    
+    #,'player2character': (584,  228,   245, 32)
     #,'vs': (343, 173, 172, 85)
     #,'ko': (438, 302, 627, 237)
     #,'excellent': (162, 209, 552, 81)
@@ -80,7 +80,7 @@ regions_360p = {
     ,'stage': (266, 223, 117, 22)
     ,'player2rank': (614, 68, 13, 8)
     ,'player1_rounds': (519, 78, 106, 36)
-    ,'player2_rounds': (838, 78, 106, 36)    
+    ,'player2_rounds': (838, 78, 106, 36)
     ,'player2ringname':  (1000, 535, 378, 35)
     ,'player1character': (54,    386,   418, 76)
     ,'player2character': (1004,  386,    418, 76)
@@ -95,7 +95,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
     if (retry > 6):
         return 0
 
-    region_name=f"player{player_num}rank"    
+    region_name=f"player{player_num}rank"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_regions)
 
     if (retry == 1):
@@ -156,7 +156,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
     rank_int = int(text)
     if (rank_int == 38 and white_count == 8):
         return 39
-    
+
     if (rank_int > 46 and retry < 3):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
@@ -240,12 +240,12 @@ def is_vs_text(text):
 def is_vs(frame, retry = 0, override_regions = None):
     if (retry == 4):
         return False
-    
+
     (x, y, w, h) = (0, 0, 0, 0)
 
-    if (override_regions is not None):        
+    if (override_regions is not None):
         (x, y, w, h) = override_regions["vs"]
-    elif (resolution == '480p'):        
+    elif (resolution == '480p'):
         (x, y, w, h) = regions_480p["vs"]
 
     if (retry == 1):
@@ -268,19 +268,19 @@ def is_vs(frame, retry = 0, override_regions = None):
 
     #black_pixel_count = count_pixels("#090803", roi)
     #grey_pixel_count = count_pixels("#76716d", roi)
-    #if (grey_pixel_count > 3000 and grey_pixel_count < 3400 and 
+    #if (grey_pixel_count > 3000 and grey_pixel_count < 3400 and
         #black_pixel_count > 2000 and black_pixel_count < 2500
         #):
         #return True
-    
+
     #print(f"black: {black_pixel_count} grey: {grey_pixel_count}")
 
-    
+
     all_black_roi = all_but_black_range(roi,
         np.array([0,0,0]),
         np.array([25,25,15])
         )
-    
+
     #if (retry == 0):
         #all_white_roi = image_resize(all_white_roi, width=50)
 
@@ -319,14 +319,14 @@ def is_vs(frame, retry = 0, override_regions = None):
 
 def is_ko(frame, override_region=None):
     region_name='ko'
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)    
-    
+    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
+
     roi = frame[y:y+h, x:x+w]
     #lower_bound = np.array([77, 78, 78])  # BGR for #c58e4d
     #upper_bound = np.array([255, 255, 255])  # BGR for #ffffff
     #isolated = isolate_color_range(roi, lower_bound, upper_bound)
     #text = pytesseract.image_to_string(roi, config="--psm 6")
-    
+
     gold_count = count_pixels('#ce9e54', roi, override_tolerance=5)
     red_count = count_pixels('#b3200e', roi, override_tolerance=25)
     purple_count = count_pixels('#422fc9', roi, override_tolerance=25)
@@ -347,15 +347,15 @@ def is_ko(frame, override_region=None):
             return True
         if (gold_count > 42 and purple_count > 10):
             return True
-                
+
     return False
 
 def is_excellent(frame, override_region=None):
     region_name="excellent"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)    
+    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
     roi = frame[y:y+h, x:x+w]
-    
+
     white_count = count_pixels('#ffffff', roi, override_tolerance=5)
     gold_count = count_pixels('#ce9e54', roi, override_tolerance=5)
     red_count = count_pixels('#b3200e', roi, override_tolerance=25)
@@ -363,14 +363,14 @@ def is_excellent(frame, override_region=None):
     black_count = count_pixels('#000000', roi, override_tolerance=25)
 
     logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count}")
-    
+
     #cv2.imshow("excellent", frame)
     #cv2.imshow("excellent", roi)
     #cv2.waitKey()
 
     if (is_ko(frame)):
         return False
-    
+
     if (resolution == "480p"):
         #excellent excellent white count 118 gold 88 red 0 purple 10 black 1090
         #not excellent white count 750 gold 32 red 347 purple 520 black 175
@@ -384,7 +384,7 @@ def is_excellent(frame, override_region=None):
 
         if (white_count > 2500):
             return False
-            
+
         if (red_count > 150 and purple_count > 50):
             return False
 
@@ -399,22 +399,22 @@ def is_excellent(frame, override_region=None):
 
         if (gold_count < 150 and white_count > 91 and black_count < 1800 and white_count < 250 and purple_count < 200 and black_count > 45):
             return True
-        
+
         if (gold_count > 85 and red_count > 50 and black_count > 45):
             return True
-                
+
     return False
 
 def is_ringout(frame, override_region=None):
     region_name="ro"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)    
-    
+    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
+
     roi = frame[y:y+h, x:x+w]
 
     green_count = count_pixels('#07a319', roi, override_tolerance=15)
     black_count = count_pixels('#000000', roi, override_tolerance=15)
     white_count = count_pixels('#FFFFFF', roi, override_tolerance=15)
-    
+
     #print(f"is_ringout green {green_count} black {black_count} white {white_count}")
     #cv2.imshow("ro frame", frame)
     #cv2.imshow("ro roi", roi)
@@ -459,38 +459,38 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
     region_name=f"player{playerNumber}_rounds"
     #if (wonSoFar == 0 and playerNumber == 2):
         #region_name=f"player{playerNumber}_rounds1"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)             
+    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
     roi = frame[y:y+h, x:x+w]
 
     #Excellent
     region_name="excellent"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
     excellent = frame[y:y+h, x:x+w]
-        
+
     gold_count = count_pixels("#a08747", excellent)
     red_count = count_pixels("#a72027", excellent)
     purple_count = count_pixels("#2d0c5b", excellent)
     white_count = count_pixels("#ffffff", excellent, 5)
-    
+
     #cv2.imshow("wzxl", excellent)
     #cv2.waitKey()
 
-    #if (gold_count > 3000 and red_count > 1000 and purple_count > 1000):        
+    #if (gold_count > 3000 and red_count > 1000 and purple_count > 1000):
         #raise Exception("Round start")
-    
+
     if (not is_excellent(frame) and not is_ko(frame) and not is_ringout(frame)):
         logger.debug("\traising exception because not found end of round test")
         raise Exception("Not sure how won")
-    
+
     # Convert BGR to HSV
     #hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
     grey_pixel_count = count_pixels("#aea6a4", roi)
-    
+
     # Define range of red color in HSV
     if (playerNumber == 1):
-        red_pixel_count = count_pixels("#e02958", roi)        
+        red_pixel_count = count_pixels("#e02958", roi)
         logger.debug(f"\trounds won Player 1  - Red count: {red_pixel_count} - Grey Count: {grey_pixel_count} So Far: {wonSoFar}")
-        
+
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
 
@@ -554,20 +554,20 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
 
         logger.debug(f"\trounds won player 2 blue count {blue_count}  white {white_count} grey {grey_pixel_count} sofar {wonSoFar}")
 
-        #cv2.imshow("frame", frame)                
-        #cv2.imshow("roi", roi)        
+        #cv2.imshow("frame", frame)
+        #cv2.imshow("roi", roi)
         #cv2.waitKey()
 
 
-        if (override_region == regions_480p or resolution == '480p'):            
-            
+        if (override_region == regions_480p or resolution == '480p'):
+
             if (wonSoFar == 0 and white_count > 65):
                 logger.debug("returning 1 for white_count and wonSoFar")
                 return 1
-            
+
             if (blue_count > 290):
                 return 0
-            
+
             if (blue_count > 56 and grey_pixel_count < 90):
                 return 3
 
@@ -785,7 +785,7 @@ def get_ringname(player_num, frame, region_override=None):
 
     if (len(text) >= 3):
         return text
-    
+
     return "n/a"
 
 def get_dimensions(region_name, resolution, override_region=None):
@@ -800,7 +800,7 @@ def get_dimensions(region_name, resolution, override_region=None):
         x = (int) (x * 1.5)
         y = (int) (y*1.5)
         w = (int) (w*1.5)
-        h = (int) (h*1.5)        
+        h = (int) (h*1.5)
     return (x, y, w, h)
 
 # Min width of frame is 85
@@ -827,7 +827,7 @@ def get_stage(frame, override_region=None):
 
     if (text == "ISLAND"):
         return "Island"
-    
+
     if (text == "SSFAND"):
         return "Island"
 
@@ -1042,7 +1042,7 @@ def remove_black_border(image, threshold_value = 10):
 
     # Find contours
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     # Find the bounding box of the largest contour
     if contours:
         c = max(contours, key=cv2.contourArea)
@@ -1053,7 +1053,7 @@ def remove_black_border(image, threshold_value = 10):
         #cv2.imshow("crpoped image", cropped_image)
         #cv2.waitKey()
         return cropped_image
-    
+
     return image
 
 def isolate_color_range(image, lower_bgr, upper_bgr):
@@ -1067,7 +1067,7 @@ def isolate_color_range(image, lower_bgr, upper_bgr):
     # Create a mask using the bounds
     mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
 
-    # Create an output image with the mask applied    
+    # Create an output image with the mask applied
     output_image = cv2.bitwise_and(image, image, mask=mask)
-    
+
     return mask
