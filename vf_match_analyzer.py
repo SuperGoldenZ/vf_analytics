@@ -14,6 +14,8 @@ import pathlib
 import ffmpeg
 
 logger = None
+resize_video = False
+
 #65661
 
 #####todo: resize others to be width 1467x824
@@ -134,6 +136,9 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         if frame is None:
             continue
 
+        height, width, channels = frame.shape
+        if (height != 480):
+            frame = cv2.resize(frame, (854, 480))
         frame = vf_analytics.remove_black_border(frame)
 
         if (state == "before"):
@@ -419,10 +424,11 @@ def analyze_video(url):
             temp_path = youtube_helper.download_video(ys, video_id, resolution=resolution)
 
             print(f"Renaming video after download: {temp_path} to {video_path}")
-            if (resolution != '480p'):
+            if (resolution != '480p' and resize_video):
                 ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()            
                 os.remove(temp_path)
-
+            elif (resolution != '480p'):
+                os.rename(temp_path, video_path)
         except Exception as e:
             print(f"error downloading \"{url}\" ")                    
             print(ys)
@@ -465,7 +471,7 @@ def main(video_url = None):
     thread = Thread(target=process_playlists,args=[youtube_helper.play_collection])
     thread.start()
     threads.append(thread)            
-
+    
     thread = Thread(target=process_playlists,args=[youtube_helper.playlists])
     thread.start()
     threads.append(thread)            
