@@ -122,7 +122,7 @@ playlists_streamer = [
 #panchan_videos = [
 #]
 
-def get_stream(url, resolution="480p", youtube_auth=False):
+def get_stream(url, resolution="480p", youtube_auth=True):
     logger.debug(f"get_stream {url} {resolution}" )
     yt = YouTube(url, use_oauth=youtube_auth)
     fps = 30
@@ -135,7 +135,8 @@ def get_stream(url, resolution="480p", youtube_auth=False):
         if (ys is None and resolution == "480p"):
             return get_stream(url, '720p')
         return ys
-    except:
+    except Exception as error:
+        logger.error(f"error occured getting stream {error}")
         if (resolution == '480p'):            
             return get_stream(url, '720p')
     raise Exception(f"Resolution not found for {url} {resolution}")
