@@ -403,12 +403,12 @@ def analyze_video(url):
     resolution = ys.resolution
     vf_analytics.resolution = resolution
 
-    jpg_folder=f"/home/alex/vf_analytics/assets/jpg/{video_id}_{resolution}"
+    jpg_folder=f"assets/jpg/{video_id}_{resolution}"
     if not os.path.exists(jpg_folder):
         os.makedirs(jpg_folder)
     
-    video_folder=f"/home/alex/vf_analytics/assets/videos/{video_id}_{resolution}/"
-    video_path  =f"/home/alex/vf_analytics/assets/videos/{video_id}_{resolution}/video.mp4"
+    video_folder=f"assets/videos/{video_id}_{resolution}/"
+    video_path  =f"assets/videos/{video_id}_{resolution}/video.mp4"
 
     if not os.path.exists(video_folder):
         os.makedirs(video_folder)
