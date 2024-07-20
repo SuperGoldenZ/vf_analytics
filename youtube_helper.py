@@ -45,60 +45,11 @@ playlists=[
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcFgC5wim7NDPNK1p_xYTIh"
     #Vanessa
     ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdAJ815ZfAvi267Vme32izX"
-    #El Blaze 2
-    ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8YRfPjQuHcjVbffN46jiOsY"
     ]
 
-playlists = [
-    #Panchan
-     "https://www.youtube.com/playlist?list=PLVbGvjJ7wGuGfLBtd0vvLbrLHSSUu9gK1"
-
-    #Ami Usagi
-    ,"https://www.youtube.com/playlist?list=amiusagi"
-
-    #Jacky
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfYSZQ8xdcaFRzPZAdUdGLv"
-    #Akira
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeYys2x49se6u7C-Uyx9zuJ"
-    #Blaze
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfAJ80HDNCSp1OTrfgUH11K"
-    #Shun
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdeiiO3OkwlxHpwETQU-irP"
-    #Brad
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBetzQbU72GsYT4d9mn1LCEn"
-    #Eileen
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcDIo2JwMkxhaVayDGeDiCg"
-    #Jeffrey
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBd1PALdKnj5hGx5HFM4-AQe"
-    #Taka
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBen06zc2hbkZuaz9JdW4weF"
-    #Goh
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcWX8I6I49Rch1xDcZRaUGe"
+play_collection = [
     #Jean
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBeZaLqzgehiwSqFlVcLzhU3"
-    #Lau
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBei5K68iaf9_7TzbLNGmjax"
-    #Lion
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBfiwY36cpygqXUtWEHWgt1N"
-    #Lei Fei
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdhp8Oon9JBVT1ay1Ek5RaN"
-    #Wolf
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBf-yVzkQY4b60dBFGwcIFsc"
-    #Aoi
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdcg-2FWVgkNeuzUrnVJMTt"
-    #Pai
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdEpGLSg2hKoo_8s2WWWNC5"
-    #Sarah
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcYW_O5rwDpmW1zUfkSP9KX"
-    #Kage
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBcFgC5wim7NDPNK1p_xYTIh"
-    #Vanessa
-    ,"https://www.youtube.com/playlist?list=PLNbC0SRw-xBdAJ815ZfAvi267Vme32izX"
-    #El Blaze 2
-    ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8YRfPjQuHcjVbffN46jiOsY"
-
-    #Jean
-    ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8ZtpySzu1F_bAmziU8Uu98V"
+     "https://www.youtube.com/playlist?list=PLIYqlJQujs8ZtpySzu1F_bAmziU8Uu98V"
 
     #Eileen
     ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8ZSURKjVUIakj2qwCbg63UJ"
@@ -150,6 +101,17 @@ playlists = [
 
     #Taka
     ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8Yd6cY67kca33xEeAE19RJd"
+
+    #El Blaze 2
+    ,"https://www.youtube.com/playlist?list=PLIYqlJQujs8YRfPjQuHcjVbffN46jiOsY"
+]
+
+playlists_streamer = [
+    #Panchan
+     "https://www.youtube.com/playlist?list=PLVbGvjJ7wGuGfLBtd0vvLbrLHSSUu9gK1"
+
+    #Ami Usagi
+    ,"https://www.youtube.com/playlist?list=amiusagi"
 ]
 
 
@@ -174,8 +136,8 @@ def get_stream(url, resolution="480p"):
     raise Exception(f"Resolution not found for {url} {resolution}")
 
 # Step 1: Download the YouTube video
-def download_video(ys, resolution="480p"):
-    output_path = "/tmp/video.mp4"
+def download_video(ys, vid, resolution="480p"):
+    output_path = f"/tmp/{vid}.mp4"
 
     ys.download(filename=output_path)
     return output_path

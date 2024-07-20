@@ -112,15 +112,15 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 filename = jpg_folder + "/" + str(f"{count_int:06}") + ".jpg"
                 frame = cv2.imread(filename)
                 #logger.debug(f"loaded {filename} from local file")
-            except:
-                logger.error(f"{video_id} {count:10} [ERROR] - error reading from image file", file=sys.stderr)
+            except:                
+                logger.error(f"{video_id} {count:10d} [ERROR] - error reading from image file", file=sys.stderr)
                 continue
         else:
             cap.set(cv2.CAP_PROP_POS_FRAMES, count)
             ret, frame = cap.read()
             
             if not ret:
-                logger.warn(f"Skipping frame {count} because no return")
+                logger.warn(f"Skipping frame {count:10d} because no return")
                 continue
             
             out_filename = jpg_folder + "/" + str(f"{count_int:06}") + ".jpg"
@@ -128,7 +128,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 if (jpg_folder is not None and hdd.free > 10567308288):                                
                     cv2.imwrite(out_filename, frame, [cv2.IMWRITE_JPEG_QUALITY, 100])
             except Exception as e:
-                logger.error(f"{video_id} {count:10} [ERROR] - error write to image file {out_filename}", file=sys.stderr)
+                logger.error(f"{video_id} {count:10d} [ERROR] - error write to image file {out_filename}", file=sys.stderr)
                 logger.error(repr(e))
             
         if frame is None:
@@ -143,43 +143,43 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             if (stage is not None):
                 match["stage"] = stage
                 state="vs"
-                logger.debug(f"{video_id} {count:10} - got stage {stage}")
-            logger.debug(f"{video_id} {count:10} - vs")
+                logger.debug(f"{video_id} {count:10d} - got stage {stage}")
+            logger.debug(f"{video_id} {count:10d} - vs")
 
         if (state == "vs"):
             if (match.get('player1character') is None):
                 player1character = vf_analytics.get_character_name(1, frame)
                 if (player1character is not None):
                     match["player1character"] = player1character
-                    logger.debug(f"{video_id} {count:10} - player 1 character {player1character}")
+                    logger.debug(f"{video_id} {count:10d} - player 1 character {player1character}")
 
             if (match.get('player2character') is None):
                 player2character = vf_analytics.get_character_name(2, frame)
                 if (player2character is not None):
                     match["player2character"] = player2character
-                    logger.debug(f"{video_id} {count:10} - player 2 character {player2character}")
+                    logger.debug(f"{video_id} {count:10d} - player 2 character {player2character}")
 
             if (not "player1ringname" in match or match["player1ringname"] is None):
                 player1ringname = vf_analytics.get_ringname(1, frame)                
                 match["player1ringname"] = player1ringname
-                logger.debug(f"{video_id} {count:10} - player 1 is {player1ringname}")                
+                logger.debug(f"{video_id} {count:10d} - player 1 is {player1ringname}")                
 
             if (not "player2ringname" in match or match["player2ringname"] is None):
                 player2ringname = vf_analytics.get_ringname(2, frame)                
                 match["player2ringname"] = player2ringname
-                logger.debug(f"{video_id} {count:10} - player 2 is {player2ringname}")
+                logger.debug(f"{video_id} {count:10d} - player 2 is {player2ringname}")
 
             if ("stage" not in match):
-                logger.debug(f"{video_id} {count:10} - looking for stage")
+                logger.debug(f"{video_id} {count:10d} - looking for stage")
                 stage=vf_analytics.get_stage(frame)
                 if (stage is not None):
                     match["stage"] = stage
-                    logger.debug(f"{video_id} {count:10} - stage {stage}")
+                    logger.debug(f"{video_id} {count:10d} - stage {stage}")
 
             if (got_all_vs_info(match)):
                 state="fight"                
-                logger.debug(f"{video_id} {count:10} - fight")
-                skipFrames=20
+                logger.debug(f"{video_id} {count:10d} - fight")
+                skipFrames=22
                 continue
         
         if (state == "fight"):            
@@ -187,7 +187,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 try:
                     player1rank = vf_analytics.get_player_rank(1, frame, True)
                     match["player1rank"] = player1rank                                                                        
-                    logger.debug(f"{video_id} {count:10} - player1rank {player1rank}")
+                    logger.debug(f"{video_id} {count:10d} - player1rank {player1rank}")
                 except:
                     match["player1rank"] = 0
 
@@ -195,40 +195,42 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 try:
                     player2rank = vf_analytics.get_player_rank(2, frame, True)
                     match["player2rank"] = player2rank
-                    logger.debug(f"{video_id} {count:10} - player2rank {player2rank}")
+                    logger.debug(f"{video_id} {count:10d} - player2rank {player2rank}")
                 except:
                     match["player2rank"] = 0
 
 
             #Check if match is over
             for player_num in range(1, 3):
+                wonSoFar=rounds_won[player_num-1]
                 try:
-                    cnt=vf_analytics.count_rounds_won(frame, player_num)
+                    logger.debug(f"{video_id} {count:010d} - counting rounds won for player {player_num}")
+                    cnt=vf_analytics.count_rounds_won(frame, player_num, wonSoFar=wonSoFar)
                 except:
-                    logger.debug(f"{video_id} {count:10} - skipping round won")
+                    logger.warning(f"{video_id} {count:10d} ^^^^^^^^^^^^^^^^ skipping round won for player {player_num}")
                     continue
                                     
-                if (cnt > 0 and cnt - rounds_won[player_num-1] == 1):
-                    print(f"\nplayer {player_num} won the round")
+                if (cnt > 0 and cnt - wonSoFar == 1):
+                    logger.debug(f"\tplayer {player_num} won the round cnt {cnt} sofar {wonSoFar}")
                     process_excellent(player_num, frame, round)
                     process_ko(player_num, frame, round)
                     process_ringout(player_num, frame, round)
 
-                    cv2.imshow("winning round", frame)
-                    cv2.waitKey()
+                    #cv2.imshow("winning blow", frame)
+                    #cv2.waitKey()
 
                     round[f"player{player_num}_rounds"] = cnt
                     rounds_won[player_num-1]=cnt
                     try:
                         print_csv(match, round, round_num, video_id)
                     except:
-                        logger.error(f"{video_id} {count:10} ERROR write to csv")
-                    logger.debug(f"{video_id} {count:10} - round {round_num} finished player {player_num} won")
+                        logger.error(f"{video_id} {count:10d} ERROR write to csv")
+                    logger.debug(f"{video_id} {count:10d} - round {round_num} finished player {player_num} won")
 
                     if (match["player1rank"] == 0):
-                        logger.error(f"{video_id} {count:10} - round is over but player 1 rank is 0")
+                        logger.error(f"{video_id} {count:10d} - round is over but player 1 rank is 0")
                     if (match["player2rank"] == 0):
-                        logger.error(f"{video_id} {count:10} - round is over but player 2 rank is 0")                    
+                        logger.error(f"{video_id} {count:10d} - round is over but player 2 rank is 0")                    
 
                     if (cnt < 3):
                         round=new_round()
@@ -236,6 +238,9 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                         round["player2_rounds"]=rounds_won[1]
                         round_num+=1
                         skipFrames = 10
+                    break
+                else:
+                    logger.debug(f"{video_id} {count:10d} not finding diff of one with cnt: {cnt} player {player_num}")
 
             if (round["player1_rounds"] == 3 or round["player2_rounds"] == 3):                                                                                                
                 state="before"                
@@ -244,7 +249,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 round_num = 1
                 match={}                                        
                 match["id"] = uuid.uuid4()
-                logger.debug(f"{video_id} {count:10} - match finished")
+                logger.debug(f"{video_id} {count:10d} - match finished")
                 skipFrames=2
 
         if (state == "before"):
@@ -253,7 +258,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             count+=int(frame_rate * interval)
 
     if (state != "before"):
-        logger.error(f"{video_id} {count:10} - premature match aborted")
+        logger.error(f"{video_id} {count:10d} - premature match aborted")
     hdd = psutil.disk_usage('/')
 
     if (hdd.free < 10567308288):
@@ -411,11 +416,12 @@ def analyze_video(url):
     if (not os.path.isfile(video_path)):        
         try:                                        
             logger.debug(f"Downloading video {url} at {resolution}")
-            temp_path = youtube_helper.download_video(ys, resolution=resolution)
+            temp_path = youtube_helper.download_video(ys, video_id, resolution=resolution)
 
             print(f"Renaming video after download: {temp_path} to {video_path}")
-            ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()
-            #os.rename(temp_path, video_path)
+            if (resolution != '480p'):
+                ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()            
+                os.remove(temp_path)
 
         except Exception as e:
             print(f"error downloading \"{url}\" ")                    
@@ -431,13 +437,22 @@ def analyze_video(url):
     vf_analytics.resolution = "480p"
     resolution = "480p"
 
-    extract_frames(video_path, 0.75, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
+    extract_frames(video_path, 1, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
     
     
     start = timer()
     
     elapsed_time = timer() - start # in seconds
     print(f"{elapsed_time} seconds to run")
+
+def process_playlist(playlist):
+    urls = youtube_helper.get_video_urls_from_playlist(playlist)
+    for url in urls:
+        analyze_video(url)
+
+def process_playlists(playlist_array):
+    for playlist in playlist_array:
+        process_playlist(playlist)
     
 # Main function to run the whole process
 def main(video_url = None):
@@ -445,33 +460,29 @@ def main(video_url = None):
     if (video_url is not None):
         analyze_video(video_url)
         return
-    
-    for playlist in youtube_helper.playlists:
-        urls = youtube_helper.get_video_urls_from_playlist(playlist)
+       
+    threads = []                    
+    thread = Thread(target=process_playlists,args=[youtube_helper.play_collection])
+    thread.start()
+    threads.append(thread)            
 
-        num_cores = 2
-        print(f"Number of available CPU cores: {num_cores}")
-        
-        threads = []
-    
-        for url in urls:
-            if len(threads) >= num_cores:
-                # Wait for the first thread in the list to finish if we reached the max number of threads
-                threads[0].join()
-                threads.pop(0)
-            
-            thread = Thread(target=analyze_video,args=[url])
-            thread.start()
-            threads.append(thread)            
-                
+    thread = Thread(target=process_playlists,args=[youtube_helper.playlists])
+    thread.start()
+    threads.append(thread)            
+
+    print("going to join threads")    
+    threads[0].join()
+    threads[1].join()
+
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.DEBUG)
 
     parser=argparse.ArgumentParser(description="Download and extract match data from VF5ES videos")
-    parser.add_argument('--video_url')
-    parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
-    args = parser.parse_args()
-    video_url=vars(args)['video_url'].strip()    
+    #parser.add_argument('--video_url')
+    #parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
+    #args = parser.parse_args()
+    #video_url=vars(args)['video_url'].strip()    
     
-    main(video_url)
+    #main(video_url)
+    main(None)
