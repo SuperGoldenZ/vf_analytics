@@ -211,9 +211,6 @@ def load_sample_with_transparency(path):
 
     return sample_image
 
-player1roundwon = load_sample_with_transparency('assets/player1roundwon.png')
-player2roundwon = load_sample_with_transparency('assets/player2roundwon.png')
-
 def is_vs_text(text):
     text = text.strip()
 
