@@ -3,6 +3,8 @@ FROM python:3
 WORKDIR /usr/src
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+RUN apt install tesseract-ocr
+RUN apt install libtesseract-dev
 RUN pip install --upgrade opencv-python
 RUN pip install pytesseract
 RUN pip install pytube
