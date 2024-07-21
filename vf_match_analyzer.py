@@ -428,7 +428,7 @@ def analyze_video(url):
             if (resolution != '480p' and resize_video):
                 ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()
                 os.remove(temp_path)
-            elif (resolution != '480p'):
+            else:
                 os.rename(temp_path, video_path)
         except Exception as e:
             print(f"error downloading \"{url}\" ")
