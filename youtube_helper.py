@@ -118,6 +118,37 @@ playlists_streamer = [
     ,"https://www.youtube.com/playlist?list=amiusagi"
 ]
 
+playlists_tak = [
+    "https://www.youtube.com/playlist?list=PLWy1iacn8OteXuhWkc212aMHUdvZS5Rhz"
+]
+
+playlists_powder = [
+    "playlist-powder"
+]
+
+playlists_worldx = [
+    "https://www.youtube.com/playlist?list=PL-QUVETUF5kzfJ8fl_a6uR5DfO5RkzayH"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwxBcPmBVcNQ2jI_IKjnRYb"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kzhysQA_1QsTGJtKHrk28hc"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5ky04zvm8hTVjJ3KyyydKvL4"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwOe2-EzspVez6mvFTQhLIV"    
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwqfXUzc0BIFj-U1JbvR2Bl"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwmALMSoRxtEB7GTUTq2wqS"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwTInxwfnCChRWPLQj74o1X"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kypmop5cGlMSHD_nNoJwWjG"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kzyjTByFJcZTFa2lfUkfi1b"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kzlhoRfJEgmL0mbhAm4sTy-"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kw7FJlayNqkWINQF3kdF7Uh"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwGXW_EcJEF-0krPZMvFxIh"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwVVY66BH8xmVplQHdDRlfL"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kydsCn-hqvzDKcxZNGlGd3z"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kxMHpsQkaJYgM8W_18Atw1W"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kyIpiIv_9YiYGaxg-Ns6YN8"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kx7EOuogiWZKvFUaZwOj64L"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kxRL6N3iyY0zw9NOoz0m-jN"
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kxQ2VTntuRJsivGw9fJABpu"
+
+]
 
 #panchan_videos = [
 #]
