@@ -814,7 +814,7 @@ def get_stage(frame, override_region=None):
 
     imagem = cv2.bitwise_not(all_white_roi)
 
-    text = pytesseract.image_to_string(imagem, config="--psm 6", nice=-20)
+    text = pytesseract.image_to_string(imagem, config="--psm 6")
     text = str.replace(text, "\n\x0c", "").upper()
 
     #cv2.imshow("original: ", frame)
