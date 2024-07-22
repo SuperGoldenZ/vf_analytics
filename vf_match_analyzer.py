@@ -114,13 +114,13 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             try:
                 filename = jpg_folder + "/" + str(f"{count_int:06}") + ".jpg"
                 frame = cv2.imread(filename)
-                #logger.debug(f"loaded {filename} from local file")
             except:
                 logger.error(f"{video_id} {count:10d} [ERROR] - error reading from image file", file=sys.stderr)
                 continue
         else:
             cap.set(cv2.CAP_PROP_POS_FRAMES, count)
             ret, frame = cap.read()
+            frame = vf_analytics.remove_black_border(frame, resize_height=480)
 
             if not ret:
                 logger.warn(f"Skipping frame {count:10d} because no return")
@@ -137,10 +137,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         if frame is None:
             continue
 
-        height, width, channels = frame.shape
-        if (height != 480):
-            frame = cv2.resize(frame, (854, 480))
-        frame = vf_analytics.remove_black_border(frame)
+
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
@@ -451,7 +448,8 @@ def analyze_video(url):
     vf_analytics.resolution = "480p"
     resolution = "480p"
 
-    extract_frames(video_path, 1, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
+    fps=1
+    extract_frames(video_path, fps, video_folder, video_id, jpg_folder)  # Extract a frame every 7 seconds
 
 
     start = timer()
