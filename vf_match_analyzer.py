@@ -218,9 +218,10 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
 
                 if (cnt > 0 and cnt - wonSoFar == 1):
                     logger.debug(f"\tplayer {player_num} won the round cnt {cnt} sofar {wonSoFar}")
-                    process_excellent(player_num, frame, round)
-                    process_ko(player_num, frame, round)
-                    process_ringout(player_num, frame, round)
+                    if (not process_excellent(player_num, frame, round)):
+                        is_ko = process_ko(player_num, frame, round)
+                        if (not is_ko):
+                            process_ringout(player_num, frame, round)
 
                     #cv2.imshow("winning blow", frame)
                     #cv2.waitKey()
@@ -370,16 +371,22 @@ def process_excellent(player_num, frame, round):
     if (vf_analytics.is_excellent(frame)):
         print(f"player {player_num} got excellent")
         round[f"player{player_num}_excellent"] = 1
+        return True
+    return False
 
 def process_ko(player_num, frame, round):
     if (vf_analytics.is_ko(frame)):
         print(f"player {player_num} got ko")
         round[f"player{player_num}_ko"] = 1
+        return True
+    return False
 
 def process_ringout(player_num, frame, round):
     if (vf_analytics.is_ringout(frame)):
         print(f"player {player_num} got ringout")
         round[f"player{player_num}_ringout"] = 1
+        return True
+    return False
 
 # Step 3: Perform OCR on specific regions
 def perform_ocr_on_frames(frames, video_id="n/a"):
