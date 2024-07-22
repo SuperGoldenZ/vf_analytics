@@ -45,9 +45,9 @@ regions_1080p = {
 regions_480p = {
     'player1rank': (72, 91, 14, 12)
     ,'player2rank': (820, 91, 14, 12)
-    ,'player1_rounds': (303, 50, 63, 20)
-    ,'player2_rounds': (493, 50, 63, 20)
-    ,'player2_rounds1': (493, 50, 25, 20)
+    ,'player1_rounds': (303, 50, 85, 20)
+    ,'player2_rounds': (475, 50, 80, 20)
+    ,'player2_rounds1': (475, 50, 25, 20)
     ,'stage': (342, 295, 200, 25)
     ,'player1ringname':  (43, 315, 209, 18)
     ,'player2ringname':  (589, 315, 209, 18)
@@ -332,13 +332,15 @@ def is_ko(frame, override_region=None):
     purple_count = count_pixels('#422fc9', roi, override_tolerance=25)
     black_count = count_pixels('#000000', roi, override_tolerance=25)
     white_count = count_pixels('#FFFFFF', roi, override_tolerance=25)
+    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=15)
 
-    logger.debug(f"\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution}")
+    logger.debug(f"\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count}")
     #cv2.imshow("is_ko frame", frame)
     #cv2.imshow("is_ko roi", roi)
     #cv2.waitKey()
+    height, width, channels = frame.shape
 
-    if (resolution == "480p"):
+    if (resolution == "480p" or height == 480):
         if (purple_count > 140 and black_count > 200):
             return False
         if (gold_count > 10 and white_count > 7000):
@@ -346,6 +348,9 @@ def is_ko(frame, override_region=None):
         if (white_count > 14000):
             return True
         if (gold_count > 42 and purple_count > 10):
+            return True
+
+        if (red_tekken_count > 40 and red_tekken_count < 1500):
             return True
 
     return False
@@ -361,8 +366,9 @@ def is_excellent(frame, override_region=None):
     red_count = count_pixels('#b3200e', roi, override_tolerance=25)
     purple_count = count_pixels('#422fc9', roi, override_tolerance=25)
     black_count = count_pixels('#000000', roi, override_tolerance=25)
+    tekken_gold_count = count_pixels('#d9b409', roi, override_tolerance=15)
 
-    logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count}")
+    logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
 
     #cv2.imshow("excellent", frame)
     #cv2.imshow("excellent", roi)
@@ -403,6 +409,9 @@ def is_excellent(frame, override_region=None):
         if (gold_count > 85 and red_count > 50 and black_count > 45):
             return True
 
+        if (tekken_gold_count > 300):
+            return True
+
     return False
 
 def is_ringout(frame, override_region=None):
@@ -414,12 +423,14 @@ def is_ringout(frame, override_region=None):
     green_count = count_pixels('#07a319', roi, override_tolerance=15)
     black_count = count_pixels('#000000', roi, override_tolerance=15)
     white_count = count_pixels('#FFFFFF', roi, override_tolerance=15)
+    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=15)
 
-    #print(f"is_ringout green {green_count} black {black_count} white {white_count}")
+    logger.debug(f"is_ringout green {green_count} black {black_count} white {white_count} red tekken {red_tekken_count}")
+    #print()
     #cv2.imshow("ro frame", frame)
     #cv2.imshow("ro roi", roi)
     #cv2.waitKey()
-    return green_count > 400
+    return green_count > 400 or red_tekken_count > 2000
 
 def resize_sample_if_needed(sample_image, roi):
     roi_height, roi_width = roi.shape[:2]
@@ -489,12 +500,15 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
     # Define range of red color in HSV
     if (playerNumber == 1):
         red_pixel_count = count_pixels("#e02958", roi)
-        logger.debug(f"\trounds won Player 1  - Red count: {red_pixel_count} - Grey Count: {grey_pixel_count} So Far: {wonSoFar}")
+        white_pixel_count = count_pixels("#FFFFFF", roi)
+        tekken_teal_count = count_pixels("#65ebf6", roi)
+        logger.debug(f"\trounds won Player 1  - Red count: {red_pixel_count} - Grey Count: {grey_pixel_count} So Far: {wonSoFar} tekken teal {tekken_teal_count} white {white_pixel_count} so far {wonSoFar}")
 
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
 
         if (override_region == regions_480p or resolution == '480p'):
+            logger.debug("480p")
             if (wonSoFar == 2 and red_pixel_count > 135 and grey_pixel_count < 100):
                 return 3
 
@@ -505,6 +519,15 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
                 return 0
 
             if (red_pixel_count > 210):
+                return 3
+
+            if (tekken_teal_count > 55  and wonSoFar==2 and grey_pixel_count > 60):
+                return 3
+
+            if (tekken_teal_count > 59  and wonSoFar==2):
+                return 3
+
+            if (white_pixel_count > 20 and tekken_teal_count > 40 and wonSoFar==2):
                 return 3
 
             if (red_pixel_count > 135 and grey_pixel_count >= 90):
@@ -519,8 +542,21 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
             if (red_pixel_count > 60 and grey_pixel_count > 250):
                 return 1
 
+            if (tekken_teal_count > 20 and white_pixel_count > 20):
+                return 2
 
-        if (resolution == '720p'):
+            if (tekken_teal_count > 45):
+                return 2
+
+            if (tekken_teal_count > 20):
+                return 1
+
+            if (white_pixel_count > 20):
+                return 1
+
+            if (tekken_teal_count > 20):
+                return 1
+        elif (resolution == '720p'):
             if (red_pixel_count > 290*1.5):
                 return 0
 
@@ -535,15 +571,15 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
 
             if (red_pixel_count > 70*1.5):
                 return 1
+        else:
+            if (red_pixel_count > 700):
+                return 3
 
-        if (red_pixel_count > 700):
-            return 3
+            if (red_pixel_count > 380):
+                return 2
 
-        if (red_pixel_count > 380):
-            return 2
-
-        if (red_pixel_count >= 231):
-            return 1
+            if (red_pixel_count >= 231):
+                return 1
 
     else:
         #ce9e54
@@ -551,8 +587,9 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
         target_color = '#0d6ed7'  # Blue color
         blue_count = count_pixels(target_color, roi)
         white_count = count_pixels("#FFFFFF", roi)
+        tekken_teal_count = count_pixels("#65ebf6", roi)
 
-        logger.debug(f"\trounds won player 2 blue count {blue_count}  white {white_count} grey {grey_pixel_count} sofar {wonSoFar}")
+        logger.debug(f"\trounds won player 2 blue count {blue_count}  white {white_count} grey {grey_pixel_count} sofar {wonSoFar} tekken teal {tekken_teal_count}")
 
         #cv2.imshow("frame", frame)
         #cv2.imshow("roi", roi)
@@ -571,13 +608,19 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
             if (blue_count > 56 and grey_pixel_count < 90):
                 return 3
 
+            if (tekken_teal_count > 60):
+                return 3
+
+            if (white_count > 20 and tekken_teal_count > 40):
+                return 3
+
             if (blue_count > 60 and grey_pixel_count > 270):
                 return 2
 
             if (white_count > 230 and white_count < 260):
                 return 2
 
-            if (blue_count > 70 and grey_pixel_count < 230):
+            if (blue_count > 70 and grey_pixel_count < 250):
                 return 2
 
             if (blue_count > 60 and grey_pixel_count < 107):
@@ -593,6 +636,15 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
                 return 1
 
             if (blue_count > 20):
+                return 1
+
+            if (white_count > 20 and tekken_teal_count > 20):
+                return 2
+
+            if (white_count > 20):
+                return 1
+
+            if (tekken_teal_count > 20):
                 return 1
 
         if (resolution == '720p'):
@@ -1035,7 +1087,7 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # return the resized image
     return resized
 
-def remove_black_border(image, threshold_value = 10):
+def remove_black_border(image, threshold_value = 10, resize_height=None):
     # Convert to grayscale and threshold
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
@@ -1050,8 +1102,11 @@ def remove_black_border(image, threshold_value = 10):
         cropped_image = image[y:y+h, x:x+w]
         cropped_image = cv2.resize(cropped_image, (854, 480))
 
-        #cv2.imshow("crpoped image", cropped_image)
-        #cv2.waitKey()
+        if (resize_height is not None):
+            height, width, channels = cropped_image.shape
+            if (height != resize_height and resize_height == 480):
+                cropped_image = cv2.resize(cropped_image, (854, 480))
+
         return cropped_image
 
     return image
