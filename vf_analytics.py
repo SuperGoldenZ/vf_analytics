@@ -43,8 +43,13 @@ regions_1080p = {
 }
 
 regions_480p = {
+    #'player1rank':   (71, 91, 17, 12)
+    #,'player1rank_full': (23, 82, 67, 21)
     'player1rank': (72, 91, 14, 12)
+    ,'player1rank_full': (23, 82, 67, 21)
     ,'player2rank': (820, 91, 14, 12)
+    #,'player2rank': (819, 91, 14, 12)
+    ,'player2rank_full': (765, 82, 67, 21)
     ,'player1_rounds': (303, 50, 85, 20)
     ,'player2_rounds': (475, 50, 80, 20)
     ,'player2_rounds1': (475, 50, 25, 20)
@@ -92,12 +97,37 @@ regions_360p = {
 
 # min width 25
 def get_player_rank(player_num, frame, retry=0, override_regions=None):
-    if (retry > 6):
+    if (retry > 7):
         return 0
+
+    region_name=f"player{player_num}rank_full"
+    (x, y, w, h) = get_dimensions(region_name, resolution, override_regions)
+
+    roi = frame[y:y+h, x:x+w]
+
+    white_count  = count_pixels("#000000", roi, 50)
+    purple_count = count_pixels("#7600b9", roi)
+
+    dark_purple_count = count_pixels("#3a165e", roi)
+    teal_count = count_pixels("#558784", roi)
+    grellow_count = count_pixels("#8e9a52", roi)
+    ry = count_pixels("#cc5b31", roi)
+
+    #print(f"white: {white_count} purple: {purple_count} dp {dark_purple_count} t{teal_count} grel{grellow_count} ry {ry} retry {retry}")
+
+    if (dark_purple_count > 100 and teal_count > 100 and grellow_count > 100):
+        return 39
+
+    if (grellow_count > 100 and ry > 100 and white_count < 100):
+        return 43
+
+    if (purple_count > 8):
+        return 42
+
+    #cv2.imshow("full", roi)
 
     region_name=f"player{player_num}rank"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_regions)
-
     if (retry == 1):
         w = w -3
         x = x + 2
@@ -119,19 +149,19 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         x = x - 5
         w = w + 5
         h = h + 3
-
+    elif (retry == 7 and player_num == 2):
+        x = x - 2
+        w = w + 2
+    elif (retry == 7 and player_num == 1):
+        y = y - 1
+        x = x - 1
 
     roi = frame[y:y+h, x:x+w]
 
-    white_count = count_pixels("#000000", roi, 50)
-    #print(f"white count {white_count}")
+
     all_white_roi = all_but_white_vftv(roi, np.array([100, 100, 105]))
 
     imagem = cv2.bitwise_not(all_white_roi)
-
-    #cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255,0,0), thickness=10)
-    #cv2.imshow("rank", all_white_roi)
-    #cv2.waitKey()
 
 
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
@@ -149,7 +179,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
     #cv2.waitKey()
 
     if (not text.isnumeric() or int(text) < 10):
-        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions);
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     greyCount = count_pixels("#7c7a82", roi)
 
@@ -161,11 +191,16 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     if (rank_int >= 40 and greyCount > 130) and rank_int <= 56:
+        print (f"returning {rank_int} - 10")
         return (int(text)-10)
 
     if (rank_int < 0 or rank_int > 46):
         return 0
 
+    if (grellow_count > 150 and ry > 60 and rank_int < 30):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
+
+    #print (f"returning {rank_int}")
     return rank_int
 
 def get_player_rank_black(player_num, frame):
@@ -1088,6 +1123,8 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     return resized
 
 def remove_black_border(image, threshold_value = 10, resize_height=None):
+    if (image is None):
+        raise Exception ("cannot remove black border, image is null")
     # Convert to grayscale and threshold
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, thresh = cv2.threshold(gray, threshold_value, 255, cv2.THRESH_BINARY)
