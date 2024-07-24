@@ -146,6 +146,16 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         if (compares > 38):
             return 43
 
+        rank_44 = cv2.imread("assets/test_images/480p/rank/44.jpg")
+        compares = compare_images_histogram(roi, rank_44)
+        #cv2.imshow("rank_43", rank_43)
+        #cv2.imshow("roi", roi)
+        #print(f" they similar {compares}")
+        #cv2.waitKey()
+
+        if (compares > 38):
+            return 44
+
         return 0
 
     #cv2.imshow("full", roi)
