@@ -26,7 +26,11 @@ class TestVFCV(unittest.TestCase):
     def test_get_player_rank(self):
         params = [
              ['assets/test_images/480p/rank/42_42_001.jpg', 42, 42, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/44_44_001.jpg', 44, 44, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/44_44_002.jpg', 44, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_44_001.jpg', 43, 44, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/43_44_002.jpg', 43, 44, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/43_44_003.jpg', 43, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_46_001.jpg', 43, 46, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/37_36_001.jpg', 37, 36, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/36_37_001.jpg', 36, 37, vf_analytics.regions_480p]
@@ -233,7 +237,8 @@ class TestVFCV(unittest.TestCase):
     def test_get_stage(self):
         params = [
              #['assets/test_images/1080p/stage/snow_mountain.jpg', "Snow Mountain", vf_analytics.regions_1080p]
-             ['assets/test_images/480p/stage/island.jpg', "Island", vf_analytics.regions_480p]
+             ['assets/test_images/480p/stage/island_01.jpg', "Island", vf_analytics.regions_480p]
+            ,['assets/test_images/480p/stage/island_02.jpg', "Island", vf_analytics.regions_480p]
             ,['assets/test_images/480p/stage/training_room.png', "Training Room", vf_analytics.regions_480p]
             ,['assets/test_images/360p/stage/snow_mountain.jpg', "Snow Mountain", vf_analytics.regions_360p]
             # ,['assets/test_images/stage/training_room.jpg', "Training Room", None]
