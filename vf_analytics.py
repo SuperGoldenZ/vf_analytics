@@ -97,7 +97,7 @@ regions_360p = {
 
 # min width 25
 def get_player_rank(player_num, frame, retry=0, override_regions=None):
-    if (retry > 7):
+    if (retry > 8):
         return 0
 
     region_name=f"player{player_num}rank_full"
@@ -107,22 +107,36 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
 
     white_count  = count_pixels("#000000", roi, 50)
     purple_count = count_pixels("#7600b9", roi)
-
+    grey = count_pixels("#908f95", roi)
     dark_purple_count = count_pixels("#3a165e", roi)
     teal_count = count_pixels("#558784", roi)
     grellow_count = count_pixels("#8e9a52", roi)
+    gold_count = count_pixels("#e2cb87", roi)
     ry = count_pixels("#cc5b31", roi)
+    black_count = count_pixels("#000000", roi, 5)
 
-    #print(f"white: {white_count} purple: {purple_count} dp {dark_purple_count} t{teal_count} grel{grellow_count} ry {ry} retry {retry}")
+    #print(f"white: {white_count} purple: {purple_count} dp {dark_purple_count} t{teal_count} grel{grellow_count} ry {ry} grey {grey} gold {gold_count} black {black_count} retry {retry}")
 
-    if (dark_purple_count > 100 and teal_count > 100 and grellow_count > 100):
+    if (dark_purple_count > 100 and teal_count > 100 and grellow_count > 100 and black_count < 50):
         return 39
 
-    if (grellow_count > 100 and ry > 100 and white_count < 100):
+    if (grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50):
         return 43
 
     if (purple_count > 8):
         return 42
+
+    if (retry == 8):
+        rank_37 = cv2.imread("assets/test_images/480p/rank/37.jpg")
+        compares = compare_images_histogram(roi, rank_37)
+        #cv2.imshow("rank_37", rank_37)
+        #cv2.imshow("roi", roi)
+        #print(f" they similar {compares}")
+        #cv2.waitKey()
+
+        if (compares > 38):
+            return 37
+        return 0
 
     #cv2.imshow("full", roi)
 
@@ -154,12 +168,17 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         w = w + 2
     elif (retry == 7 and player_num == 1):
         y = y - 1
-        x = x - 1
+        w = w - 1
+        x = x + 3
+    elif (retry == 8 and player_num == 1):
+        y = y + 1
+        h = h - 3
+        x = x + 2
+        #x = x - 2
 
     roi = frame[y:y+h, x:x+w]
-
-
     all_white_roi = all_but_white_vftv(roi, np.array([100, 100, 105]))
+
 
     imagem = cv2.bitwise_not(all_white_roi)
 
@@ -172,11 +191,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
     #text = str.replace(text, "‘", "")
 
     text = re.sub("[^0-9]", "", text)
-
-    #cv2.imshow("roi", roi)
-    #cv2.imshow("rank", imagem)
     #print(f"{text} for {player_num} player")
-    #cv2.waitKey()
 
     if (not text.isnumeric() or int(text) < 10):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
@@ -195,10 +210,20 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         return (int(text)-10)
 
     if (rank_int < 0 or rank_int > 46):
-        return 0
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     if (grellow_count > 150 and ry > 60 and rank_int < 30):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
+
+    if (gold_count > 300 and rank_int < 36):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
+
+    if (grey < 400 and rank_int > 36 and white_count > 230):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
+
+
+    #white: 269 purple: 0 dp 4 t15 grel229 ry 2 grey 78 gold 328 retry 2 NG
+    #white: 269 purple: 0 dp 4 t15 grel229 ry 2 grey 78 gold 328 retry 2
 
     #print (f"returning {rank_int}")
     return rank_int
@@ -1163,3 +1188,20 @@ def isolate_color_range(image, lower_bgr, upper_bgr):
     output_image = cv2.bitwise_and(image, image, mask=mask)
 
     return mask
+
+def compare_images_histogram(imageA, imageB):
+    # Convert the images to HSV color space
+    hsvA = cv2.cvtColor(imageA, cv2.COLOR_BGR2HSV)
+    hsvB = cv2.cvtColor(imageB, cv2.COLOR_BGR2HSV)
+
+    # Calculate the histograms
+    histA = cv2.calcHist([hsvA], [0, 1], None, [50, 60], [0, 180, 0, 256])
+    histB = cv2.calcHist([hsvB], [0, 1], None, [50, 60], [0, 180, 0, 256])
+
+    # Normalize the histograms
+    cv2.normalize(histA, histA, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+    cv2.normalize(histB, histB, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+
+    # Compute the histogram intersection
+    similarity = cv2.compareHist(histA, histB, cv2.HISTCMP_INTERSECT)
+    return similarity
