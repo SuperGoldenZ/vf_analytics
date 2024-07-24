@@ -226,7 +226,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                     round[f"player{player_num}_rounds"] = cnt
                     rounds_won[player_num-1]=cnt
                     try:
-                        print_csv(match, round, round_num, video_id)
+                        print_csv(match, round, round_num, video_id, count)
                     except:
                         logger.error(f"{video_id} {count:10d} ERROR write to csv")
                     logger.debug(f"{video_id} {count:10d} - round {round_num} finished player {player_num} won")
@@ -293,10 +293,12 @@ def all_but_black(roi):
     cleaned_text = cv2.medianBlur(filled_text, 3)
     return cleaned_text
 
-def print_csv(match, round, round_num, video_id):
+def print_csv(match, round, round_num, video_id, frame_count):
     f = open("match_data.csv", "a")
 
     f.write(video_id)
+    f.write(",")
+    f.write(str(frame_count))
     f.write(",")
     f.write(str(match["id"]))
     f.write(",")
