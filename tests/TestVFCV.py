@@ -26,6 +26,7 @@ class TestVFCV(unittest.TestCase):
     def test_get_player_rank(self):
         params = [
              ['assets/test_images/480p/rank/42_42_001.jpg', 42, 42, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/43_44_001.jpg', 43, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/37_36_001.jpg', 37, 36, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/36_37_001.jpg', 36, 37, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/32_33_001.jpg', 32, 33, vf_analytics.regions_480p]
