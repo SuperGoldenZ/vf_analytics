@@ -16,6 +16,7 @@ import ffmpeg
 logger = None
 resize_video = False
 youtube_auth = True
+force_append=False
 
 #65661
 
@@ -407,7 +408,7 @@ def analyze_video(url):
         with open('match_data.csv', 'a') as the_file:
             the_file.write('vid,match_id,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex\n')
     with open('match_data.csv') as f:
-        if video_id in f.read():
+        if video_id in f.read() and force_append==False:
             print(f"Skipping {video_id} since it's already in match data")
             return
 
@@ -526,6 +527,7 @@ if __name__ == '__main__':
     parser.add_argument('--video_url', default=None, help="URL for youtube video or playlist to process")
     parser.add_argument('--playlists_file', default=None, help="Local file with list of playlists to process")
     parser.add_argument('--playlist_file', default=None, help="Local file with list of YouTube videos to process")
+    parser.add_argument('--force_append', default=None, help="Force overwrite videos")
     #parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
 
     args = parser.parse_args()
@@ -554,5 +556,11 @@ if __name__ == '__main__':
     except:
         playlist_file=None
 
+    try:
+        fa=vars(args)['force_append']
+        if (fa is not None):
+            force_append=True
+    except:
+        force_append=False
     #main(video_url)
     main(video_url=video_url, playlists_file=playlists_file, playlist_file=playlist_file)
