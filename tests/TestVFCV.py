@@ -26,9 +26,11 @@ class TestVFCV(unittest.TestCase):
     def test_get_player_rank(self):
         params = [
              ['assets/test_images/480p/rank/42_42_001.jpg', 42, 42, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/40_40_001.jpg', 40, 40, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/44_44_001.jpg', 44, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/44_44_002.jpg', 44, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_44_001.jpg', 43, 44, vf_analytics.regions_480p]
+            ,['assets/test_images/480p/rank/43_43_002.jpg', 43, 43, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_44_002.jpg', 43, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_44_003.jpg', 43, 44, vf_analytics.regions_480p]
             ,['assets/test_images/480p/rank/43_46_001.jpg', 43, 46, vf_analytics.regions_480p]
@@ -89,6 +91,7 @@ class TestVFCV(unittest.TestCase):
         images = [
              "assets/test_images/480p/rounds_won/tekken/1_1_01.jpg"
             ,"assets/test_images/480p/rounds_won/tekken/2_1_01.jpg"
+            #,"assets/test_images/480p/knockout/knockout_0_1_02.png"
             ,"assets/test_images/480p/knockout/knockout_0_1_01.jpg"
             ,"assets/test_images/480p/knockout/knockout_1_2_01.jpg"
             ,"assets/test_images/480p/knockout/knockout_1_2_02.jpg"
