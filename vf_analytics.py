@@ -140,7 +140,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         compares = compare_images_histogram(roi, rank_43)
         #cv2.imshow("rank_43", rank_43)
         #cv2.imshow("roi", roi)
-        #print(f" they similar {compares}")
+        #print(f" rank 43 they similar {compares}")
         #cv2.waitKey()
 
         if (compares > 38):
@@ -205,12 +205,19 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
 
     text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
 
+    #cv2.imshow("roi", roi)
+    #cv2.imshow("imagem", imagem)
+
     #text = str.replace(text, "\n\x0c", "")
     #text = str.replace(text, "\x0c", "")
     #text = str.replace(text, "?", "")
     #text = str.replace(text, "‘", "")
 
     text = re.sub("[^0-9]", "", text)
+
+    #print(f" text {text}")
+    #cv2.waitKey()
+
     #print(f"{text} for {player_num} player")
 
     if (not text.isnumeric() or int(text) < 10):
@@ -226,7 +233,7 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     if (rank_int >= 40 and greyCount > 130) and rank_int <= 56:
-        print (f"returning {rank_int} - 10")
+        #print (f"returning {rank_int} - 10")
         return (int(text)-10)
 
     if (rank_int < 0 or rank_int > 46):
@@ -238,9 +245,14 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
     if (gold_count > 300 and rank_int < 36):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
-    if (grey < 400 and rank_int > 36 and white_count > 230):
+    if (grey < 400 and rank_int > 36 and white_count > 230 and grellow_count < 30):
         return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
+    if (rank_int == 35 and gold_count > 200):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
+
+    if (rank_int > 41 and gold_count > 300 and teal_count > 10 and grellow_count > 200):
+        return get_player_rank(player_num, frame, retry=retry+1, override_regions=override_regions)
 
     #white: 269 purple: 0 dp 4 t15 grel229 ry 2 grey 78 gold 328 retry 2 NG
     #white: 269 purple: 0 dp 4 t15 grel229 ry 2 grey 78 gold 328 retry 2
@@ -412,30 +424,44 @@ def is_ko(frame, override_region=None):
     purple_count = count_pixels('#422fc9', roi, override_tolerance=25)
     black_count = count_pixels('#000000', roi, override_tolerance=25)
     white_count = count_pixels('#FFFFFF', roi, override_tolerance=25)
-    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=15)
+    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=10)
+    blue = count_pixels("#5c78ef", roi)
 
-    logger.debug(f"\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count}")
+    logger.debug(f"\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count} blue {blue}")
+    #print(f"\n\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count}  blue {blue}")
     #cv2.imshow("is_ko frame", frame)
     #cv2.imshow("is_ko roi", roi)
     #cv2.waitKey()
     height, width, channels = frame.shape
 
+    #ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
+
     if (resolution == "480p" or height == 480):
+        if (blue > 1800):
+            return False
+
         if (purple_count > 140 and black_count > 200):
             return False
         if (gold_count > 10 and white_count > 7000):
+            #print("true 01", flush=True)
             return True
-        if (white_count > 14000):
+        if (white_count > 15000):
+            #print("true 02", flush=True)
             return True
         if (gold_count > 42 and purple_count > 10):
+            #print("true 03", flush=True)
             return True
 
-        if (red_tekken_count > 40 and red_tekken_count < 1500):
+        if (red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000):
+            #print("true 04", flush=True)
             return True
 
     return False
 
 def is_excellent(frame, override_region=None):
+    if (is_ringout(frame)):
+        return False
+
     region_name="excellent"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
@@ -448,8 +474,10 @@ def is_excellent(frame, override_region=None):
     black_count = count_pixels('#000000', roi, override_tolerance=25)
     tekken_gold_count = count_pixels('#d9b409', roi, override_tolerance=15)
 
-    logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
+    infoString = f"excellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
 
+    #logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
+    #print(f")
     #cv2.imshow("excellent", frame)
     #cv2.imshow("excellent", roi)
     #cv2.waitKey()
@@ -474,23 +502,29 @@ def is_excellent(frame, override_region=None):
         if (red_count > 150 and purple_count > 50):
             return False
 
-        if (white_count > 15 and black_count > 45):
+        if (white_count > 15 and black_count > 45 and red_count < 100 and black_count < 2000):
+            print(f"excellent true 1 {infoString}")
             return True
 
         if (white_count > 18 and black_count == 0 and red_count == 0 and gold_count == 0):
+            print(f"excellent true 2 {infoString}")
             return True
 
         if (gold_count > 25 and red_count > 45 and black_count > 45):
+            print(f"excellent true 3 {infoString}")
             return True
 
         if (gold_count < 150 and white_count > 91 and black_count < 1800 and white_count < 250 and purple_count < 200 and black_count > 45):
+            print(f"excellent true 4 {infoString}")
             return True
 
         if (gold_count > 85 and red_count > 50 and black_count > 45):
+            print(f"excellent true 5 {infoString}")
             return True
 
-        if (tekken_gold_count > 300):
-            return True
+        #if (tekken_gold_count > 370):
+            #print(f"excellent true 6 {infoString}")
+            #return True
 
     return False
 
@@ -506,18 +540,18 @@ def is_ringout(frame, override_region=None):
     red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=15)
 
     logger.debug(f"is_ringout green {green_count} black {black_count} white {white_count} red tekken {red_tekken_count}")
-    #print()
+    #print(f"is_ringout green {green_count} black {black_count} white {white_count} red tekken {red_tekken_count}")
     #cv2.imshow("ro frame", frame)
     #cv2.imshow("ro roi", roi)
     #cv2.waitKey()
-    return green_count > 400 or red_tekken_count > 2000
+    return green_count > 300 or red_tekken_count > 2000
 
 def resize_sample_if_needed(sample_image, roi):
     roi_height, roi_width = roi.shape[:2]
     sample_height, sample_width = sample_image.shape[:2]
 
     if sample_width > roi_width or sample_height > roi_height:
-        print ("resizing")
+        #print ("resizing")
         scale_width = roi_width / sample_width
         scale_height = roi_height / sample_height
         scale = min(scale_width, scale_height)
@@ -582,7 +616,7 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
         red_pixel_count = count_pixels("#e02958", roi)
         white_pixel_count = count_pixels("#FFFFFF", roi)
         tekken_teal_count = count_pixels("#65ebf6", roi)
-        logger.debug(f"\trounds won Player 1  - Red count: {red_pixel_count} - Grey Count: {grey_pixel_count} So Far: {wonSoFar} tekken teal {tekken_teal_count} white {white_pixel_count} so far {wonSoFar}")
+        #logger.debug(f"\trounds won Player 1  - Red count: {red_pixel_count} - Grey Count: {grey_pixel_count} So Far: {wonSoFar} tekken teal {tekken_teal_count} white {white_pixel_count} so far {wonSoFar}")
 
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
@@ -669,7 +703,7 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
         white_count = count_pixels("#FFFFFF", roi)
         tekken_teal_count = count_pixels("#65ebf6", roi)
 
-        logger.debug(f"\trounds won player 2 blue count {blue_count}  white {white_count} grey {grey_pixel_count} sofar {wonSoFar} tekken teal {tekken_teal_count}")
+        #logger.debug(f"\trounds won player 2 blue count {blue_count}  white {white_count} grey {grey_pixel_count} sofar {wonSoFar} tekken teal {tekken_teal_count}")
 
         #cv2.imshow("frame", frame)
         #cv2.imshow("roi", roi)
@@ -966,6 +1000,9 @@ def get_stage(frame, override_region=None):
     if (text == "TAMPIA"):
         return "Temple"
 
+    if (len(text) == 6 and "LAND" in text):
+        return "Island"
+
     if ("ARENA" == text):
         return "Arena"
 
@@ -993,7 +1030,7 @@ def get_stage(frame, override_region=None):
     if ("WALL" in text):
         return "Great Wall"
 
-    if ("CITY" == text):
+    if ("CITY" in text):
         return "City"
 
     if ("TERRACE" == text):
