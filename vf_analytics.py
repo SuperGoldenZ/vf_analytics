@@ -7,9 +7,10 @@ import logging
 # PS4 Resolution is 1920 x 1080 1080P
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename='vf_analytics.log', encoding='utf-8', level=logging.DEBUG)
 
 resolution='1080p'
+excellent = cv2.imread("assets/test_images/480p/excellent/excellent.png")
 
 #alexRegions
 regions_default = {
@@ -50,17 +51,19 @@ regions_480p = {
     ,'player2rank': (820, 91, 14, 12)
     #,'player2rank': (819, 91, 14, 12)
     ,'player2rank_full': (765, 82, 67, 21)
-    ,'player1_rounds': (303, 50, 85, 20)
-    ,'player2_rounds': (475, 50, 80, 20)
-    ,'player2_rounds1': (475, 50, 25, 20)
+    ,'player1_rounds': (307, 50, 55, 15)
+    ,'player2_rounds': (475, 50, 80, 15)
+    ,'player1_health': (111, 33, 265, 8)
+    ,'player2_health': (483, 36, 265, 8)
     ,'stage': (342, 295, 200, 25)
     ,'player1ringname':  (43, 315, 209, 18)
     ,'player2ringname':  (589, 315, 209, 18)
     ,'player1character': (27,   228,   245, 32)
     ,'player2character': (584,  228,   245, 32)
+    ,'all_rounds': (247, 50, 404, 26)
     ,'vs': (343, 173, 172, 85)
     ,'ko': (250, 170, 350, 140)
-    ,'excellent': (75, 200, 275, 80)
+    ,'excellent': (75, 200, 700, 80)
     ,'ro': (185, 204, 484, 80)
 }
 
@@ -409,7 +412,7 @@ def is_vs(frame, retry = 0, override_regions = None):
 
     return is_vs(frame, retry+1, override_regions)
 
-def is_ko(frame, override_region=None):
+def is_ko(frame, override_region=None):    
     region_name='ko'
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
@@ -459,13 +462,27 @@ def is_ko(frame, override_region=None):
     return False
 
 def is_excellent(frame, override_region=None):
+    
     if (is_ringout(frame)):
+        return False
+    
+    (p1green, p1black, p1grey) = get_player_health(frame, 1)
+    (p2green, p2black, p2grey) = get_player_health(frame, 2)
+
+    
+    logger.debug(f"is_excellent got health {p1black} {p1green} - {p2black} {p2green} ")
+    p1excellent = p1black == 0 and p1grey == 0
+    p2excellent = p2black == 0 and p2grey == 0
+    if (not p1excellent and not p2excellent):
         return False
 
     region_name="excellent"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
     roi = frame[y:y+h, x:x+w]
+    #result = compare_images_histogram(excellent, roi)
+    
+    #print(f"compares {result}")
 
     white_count = count_pixels('#ffffff', roi, override_tolerance=5)
     gold_count = count_pixels('#ce9e54', roi, override_tolerance=5)
@@ -476,55 +493,24 @@ def is_excellent(frame, override_region=None):
 
     infoString = f"excellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
 
-    #logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
-    #print(f")
-    #cv2.imshow("excellent", frame)
-    #cv2.imshow("excellent", roi)
+    logger.debug(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
+    #print(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
+    #cv2.imshow("frame", frame)
+    #cv2.imshow("roi", roi)
+    #cv2.imshow("excellent", excellent)
     #cv2.waitKey()
 
     if (is_ko(frame)):
         return False
 
-    if (resolution == "480p"):
-        #excellent excellent white count 118 gold 88 red 0 purple 10 black 1090
-        #not excellent white count 750 gold 32 red 347 purple 520 black 175
-
-        # not excellent
-        #if (white_count < 105 and gold_count < 150 and black_count < 500):
-            #return False
-        #excellent white count 229 gold 60 red 0 purple 10 black 261
-        #if (white_count > 200 and gold_count < 70):
-            #return False
-
-        if (white_count > 2500):
+    if (resolution == "480p"):        
+        if (white_count < 10 and gold_count < 10):
             return False
-
-        if (red_count > 150 and purple_count > 50):
-            return False
-
-        if (white_count > 15 and black_count > 45 and red_count < 100 and black_count < 2000):
-            print(f"excellent true 1 {infoString}")
+        
+        if (140 < gold_count < 550 and red_count < 700 and 400 < black_count < 3500):
             return True
-
-        if (white_count > 18 and black_count == 0 and red_count == 0 and gold_count == 0):
-            print(f"excellent true 2 {infoString}")
-            return True
-
-        if (gold_count > 25 and red_count > 45 and black_count > 45):
-            print(f"excellent true 3 {infoString}")
-            return True
-
-        if (gold_count < 150 and white_count > 91 and black_count < 1800 and white_count < 250 and purple_count < 200 and black_count > 45):
-            print(f"excellent true 4 {infoString}")
-            return True
-
-        if (gold_count > 85 and red_count > 50 and black_count > 45):
-            print(f"excellent true 5 {infoString}")
-            return True
-
-        #if (tekken_gold_count > 370):
-            #print(f"excellent true 6 {infoString}")
-            #return True
+        
+        return black_count > 900 and white_count < 150 and red_count < 100 and purple_count < 120
 
     return False
 
@@ -582,8 +568,7 @@ def count_pixels(target_color, image, override_tolerance=40):
 def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
     #Rounds won
     region_name=f"player{playerNumber}_rounds"
-    #if (wonSoFar == 0 and playerNumber == 2):
-        #region_name=f"player{playerNumber}_rounds1"
+
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
     roi = frame[y:y+h, x:x+w]
 
@@ -1246,6 +1231,21 @@ def isolate_color_range(image, lower_bgr, upper_bgr):
 
     return mask
 
+def get_player_health(frame, player_num):
+    region_name=f"player{player_num}_health"
+    (x, y, w, h) = get_dimensions(region_name, resolution)
+
+    roi = frame[y:y+h, x:x+w]
+    green_health = count_pixels("#30c90e", roi, override_tolerance=5)
+    black_health = count_pixels("#1d1d1d", roi, override_tolerance=5)
+    grey_health = count_pixels("#1c211d", roi, override_tolerance=5)
+
+    #cv2.imshow("roi", roi)
+    #print(f"health {green_health} black {black_health} grey {grey_health}")
+    #cv2.waitKey()
+    
+    return [green_health, black_health, grey_health]    
+
 def compare_images_histogram(imageA, imageB):
     # Convert the images to HSV color space
     hsvA = cv2.cvtColor(imageA, cv2.COLOR_BGR2HSV)
@@ -1262,3 +1262,54 @@ def compare_images_histogram(imageA, imageB):
     # Compute the histogram intersection
     similarity = cv2.compareHist(histA, histB, cv2.HISTCMP_INTERSECT)
     return similarity
+
+def is_winning_round(frame):
+    region_name=f"all_rounds"
+    (x, y, w, h) = get_dimensions(region_name, resolution)
+    roi = frame[y:y+h, x:x+w]
+    all_white_count = count_pixels("#ffffff", roi, 5)        
+    all_pink_count = count_pixels("#f6d8be", roi, 5)
+    all_light_blue_count = count_pixels("#71fffe", roi, 5)
+    all_dark_red = count_pixels("#780103", roi, 5)
+    all_dark_maroon = count_pixels("#520004", roi, 5)
+    all_dark_blue = count_pixels("#03176d", roi, 5)    
+    other_blue = count_pixels("#36539f", roi, 5)
+    another_blue = count_pixels("#213275", roi, 5)
+    other_db = count_pixels("#1e00b3", roi, 5)
+    other_maroon = count_pixels("#691f34", roi, 5)
+
+    #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}" )
+    #cv2.imshow("roi", roi)
+    #cv2.waitKey()
+
+
+    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10) :
+        return 0
+    
+    for player_num in range(1, 3):
+        region_name=f"player{player_num}_rounds"
+        (x, y, w, h) = get_dimensions(region_name, resolution)
+        roi = frame[y:y+h, x:x+w]
+
+        #cv2.imshow("roi", roi)
+        #cv2.waitKey()
+
+        white_count = count_pixels("#ffffff", roi, 5)        
+        pink_count = count_pixels("#f6d8be", roi, 5)
+        light_blue_count = count_pixels("#71fffe", roi, 5)
+        dark_red = count_pixels("#780103", roi, 5)
+        dark_blue = count_pixels("#03176d", roi, 5)        
+        grey_count = count_pixels("#aaaaac", roi, 5)
+
+        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue}")
+        if (dark_red > 50 or dark_blue > 50):
+            return 0
+        
+        if ((white_count > 8 or pink_count >= 5 or light_blue_count >= 5) and (grey_count < 50)):            
+            #print(f"got winning rounds white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} all_maroon {all_dark_maroon} all dark red {all_dark_red} all_dark_blue {all_dark_blue} grey {grey_count}")
+            #cv2.imshow(f"roi for winner {player_num}", roi)
+            #cv2.waitKey()
+
+            return player_num
+        
+    return 0

@@ -78,6 +78,29 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # return the resized image
     return resized
 
+def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
+    hdd = psutil.disk_usage('/')
+
+    if not os.path.exists(jpg_folder + "/original/"):
+        os.makedirs(jpg_folder + "/original/")
+
+    out_filename = jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
+    try:
+        if (jpg_folder is not None and hdd.free > 10567308288):
+            cv2.imwrite(out_filename, original_frame)
+    except Exception as e:
+        logger.error(f"Error write to image file {out_filename}", file=sys.stderr)
+        logger.error(repr(e))
+
+    out_filename = jpg_folder + "/" + str(f"{count_int}_{suffix}") + ".png"
+    try:
+        if (jpg_folder is not None and hdd.free > 10567308288):
+            cv2.imwrite(out_filename, frame)
+    except Exception as e:
+        logger.error(f"Error write to image file {out_filename}", file=sys.stderr)
+        logger.error(repr(e))
+        
+    
 # Step 2: Extract frames from the video
 def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_folder="jpg", regions=None, cam=-1):
     cap = None
@@ -123,7 +146,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
 
         #use epoch time for cam
         if (cam != -1):
-            count_int = int(time.time())
+            count_int = int(time.time() * 1000)
             count = count_int
 
         frame = None
@@ -134,9 +157,10 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
 
             if (cam != -1):
                 cap.read()
-                time.sleep(interval)
-                print(f"skipping frames {skipFrames} left")
+                time.sleep(interval)                
             continue
+
+        original_frame = None
 
         if (cam == -1 and os.path.isfile(jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg")):
             try:
@@ -160,32 +184,12 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 frame = vf_analytics.remove_black_border(frame, resize_height=480)
             else:
                 vf_analytics.resolution="480p"
-
-                if not os.path.exists(jpg_folder + "/original/"):
-                    os.makedirs(jpg_folder + "/original/")
-
-                out_filename = jpg_folder + "/original/" + str(f"{count_int:13d}") + ".jpg"
-                try:
-                    if (jpg_folder is not None and hdd.free > 10567308288):
-                        cv2.imwrite(out_filename, frame, [cv2.IMWRITE_JPEG_QUALITY, 100])
-                except Exception as e:
-                    logger.error(f"{video_id} {count:13d} [ERROR] - error write to image file {out_filename}", file=sys.stderr)
-                    logger.error(repr(e))
-
+                
+                original_frame = frame
                 frame = cv2.resize(frame, (854, 480))
-
-            out_filename = jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg"
-            try:
-                if (jpg_folder is not None and hdd.free > 10567308288):
-                    cv2.imwrite(out_filename, frame, [cv2.IMWRITE_JPEG_QUALITY, 100])
-            except Exception as e:
-                logger.error(f"{video_id} {count:13d} [ERROR] - error write to image file {out_filename}", file=sys.stderr)
-                logger.error(repr(e))
 
         if frame is None:
             continue
-
-
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
@@ -195,13 +199,14 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             if (stage is not None):
                 match["stage"] = stage
                 state="vs"
-                logger.debug(f"{video_id} {count:13d} - got stage {stage}")
+                logger.debug(f"{video_id} {count:13d} - got stage {stage} and setting to vs")
 
                 if (cam == -1):
                     print(f"{video_id} {count:13d} - got stage {stage}")
                 else:
                     print(f"camera: {cam} {count:13d} - got stage {stage}")
-            logger.debug(f"{video_id} {count:13d} - vs")
+
+                
 
         if (state == "vs"):
             if (match.get('player1character') is None):
@@ -239,6 +244,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 print_csv(match, round, "0", video_id, count)
                 skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
+                if (cam != -1):
+                    save_cam_frame(jpg_folder, original_frame, frame, count, "start")
                 continue
 
         if (state == "fight"):
@@ -258,63 +265,72 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 except:
                     match["player2rank"] = 0
 
+            #save_cam_frame(jpg_folder, original_frame, frame, count, "none")
 
-            #Check if match is over
-            for player_num in range(1, 3):
-                wonSoFar=rounds_won[player_num-1]
-                try:
-                    logger.debug(f"{video_id} {count:013d} - counting rounds won for player {player_num}")
-                    cnt=vf_analytics.count_rounds_won(frame, player_num, wonSoFar=wonSoFar)
-                except:
-                    logger.warning(f"{video_id} {count:13d} ^^^^^^^^^^^^^^^^ skipping round won for player {player_num}")
-                    continue
+            player_num = vf_analytics.is_winning_round(frame)
+            if (player_num == 0 ):
+                logger.debug(f"{count_int} is not a winning round so continue")
+                continue
+            
+            logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
+                                    
+            is_excellent = vf_analytics.is_excellent(frame)
+            is_ko = not is_excellent and vf_analytics.is_ko(frame)
+            is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
 
-                if (cnt > 0 and cnt - wonSoFar == 1):
-                    logger.debug(f"\tplayer {player_num} won the round cnt {cnt} sofar {wonSoFar}")
-                    is_excellent = vf_analytics.is_excellent(frame)
-                    is_ko = not is_excellent and vf_analytics.is_ko(frame)
-                    is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
+            if (is_excellent):
+                round[f"player{player_num}_excellent"] = 1
+                print(f"{count} got excellent for player {player_num}")
+            elif (is_ko):
+                round[f"player{player_num}_ko"] = 1
+                print(f"{count} got KO player {player_num}")
+            elif (is_ro):
+                round[f"player{player_num}_ringout"] = 1
+                print(f"{count} got ringout player {player_num}")
+            else:
+                print(f"{count} unknown way to victory for {player_num} skipping")
+                save_cam_frame(jpg_folder, original_frame, frame, count, "unknown_skip")
+                continue
 
+            rounds_won[player_num-1] = rounds_won[player_num-1] + 1
+            round[f"player{player_num}_rounds"] = round[f"player{player_num}_rounds"] + 1
+            
+            try:
+                print_csv(match, round, round_num, video_id, count)
+
+                if (cam != -1):
+                    suffix=""
                     if (is_excellent):
-                        round[f"player{player_num}_excellent"] = 1
-                        print(f"{count} got excellent")
-                    elif (is_ko):
-                        round[f"player{player_num}_ko"] = 1
+                        suffix=f"excellent_for_player{player_num}"
                     elif (is_ro):
-                        round[f"player{player_num}_ringout"] = 1
+                        suffix=f"ringout_for_player{player_num}"
+                    elif (is_ko):
+                        suffix=f"knockout_for_player{player_num}"
                     else:
-                        logger.error("could not determine how won round")
-                        continue
+                        suffix=f"unknownwin_for_player{player_num}"
 
-                    round[f"player{player_num}_rounds"] = cnt
-                    rounds_won[player_num-1]=cnt
-                    try:
-                        print_csv(match, round, round_num, video_id, count)
-                    except:
-                        logger.error(f"{video_id} {count:13d} ERROR write to csv")
-                    logger.debug(f"{video_id} {count:13d} - round {round_num} finished player {player_num} won")
+                    save_cam_frame(jpg_folder, original_frame, frame, count, suffix)
+            except:
+                logger.error(f"{video_id} {count:13d} ERROR write to csv")
+            logger.debug(f"{video_id} {count:13d} - round {round_num} finished player {player_num} won")
 
-                    if (match["player1rank"] == 0):
-                        logger.error(f"{video_id} {count:13d} - round is over but player 1 rank is 0")
-                    if (match["player2rank"] == 0):
-                        logger.error(f"{video_id} {count:13d} - round is over but player 2 rank is 0")
+            if (match["player1rank"] == 0):
+                logger.error(f"{video_id} {count:13d} - round is over but player 1 rank is 0")
+            if (match["player2rank"] == 0):
+                logger.error(f"{video_id} {count:13d} - round is over but player 2 rank is 0")
 
-                    if (cnt < 3):
-                        round=new_round()
-                        round["player1_rounds"]=rounds_won[0]
-                        round["player2_rounds"]=rounds_won[1]
-                        round_num+=1
-                        skipFrames = 10
+            if (round[f"player{player_num}_rounds"] < 3):
+                round=new_round()
+                round["player1_rounds"]=rounds_won[0]
+                round["player2_rounds"]=rounds_won[1]
+                round_num+=1
+                skipFrames = 10
 
-                        if (cam != -1):
-                            skipFrames = 15
+                if (cam != -1):
+                    skipFrames = 17
 
-                        print(f"{count} new round")
-                    break
-                else:
-                    logger.debug(f"{video_id} {count:13d} not finding diff of one with cnt: {cnt} player {player_num}")
-
-            if (round["player1_rounds"] == 3 or round["player2_rounds"] == 3):
+                print(f"{count} new round")
+            else:         
                 state="before"
                 round=new_round()
                 rounds_won=[0, 0]
@@ -324,8 +340,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 logger.debug(f"{video_id} {count:13d} - match finished")
                 skipFrames=2
 
-        if (cam != -1):
-            time.sleep(0.25)
+        #if (cam != -1):
+            #time.sleep(0.25)
 
         if (state == "before"):
             count+=int(frame_rate * interval*4)
@@ -477,28 +493,6 @@ def got_all_vs_info(match):
 
     return True
 
-def process_excellent(player_num, frame, round, count=0):
-    if (vf_analytics.is_excellent(frame)):
-        logger.debug(f"{count} player {player_num} got excellent")
-        print(f"{count} player {player_num} got excellent")
-        round[f"player{player_num}_excellent"] = 1
-        return True
-    return False
-
-def process_ko(player_num, frame, round, count=0):
-    if (vf_analytics.is_ko(frame)):
-        print(f"{count} player {player_num} got ko")
-        round[f"player{player_num}_ko"] = 1
-        return True
-    return False
-
-def process_ringout(player_num, frame, round, count=0):
-    if (vf_analytics.is_ringout(frame)):
-        print(f"{count} player {player_num} got ringout")
-        round[f"player{player_num}_ringout"] = 1
-        return True
-    return False
-
 # Step 3: Perform OCR on specific regions
 def perform_ocr_on_frames(frames, video_id="n/a"):
     #height, width = list(frames.keys())[0].shape
@@ -570,7 +564,7 @@ def analyze_video(url, cam=-1):
     vf_analytics.resolution = "480p"
     resolution = "480p"
 
-    fps=1
+    fps=0.25
     extract_frames(video_path, fps, video_folder, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
 
 
@@ -643,7 +637,7 @@ def main(video_url = None, playlists_file=None, playlist_file=None, cam=-1):
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
-    logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.INFO)
+    logging.basicConfig(filename='vf_match_analyzer.log', encoding='utf-8', level=logging.DEBUG)
 
     parser=argparse.ArgumentParser(description="Download and extract match data from VF5ES videos")
     parser.add_argument('--youtube-auth', default=True)
