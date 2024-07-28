@@ -47,37 +47,6 @@ def get_available_devices():
         index += 1
     return arr
 
-def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
-    # initialize the dimensions of the image to be resized and
-    # grab the image size
-    dim = None
-    (h, w) = image.shape[:2]
-
-    # if both the width and height are None, then return the
-    # original image
-    if width is None and height is None:
-        return image
-
-    # check to see if the width is None
-    if width is None:
-        # calculate the ratio of the height and construct the
-        # dimensions
-        r = height / float(h)
-        dim = (int(w * r), height)
-
-    # otherwise, the height is None
-    else:
-        # calculate the ratio of the width and construct the
-        # dimensions
-        r = width / float(w)
-        dim = (width, int(h * r))
-
-    # resize the image
-    resized = cv2.resize(image, dim, interpolation = inter)
-
-    # return the resized image
-    return resized
-
 def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
     hdd = psutil.disk_usage('/')
 
@@ -189,7 +158,10 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             continue
 
         original_frame = frame
-        frame = cv2.resize(frame, (854, 480))
+        height, width, _ = frame.shape  # Get the dimensions of the frame
+        if (height != 480):
+            frame = cv2.resize(frame, (854, 480))
+            print("resizing frame")
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
@@ -270,7 +242,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             
             player_num = vf_analytics.is_winning_round(frame)
             if (player_num == 0 ):
-                save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
+                #save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
                 logger.debug(f"{count_int} is not a winning round so continue")
                 count+=int(frame_rate * interval)
                 continue
@@ -294,8 +266,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count+=int(frame_rate * interval)
 
-                thread = Thread(target=save_cam_frame,args=[jpg_folder, original_frame, frame, count, "unknown_skip"])
-                thread.start()
+                #thread = Thread(target=save_cam_frame,args=[jpg_folder, original_frame, frame, count, "unknown_skip"])
+                #thread.start()
     
                 save_cam_frame(jpg_folder, original_frame, frame, count, "unknown_skip")
                 continue
@@ -305,17 +277,16 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             
             try:
                 print_csv(match, round, round_num, video_id, count)
-
-                if (cam != -1):
-                    suffix=""
-                    if (is_excellent):
-                        suffix=f"excellent_for_player{player_num}"
-                    elif (is_ro):
-                        suffix=f"ringout_for_player{player_num}"
-                    elif (is_ko):
-                        suffix=f"knockout_for_player{player_num}"
-                    else:
-                        suffix=f"unknownwin_for_player{player_num}"
+                
+                suffix=""
+                if (is_excellent):
+                    suffix=f"excellent_for_player{player_num}"
+                elif (is_ro):
+                    suffix=f"ringout_for_player{player_num}"
+                elif (is_ko):
+                    suffix=f"knockout_for_player{player_num}"
+                else:
+                    suffix=f"unknownwin_for_player{player_num}"
 
                 save_cam_frame(jpg_folder, original_frame, frame, count, suffix)
             except:
@@ -334,8 +305,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 round_num+=1
                 skipFrames = 10
 
-                if (cam != -1):
-                    skipFrames = 17
+                if (cam == -1):
+                    skipFrames = 12/interval
 
                 print(f"{count} new round")
             else:         
@@ -354,7 +325,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         if (state == "before"):
             count+=int(frame_rate * interval*4)
         else:
-            count+=int(frame_rate * interval)
+            #count+=int(frame_rate * interval)
+            count += 2
 
     if (state != "before"):
         logger.error(f"{video_id} {count:13d} - premature match aborted")
@@ -572,7 +544,7 @@ def analyze_video(url, cam=-1):
     vf_analytics.resolution = "480p"
     resolution = "480p"
 
-    fps=0.1
+    fps=0.05
     extract_frames(video_path, fps, video_folder, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
 
 

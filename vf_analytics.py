@@ -498,16 +498,32 @@ def is_excellent(frame, override_region=None):
     #cv2.imshow("frame", frame)
     #cv2.imshow("roi", roi)
     #cv2.imshow("excellent", excellent)
-    #cv2.waitKey()
+    cv2.waitKey()
 
     if (is_ko(frame)):
         #print ("1  false")    
         return False
 
     if (resolution == "480p"):        
+        if (black_count > 2300 and white_count < 15 and red_count < 15 and purple_count < 15):
+            return False
+        
         if (white_count < 10 and gold_count < 10):
             #print ("2.5  false")    
             return False
+
+        if (150 <= white_count <= 175 and 100 <= gold_count <= 120):
+            return True
+
+        if (1000 <= white_count <= 1250 and 65 <= gold_count <= 100):
+            return True
+        
+        if (700 <= white_count <= 850 and 20 <= gold_count <= 30):
+            return True
+
+
+        if (575 <= white_count <= 625 and 10 <= gold_count <= 20):
+            return True
 
         if (575 <= white_count <= 625 and 10 <= gold_count <= 20):
             return True
@@ -1316,20 +1332,35 @@ def is_winning_round(frame):
         dark_blue = count_pixels("#03176d", roi, 5)        
         grey_count = count_pixels("#aaaaac", roi, 5)
         white_blue_count = count_pixels("#e4feff", roi, 5)
+        teal = count_pixels("#77f8fe", roi, 5)
+        light_teal = count_pixels("#d1fdff", roi, 5)
+        another_teal = count_pixels("#a8ffff", roi, 5)
 
-        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count}")
-        #cv2.imshow("roi", roi)
+        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal}")
+        #cv2.imshow("roi", roi)        
         #cv2.waitKey()
         
         if (dark_red > 50 or dark_blue > 50):
             return 0
         
+        if (25 <= another_teal <= 28 and player_num == 2):
+            return player_num
+        
+        if (5 <= teal <= 15 and player_num == 2):
+            return player_num
+
+        if (10 <= light_teal <= 25 and player_num == 2):
+            return player_num
+
         if (white_blue_count > 20):
             return player_num
         
         if (off_white_count > 15):
             return player_num
-
+        
+        if (20 <= white_count <= 30 and pink_count == 0 and light_teal == 0 and teal == 0):
+            return player_num
+        
         if ((white_count > 8 or (pink_count >= 5 and player_num == 1) or light_blue_count >= 5) and (grey_count < 50)):            
             #print(f"got winning rounds white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} all_maroon {all_dark_maroon} all dark red {all_dark_red} all_dark_blue {all_dark_blue} grey {grey_count}")
             #cv2.imshow(f"roi for winner {player_num}", roi)
