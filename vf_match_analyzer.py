@@ -110,6 +110,10 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         if not os.path.exists(jpg_folder):
             os.makedirs(jpg_folder)
 
+    #fight_time = None
+    #elapsed_time = timer() - start # in seconds
+    vf_analytics.resolution="480p"
+
     while count < end_frame or cam != -1:
         count_int = int(count)
 
@@ -119,15 +123,16 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             count = count_int
 
         frame = None
-        if (skipFrames > 0):
+        if (skipFrames > 0 and cam != -1):
             skipFrames-=1
-            count+=int(frame_rate * interval)
-            logger.debug(f"skipping frames {skipFrames} left")
-            print(f"{video_id} {count_int} skipping frames {skipFrames} left")
             if (cam != -1):
                 cap.read()
                 time.sleep(interval)
             continue
+        if (skipFrames > 0 and cam == -1):
+            count+=int((frame_rate * interval) * skipFrames)
+            count_int = int(count)
+            skipFrames =0
 
         original_frame = None
 
@@ -149,10 +154,9 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 logger.warn(f"Skipping frame {count:13d} because no return")
                 continue
 
-            if (cam == -1):
-                frame = vf_analytics.remove_black_border(frame, resize_height=480)
-            else:
-                vf_analytics.resolution="480p"
+            #if (cam == -1):
+                #frame = vf_analytics.remove_black_border(frame, resize_height=480)
+            #else:
 
         if frame is None:
             continue
@@ -161,7 +165,6 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         height, width, _ = frame.shape  # Get the dimensions of the frame
         if (height != 480):
             frame = cv2.resize(frame, (854, 480))
-            print("resizing frame")
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
@@ -177,8 +180,9 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                     print(f"{video_id} {count:13d} - got stage {stage} and setting to vs")
                 else:
                     print(f"camera: {cam} {count:13d} - got stage {stage} and setting to vs")
-
-
+            else:
+                count+=int(frame_rate * interval*40)
+                continue
 
         if (state == "vs"):
             if (match.get('player1character') is None):
@@ -219,8 +223,8 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 #skipFrames for 1
                 #skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
-
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
+                fight_time = timer()
                 continue
             else:
                 save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
@@ -321,13 +325,13 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 logger.debug(f"{video_id} {count:13d} - match finished")
                 skipFrames=2
 
+                #elapsed_time = timer() - fight_time # in seconds
+                #print(f"time in fight state: {elapsed_time}")
+
         #if (cam != -1):
             #time.sleep(0.25)
 
-        if (state == "before"):
-            count+=int(frame_rate * interval*4)
-        else:
-            count+=int(frame_rate * interval)*3
+        count+=int(frame_rate * interval)*3
 
     if (state != "before"):
         logger.error(f"{video_id} {count:13d} - premature match aborted")
