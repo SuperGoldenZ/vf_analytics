@@ -361,23 +361,10 @@ def is_vs(frame, retry = 0, override_regions = None):
 
     roi = frame[y:y+h, x:x+w]
 
-    #black_pixel_count = count_pixels("#090803", roi)
-    #grey_pixel_count = count_pixels("#76716d", roi)
-    #if (grey_pixel_count > 3000 and grey_pixel_count < 3400 and
-        #black_pixel_count > 2000 and black_pixel_count < 2500
-        #):
-        #return True
-
-    #print(f"black: {black_pixel_count} grey: {grey_pixel_count}")
-
-
     all_black_roi = all_but_black_range(roi,
         np.array([0,0,0]),
         np.array([25,25,15])
         )
-
-    #if (retry == 0):
-        #all_white_roi = image_resize(all_white_roi, width=50)
 
     text = pytesseract.image_to_string(all_black_roi, config="--psm 7")
     if (is_vs_text(text)):
@@ -392,24 +379,6 @@ def is_vs(frame, retry = 0, override_regions = None):
     if (is_vs_text(text)):
         return True
 
-    blue_pixel_count = count_pixels("#0b0e91", roi)
-    red_pixel_count = count_pixels("#880807", roi)
-
-
-    if (blue_pixel_count > 500):
-        return False
-
-    #if (red_pixel_count > 500):
-        #return False
-
-    grey_pixels = count_pixels('#a4a09a', roi)
-    white_pixels = count_pixels('#fffffb', roi)
-
-    #if (grey_pixels > 5700 and grey_pixels < 6000 and
-        #white_pixels > 2300 and white_pixels < 2600
-        #):
-        #return True
-
     return is_vs(frame, retry+1, override_regions)
 
 def is_ko(frame, override_region=None):
@@ -419,7 +388,6 @@ def is_ko(frame, override_region=None):
     roi = frame[y:y+h, x:x+w]
     #lower_bound = np.array([77, 78, 78])  # BGR for #c58e4d
     #upper_bound = np.array([255, 255, 255])  # BGR for #ffffff
-    #isolated = isolate_color_range(roi, lower_bound, upper_bound)
     #text = pytesseract.image_to_string(roi, config="--psm 6")
 
     gold_count = count_pixels('#ce9e54', roi, override_tolerance=5)
@@ -1245,22 +1213,6 @@ def remove_black_border(image, threshold_value = 10, resize_height=None):
 
     return image
 
-def isolate_color_range(image, lower_bgr, upper_bgr):
-  # Convert BGR bounds to HSV
-    lower_hsv = cv2.cvtColor(np.uint8([[lower_bgr]]), cv2.COLOR_BGR2HSV)[0][0]
-    upper_hsv = cv2.cvtColor(np.uint8([[upper_bgr]]), cv2.COLOR_BGR2HSV)[0][0]
-
-    # Convert the image to HSV color space
-    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-    # Create a mask using the bounds
-    mask = cv2.inRange(hsv_image, lower_hsv, upper_hsv)
-
-    # Create an output image with the mask applied
-    output_image = cv2.bitwise_and(image, image, mask=mask)
-
-    return mask
-
 def get_player_health(frame, player_num):
     region_name=f"player{player_num}_health"
     (x, y, w, h) = get_dimensions(region_name, resolution)
@@ -1293,56 +1245,30 @@ def compare_images_histogram(imageA, imageB):
     similarity = cv2.compareHist(histA, histB, cv2.HISTCMP_INTERSECT)
     return similarity
 
-def cancel_winning_round(roi):
-    bar_blue_two = count_pixels("#0636a5", roi, 5)
-    if (bar_blue_two >= 60):
-        return 0
-
-    #all_white_count = count_pixels("#ffffff", roi, 5)
-    #all_pink_count = count_pixels("#f6d8be", roi, 5)
-    #all_light_blue_count = count_pixels("#71fffe", roi, 5)
-
-    colors = [
-        #all dark red
-        ["#780103", 5]
-
-        #all_dark_maroon
-        ,["#520004", 10]
-
-        #other maroon
-        ,["#691f34", 80]
-
-        #other blue
-        ,["#213275", 25]
-
-        #other db 80
-        ,["#1e00b3", 80]
-    ]
-        
-    for color in colors:
-        if (count_pixels(color[0], roi, 5) > color[1]):
-            return True
-        
-    all_dark_blue = count_pixels("#03176d", roi, 5)
-    other_blue = count_pixels("#36539f", roi, 5)    
-    bar_blue = count_pixels("#0318c6", roi, 5)
-
-    if (all_dark_blue >= 5 or other_blue > 25 or bar_blue >= 10) :
-        return True
-    
-    return False
-
 def is_winning_round(frame):
-    region_name=f"all_rounds"
+    region_name="all_rounds"
     (x, y, w, h) = get_dimensions(region_name, resolution)
     roi = frame[y:y+h, x:x+w]
-    
+
+    all_dark_red = count_pixels("#780103", roi, 5)
+    all_dark_maroon = count_pixels("#520004", roi, 5)
+    all_dark_blue = count_pixels("#03176d", roi, 5)
+    other_blue = count_pixels("#36539f", roi, 5)
+    another_blue = count_pixels("#213275", roi, 5)
+    other_db = count_pixels("#1e00b3", roi, 5)
+    other_maroon = count_pixels("#691f34", roi, 5)
+    bar_blue = count_pixels("#0318c6", roi, 5)
+
 
     #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
     #cv2.imshow("roi", roi)
     #cv2.waitKey()
-    
-    if (cancel_winning_round(frame)):
+
+    bar_blue_two = count_pixels("#0636a5", roi, 5)
+    if (bar_blue_two >= 60):
+        return 0
+
+    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10) :
         return 0
 
     for player_num in range(1, 3):
@@ -1350,41 +1276,45 @@ def is_winning_round(frame):
         (x, y, w, h) = get_dimensions(region_name, resolution)
         roi = frame[y:y+h, x:x+w]
 
-        white_count = count_pixels("#ffffff", roi, 5)
-        off_white_count = count_pixels("#f9fff2", roi, 5)
-        pink_count = count_pixels("#f6d8be", roi, 5)
-        light_blue_count = count_pixels("#71fffe", roi, 5)
-        dark_red = count_pixels("#780103", roi, 5)
+        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal} whiterblue {whiter_blue}")
+        #cv2.imshow("roi", roi)
+        #cv2.waitKey()
+
+        if (player_num == 2):
+            whiter_blue = count_pixels("#f1ffff", roi, 5)
+            if (45 <= whiter_blue <= 85):
+                return player_num
+
+            another_teal = count_pixels("#a8ffff", roi, 5)
+            if (25 <= another_teal <= 28):
+                return player_num
+
+            teal = count_pixels("#77f8fe", roi, 5)
+            if (5 <= teal <= 15):
+                return player_num
+
+            light_teal = count_pixels("#d1fdff", roi, 5)
+            if (10 <= light_teal <= 25):
+                return player_num
+
         dark_blue = count_pixels("#03176d", roi, 5)
-        grey_count = count_pixels("#aaaaac", roi, 5)
-        white_blue_count = count_pixels("#e4feff", roi, 5)
-        teal = count_pixels("#77f8fe", roi, 5)
-        light_teal = count_pixels("#d1fdff", roi, 5)
-        another_teal = count_pixels("#a8ffff", roi, 5)
-        whiter_blue = count_pixels("#f1ffff", roi, 5)
-
-        if (45 <= whiter_blue <= 85 and player_num == 2):
-            return player_num
-
+        dark_red = count_pixels("#780103", roi, 5)
         if (dark_red > 50 or dark_blue > 50):
             return 0
 
-        if (25 <= another_teal <= 28 and player_num == 2):
-            return player_num
-
-        if (5 <= teal <= 15 and player_num == 2):
-            return player_num
-
-        if (10 <= light_teal <= 25 and player_num == 2):
-            return player_num
-
+        white_blue_count = count_pixels("#e4feff", roi, 5)
         if (white_blue_count > 20):
             return player_num
 
+        off_white_count = count_pixels("#f9fff2", roi, 5)
         if (off_white_count > 15):
             return player_num
 
-        if (20 <= white_count <= 30 and pink_count == 0 and light_teal == 0 and teal == 0):
+        white_count = count_pixels("#ffffff", roi, 5)
+        pink_count = count_pixels("#f6d8be", roi, 5)
+        light_blue_count = count_pixels("#71fffe", roi, 5)
+        grey_count = count_pixels("#aaaaac", roi, 5)
+        if (20 <= white_count <= 30 and pink_count == 0):
             return player_num
 
         if ((white_count > 8 or (pink_count >= 5 and player_num == 1) or light_blue_count >= 5) and (grey_count < 50)):
