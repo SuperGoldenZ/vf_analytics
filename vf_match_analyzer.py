@@ -68,8 +68,8 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
     except Exception as e:
         logger.error(f"Error write to image file {out_filename}")
         logger.error(repr(e))
-        
-    
+
+
 # Step 2: Extract frames from the video
 def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_folder="jpg", regions=None, cam=-1):
     cap = None
@@ -126,7 +126,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
             print(f"{video_id} {count_int} skipping frames {skipFrames} left")
             if (cam != -1):
                 cap.read()
-                time.sleep(interval)                
+                time.sleep(interval)
             continue
 
         original_frame = None
@@ -178,7 +178,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 else:
                     print(f"camera: {cam} {count:13d} - got stage {stage} and setting to vs")
 
-                
+
 
         if (state == "vs"):
             if (match.get('player1character') is None):
@@ -214,14 +214,16 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 state="fight"
                 logger.debug(f"{video_id} {count:13d} - fight")
                 print_csv(match, round, "0", video_id, count)
-                
-                skipFrames=(int) (40/interval)
+
+                skipFrames=(int) (45/interval)
                 #skipFrames for 1
                 #skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
-                
+
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
                 continue
+            else:
+                save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
 
         if (state == "fight"):
             if (not "player1rank" in match or match["player1rank"] == 0):
@@ -239,16 +241,17 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                     logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
                 except:
                     match["player2rank"] = 0
-            
+
             player_num = vf_analytics.is_winning_round(frame)
             if (player_num == 0 ):
                 #save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
                 logger.debug(f"{count_int} is not a winning round so continue")
-                count+=int(frame_rate * interval)
+                #save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
+                count+=int(frame_rate * interval) * 3
                 continue
-            
+
             logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
-                                    
+
             is_excellent = vf_analytics.is_excellent(frame)
             is_ko = not is_excellent and vf_analytics.is_ko(frame)
             is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
@@ -268,16 +271,16 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
 
                 #thread = Thread(target=save_cam_frame,args=[jpg_folder, original_frame, frame, count, "unknown_skip"])
                 #thread.start()
-    
+
                 save_cam_frame(jpg_folder, original_frame, frame, count, "unknown_skip")
                 continue
 
             rounds_won[player_num-1] = rounds_won[player_num-1] + 1
             round[f"player{player_num}_rounds"] = round[f"player{player_num}_rounds"] + 1
-            
+
             try:
                 print_csv(match, round, round_num, video_id, count)
-                
+
                 suffix=""
                 if (is_excellent):
                     suffix=f"excellent_for_player{player_num}"
@@ -303,13 +306,12 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
                 round["player1_rounds"]=rounds_won[0]
                 round["player2_rounds"]=rounds_won[1]
                 round_num+=1
-                skipFrames = 10
 
                 if (cam == -1):
-                    skipFrames = 12/interval
+                    skipFrames = 20/interval
 
                 print(f"{count} new round")
-            else:         
+            else:
                 state="before"
                 round=new_round()
                 rounds_won=[0, 0]
@@ -325,8 +327,7 @@ def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_
         if (state == "before"):
             count+=int(frame_rate * interval*4)
         else:
-            #count+=int(frame_rate * interval)
-            count += 2
+            count+=int(frame_rate * interval)*3
 
     if (state != "before"):
         logger.error(f"{video_id} {count:13d} - premature match aborted")
@@ -487,6 +488,7 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
     return
 
 def analyze_video(url, cam=-1):
+    start = timer()
     p = pathlib.Path('match_data.csv')
     if (not p.is_file()):
         with open('match_data.csv', 'a') as the_file:
@@ -548,15 +550,19 @@ def analyze_video(url, cam=-1):
     extract_frames(video_path, fps, video_folder, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
 
 
-    start = timer()
-
     elapsed_time = timer() - start # in seconds
     print(f"{elapsed_time} seconds to run")
 
 def process_playlist(playlist):
     urls = youtube_helper.get_video_urls_from_playlist(playlist)
     for url in urls:
-        analyze_video(url)
+        try:
+            analyze_video(url)
+        except Exception as e:
+            logger.error(f"Error processing {url}")
+            logger.error(repr(e))
+            print(f"Error processing {url}")
+            print(repr(e))
 
 def process_videos_list(urls):
     for url in urls:
