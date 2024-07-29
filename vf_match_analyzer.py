@@ -18,6 +18,7 @@ logger = None
 resize_video = False
 youtube_auth = True
 force_append=False
+video_folder_param = None
 
 #65661
 
@@ -71,7 +72,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
 
 # Step 2: Extract frames from the video
-def extract_frames(video_path, interval, video_folder=None, video_id="n/a", jpg_folder="jpg", regions=None, cam=-1):
+def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
     if (video_path is not None):
         cap = cv2.VideoCapture(video_path )
@@ -519,7 +520,10 @@ def analyze_video(url, cam=-1):
         if not os.path.exists(jpg_folder):
             os.makedirs(jpg_folder)
 
-        video_folder=f"assets/videos/{video_id}_{resolution}/"
+        if (video_folder_param is not None):
+            video_folder = video_folder_param
+        else:
+            video_folder=f"assets/videos/{video_id}_{resolution}/"
         video_path  =f"assets/videos/{video_id}_{resolution}/video.mp4"
 
         if not os.path.exists(video_folder):
@@ -570,7 +574,14 @@ def process_playlist(playlist):
 
 def process_videos_list(urls):
     for url in urls:
-        analyze_video(url)
+        try:
+            analyze_video(url)
+        except:
+            logger.error(f"Error processing {url}")
+            logger.error(repr(e))
+            print(f"Error processing {url}")
+            print(repr(e))
+
 
 
 def process_playlists(playlist_array):
@@ -678,6 +689,15 @@ if __name__ == '__main__':
             cam = cam.strip()
     except:
         cam=None
+
+    video_folder_param = None
+    try:
+        video_folder_param=vars(args)['video_folder']
+        if (video_folder_param is not None):
+            video_folder_param = video_folder_param.strip()
+    except:
+        video_folder_param=None
+
 
     #main(video_url)
     cam_int = -1
