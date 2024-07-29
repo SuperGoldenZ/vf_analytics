@@ -555,7 +555,7 @@ def analyze_video(url, cam=-1):
     resolution = "480p"
 
     fps=0.05
-    extract_frames(video_path, fps, video_folder, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
+    extract_frames(video_path, fps, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
 
 
     elapsed_time = timer() - start # in seconds
