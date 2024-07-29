@@ -498,7 +498,7 @@ def is_excellent(frame, override_region=None):
     #cv2.imshow("frame", frame)
     #cv2.imshow("roi", roi)
     #cv2.imshow("excellent", excellent)
-    cv2.waitKey()
+    #cv2.waitKey()
 
     if (is_ko(frame)):
         #print ("1  false")
@@ -1293,31 +1293,56 @@ def compare_images_histogram(imageA, imageB):
     similarity = cv2.compareHist(histA, histB, cv2.HISTCMP_INTERSECT)
     return similarity
 
+def cancel_winning_round(roi):
+    bar_blue_two = count_pixels("#0636a5", roi, 5)
+    if (bar_blue_two >= 60):
+        return 0
+
+    #all_white_count = count_pixels("#ffffff", roi, 5)
+    #all_pink_count = count_pixels("#f6d8be", roi, 5)
+    #all_light_blue_count = count_pixels("#71fffe", roi, 5)
+
+    colors = [
+        #all dark red
+        ["#780103", 5]
+
+        #all_dark_maroon
+        ,["#520004", 10]
+
+        #other maroon
+        ,["#691f34", 80]
+
+        #other blue
+        ,["#213275", 25]
+
+        #other db 80
+        ,["#1e00b3", 80]
+    ]
+        
+    for color in colors:
+        if (count_pixels(color[0], roi, 5) > color[1]):
+            return True
+        
+    all_dark_blue = count_pixels("#03176d", roi, 5)
+    other_blue = count_pixels("#36539f", roi, 5)    
+    bar_blue = count_pixels("#0318c6", roi, 5)
+
+    if (all_dark_blue >= 5 or other_blue > 25 or bar_blue >= 10) :
+        return True
+    
+    return False
+
 def is_winning_round(frame):
     region_name=f"all_rounds"
     (x, y, w, h) = get_dimensions(region_name, resolution)
     roi = frame[y:y+h, x:x+w]
-    all_white_count = count_pixels("#ffffff", roi, 5)
-    all_pink_count = count_pixels("#f6d8be", roi, 5)
-    all_light_blue_count = count_pixels("#71fffe", roi, 5)
-    all_dark_red = count_pixels("#780103", roi, 5)
-    all_dark_maroon = count_pixels("#520004", roi, 5)
-    all_dark_blue = count_pixels("#03176d", roi, 5)
-    other_blue = count_pixels("#36539f", roi, 5)
-    another_blue = count_pixels("#213275", roi, 5)
-    other_db = count_pixels("#1e00b3", roi, 5)
-    other_maroon = count_pixels("#691f34", roi, 5)
-    bar_blue = count_pixels("#0318c6", roi, 5)
-    bar_blue_two = count_pixels("#0636a5", roi, 5)
+    
 
     #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
     #cv2.imshow("roi", roi)
     #cv2.waitKey()
-
-    if (bar_blue_two >= 60):
-        return 0
-
-    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10) :
+    
+    if (cancel_winning_round(frame)):
         return 0
 
     for player_num in range(1, 3):
@@ -1337,10 +1362,6 @@ def is_winning_round(frame):
         light_teal = count_pixels("#d1fdff", roi, 5)
         another_teal = count_pixels("#a8ffff", roi, 5)
         whiter_blue = count_pixels("#f1ffff", roi, 5)
-
-        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal} whiterblue {whiter_blue}")
-        #cv2.imshow("roi", roi)
-        #cv2.waitKey()
 
         if (45 <= whiter_blue <= 85 and player_num == 2):
             return player_num
