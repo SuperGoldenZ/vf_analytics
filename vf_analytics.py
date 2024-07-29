@@ -58,7 +58,7 @@ regions_480p = {
     ,'stage': (342, 295, 200, 25)
     ,'player1ringname':  (43, 315, 209, 18)
     ,'player2ringname':  (589, 315, 209, 18)
-    ,'player1character': (27,   228,   245, 32)
+    ,'player1character': (35,   228,   245, 32)
     ,'player2character': (584,  228,   245, 32)
     ,'all_rounds': (247, 45, 404, 31)
     ,'vs': (343, 173, 172, 85)
@@ -412,7 +412,7 @@ def is_vs(frame, retry = 0, override_regions = None):
 
     return is_vs(frame, retry+1, override_regions)
 
-def is_ko(frame, override_region=None):    
+def is_ko(frame, override_region=None):
     region_name='ko'
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
@@ -462,14 +462,14 @@ def is_ko(frame, override_region=None):
     return False
 
 def is_excellent(frame, override_region=None):
-    
+
     if (is_ringout(frame)):
         return False
-    
+
     (p1green, p1black, p1grey) = get_player_health(frame, 1)
     (p2green, p2black, p2grey) = get_player_health(frame, 2)
 
-    
+
     logger.debug(f"is_excellent got health {p1black} {p1green} - {p2black} {p2green} ")
     p1excellent = p1black == 0 and p1grey == 0
     p2excellent = p2black == 0 and p2grey == 0
@@ -481,7 +481,7 @@ def is_excellent(frame, override_region=None):
 
     roi = frame[y:y+h, x:x+w]
     #result = compare_images_histogram(excellent, roi)
-    
+
     #print(f"compares {result}")
 
     white_count = count_pixels('#ffffff', roi, override_tolerance=5)
@@ -501,15 +501,15 @@ def is_excellent(frame, override_region=None):
     cv2.waitKey()
 
     if (is_ko(frame)):
-        #print ("1  false")    
+        #print ("1  false")
         return False
 
-    if (resolution == "480p"):        
+    if (resolution == "480p"):
         if (black_count > 2300 and white_count < 15 and red_count < 15 and purple_count < 15):
             return False
-        
+
         if (white_count < 10 and gold_count < 10):
-            #print ("2.5  false")    
+            #print ("2.5  false")
             return False
 
         if (150 <= white_count <= 175 and 100 <= gold_count <= 120):
@@ -517,7 +517,7 @@ def is_excellent(frame, override_region=None):
 
         if (1000 <= white_count <= 1250 and 65 <= gold_count <= 100):
             return True
-        
+
         if (700 <= white_count <= 850 and 20 <= gold_count <= 30):
             return True
 
@@ -527,19 +527,19 @@ def is_excellent(frame, override_region=None):
 
         if (575 <= white_count <= 625 and 10 <= gold_count <= 20):
             return True
-        
+
         if (175 <= white_count <= 200 and 100 <= gold_count <= 145):
             return True
 
         if (250 <= white_count <= 300 and 50 <= gold_count <= 100):
             return True
-        
+
         if (140 < gold_count < 550 and red_count < 700 and 400 < black_count < 3500):
             return True
 
-        #print ("2nd before default false")    
+        #print ("2nd before default false")
         return black_count > 900 and white_count < 150 and red_count < 100 and purple_count < 120
-    
+
     #print ("default false")
     return False
 
@@ -1128,11 +1128,7 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
 
 
     white_only_roi = all_but_white(roi)
-    text = pytesseract.image_to_string(white_only_roi, config="--psm 6")
-
-    #print(text)
-    #cv2.imshow("roi", white_only_roi)
-    #cv2.waitKey()
+    text = pytesseract.image_to_string(white_only_roi, config="--psm 6").strip()
 
     if ("Brad" in text):
         text="Brad"
@@ -1179,6 +1175,11 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
 
     if (text == "EI Blaze"):
         text = "Blaze"
+
+    pattern = r'^[a-zA-Z]{4} [a-zA-Z]{4}$'
+
+    if re.match(pattern, text):
+        return "Kage"
 
     if (is_vf_character_name(text)):
         return str.replace(text, "\n\x0c", "")
@@ -1272,8 +1273,8 @@ def get_player_health(frame, player_num):
     #cv2.imshow("roi", roi)
     #print(f"health {green_health} black {black_health} grey {grey_health}")
     #cv2.waitKey()
-    
-    return [green_health, black_health, grey_health]    
+
+    return [green_health, black_health, grey_health]
 
 def compare_images_histogram(imageA, imageB):
     # Convert the images to HSV color space
@@ -1296,12 +1297,12 @@ def is_winning_round(frame):
     region_name=f"all_rounds"
     (x, y, w, h) = get_dimensions(region_name, resolution)
     roi = frame[y:y+h, x:x+w]
-    all_white_count = count_pixels("#ffffff", roi, 5)        
+    all_white_count = count_pixels("#ffffff", roi, 5)
     all_pink_count = count_pixels("#f6d8be", roi, 5)
     all_light_blue_count = count_pixels("#71fffe", roi, 5)
     all_dark_red = count_pixels("#780103", roi, 5)
     all_dark_maroon = count_pixels("#520004", roi, 5)
-    all_dark_blue = count_pixels("#03176d", roi, 5)    
+    all_dark_blue = count_pixels("#03176d", roi, 5)
     other_blue = count_pixels("#36539f", roi, 5)
     another_blue = count_pixels("#213275", roi, 5)
     other_db = count_pixels("#1e00b3", roi, 5)
@@ -1318,34 +1319,38 @@ def is_winning_round(frame):
 
     if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10) :
         return 0
-    
+
     for player_num in range(1, 3):
         region_name=f"player{player_num}_rounds"
         (x, y, w, h) = get_dimensions(region_name, resolution)
         roi = frame[y:y+h, x:x+w]
-        
-        white_count = count_pixels("#ffffff", roi, 5)        
+
+        white_count = count_pixels("#ffffff", roi, 5)
         off_white_count = count_pixels("#f9fff2", roi, 5)
         pink_count = count_pixels("#f6d8be", roi, 5)
         light_blue_count = count_pixels("#71fffe", roi, 5)
         dark_red = count_pixels("#780103", roi, 5)
-        dark_blue = count_pixels("#03176d", roi, 5)        
+        dark_blue = count_pixels("#03176d", roi, 5)
         grey_count = count_pixels("#aaaaac", roi, 5)
         white_blue_count = count_pixels("#e4feff", roi, 5)
         teal = count_pixels("#77f8fe", roi, 5)
         light_teal = count_pixels("#d1fdff", roi, 5)
         another_teal = count_pixels("#a8ffff", roi, 5)
+        whiter_blue = count_pixels("#f1ffff", roi, 5)
 
-        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal}")
-        #cv2.imshow("roi", roi)        
+        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal} whiterblue {whiter_blue}")
+        #cv2.imshow("roi", roi)
         #cv2.waitKey()
-        
+
+        if (45 <= whiter_blue <= 85 and player_num == 2):
+            return player_num
+
         if (dark_red > 50 or dark_blue > 50):
             return 0
-        
+
         if (25 <= another_teal <= 28 and player_num == 2):
             return player_num
-        
+
         if (5 <= teal <= 15 and player_num == 2):
             return player_num
 
@@ -1354,18 +1359,18 @@ def is_winning_round(frame):
 
         if (white_blue_count > 20):
             return player_num
-        
+
         if (off_white_count > 15):
             return player_num
-        
+
         if (20 <= white_count <= 30 and pink_count == 0 and light_teal == 0 and teal == 0):
             return player_num
-        
-        if ((white_count > 8 or (pink_count >= 5 and player_num == 1) or light_blue_count >= 5) and (grey_count < 50)):            
+
+        if ((white_count > 8 or (pink_count >= 5 and player_num == 1) or light_blue_count >= 5) and (grey_count < 50)):
             #print(f"got winning rounds white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} all_maroon {all_dark_maroon} all dark red {all_dark_red} all_dark_blue {all_dark_blue} grey {grey_count}")
             #cv2.imshow(f"roi for winner {player_num}", roi)
             #cv2.waitKey()
 
             return player_num
-        
+
     return 0
