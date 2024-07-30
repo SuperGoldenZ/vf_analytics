@@ -114,6 +114,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
     #fight_time = None
     #elapsed_time = timer() - start # in seconds
     vf_analytics.resolution="480p"
+    actual_count = 0
 
     while count < end_frame or cam != -1:
         count_int = int(count)
@@ -146,13 +147,19 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 logger.error(repr(e))
                 continue
         else:
-            if (cam == -1):
-                cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+            ret = None
+            frame = None
 
-            ret, frame = cap.read()
+            if (cam != -1):
+                actual_count = count-1
+
+            while (actual_count < count_int):
+                ret, frame = cap.read()
+                actual_count = actual_count + 1
+
             if not ret:
                 print("could not read frame")
-                logger.warn(f"Skipping frame {count:13d} because no return")
+                logger.warning(f"Skipping frame {count:13d} because no return")
                 continue
 
             #if (cam == -1):
@@ -231,7 +238,15 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
 
         if (state == "fight"):
-            if (not "player1rank" in match or match["player1rank"] == 0):
+            is_excellent = vf_analytics.is_excellent(frame)
+            is_ko = not is_excellent and vf_analytics.is_ko(frame)
+            is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
+
+            if (not is_excellent and not is_ko and not is_ro):
+                count+=int(frame_rate * interval) * 3
+                continue
+
+            if ("player1rank" not in match or match["player1rank"] == 0):
                 try:
                     player1rank = vf_analytics.get_player_rank(1, frame, True)
                     match["player1rank"] = player1rank
@@ -239,7 +254,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 except:
                     match["player1rank"] = 0
 
-            if (not "player2rank" in match or match["player2rank"] == 0):
+            if ("player2rank" not in match or match["player2rank"] == 0):
                 try:
                     player2rank = vf_analytics.get_player_rank(2, frame, True)
                     match["player2rank"] = player2rank
@@ -257,10 +272,6 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
             logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
 
-            is_excellent = vf_analytics.is_excellent(frame)
-            is_ko = not is_excellent and vf_analytics.is_ko(frame)
-            is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
-
             if (is_excellent):
                 round[f"player{player_num}_excellent"] = 1
                 print(f"{count} got excellent for player {player_num}")
@@ -273,9 +284,6 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             else:
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count+=int(frame_rate * interval)
-
-                #thread = Thread(target=save_cam_frame,args=[jpg_folder, original_frame, frame, count, "unknown_skip"])
-                #thread.start()
 
                 save_cam_frame(jpg_folder, original_frame, frame, count, "unknown_skip")
                 continue
@@ -332,7 +340,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
         #if (cam != -1):
             #time.sleep(0.25)
 
-        count+=int(frame_rate * interval)*3
+        count+=int(frame_rate * interval)
 
     if (state != "before"):
         logger.error(f"{video_id} {count:13d} - premature match aborted")
