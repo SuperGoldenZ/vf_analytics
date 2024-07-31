@@ -306,13 +306,15 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             round[f"player{player_num}_rounds"] = round[f"player{player_num}_rounds"] + 1
 
             try:
+                timestr = None
                 try:
                     time_seconds = vf_analytics.get_time_seconds(frame)
                     time_ms = vf_analytics.get_time_ms(frame)
-
-                    print_csv(match, round, round_num, video_id, count, f"{time_seconds}.{time_ms}")
+                    timestr = f"{time_seconds}.{time_ms}"
                 except:
-                    print_csv(match, round, round_num, video_id, count, "n/a")
+                    timestr = "na"
+
+                print_csv(match, round, round_num, video_id, count, timestr)
 
                 suffix=""
                 if (is_excellent):
@@ -324,7 +326,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 else:
                     suffix=f"unknownwin_for_player{player_num}"
 
-                save_cam_frame(jpg_folder, original_frame, frame, count, suffix)
+                save_cam_frame(jpg_folder, original_frame, frame, count, f"{suffix}_{timestr}")
             except:
                 logger.error(f"{video_id} {count:13d} ERROR write to csv")
             logger.debug(f"{video_id} {count:13d} - round {round_num} finished player {player_num} won")
