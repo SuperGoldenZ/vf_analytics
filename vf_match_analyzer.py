@@ -76,7 +76,6 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
 
 # Step 2: Extract frames from the video
-@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
 
@@ -536,41 +535,51 @@ def analyze_video(url, cam=-1):
                 print(f"Skipping {video_id} since it's already in match data")
                 return
 
-        ys = youtube_helper.get_stream(url)
-        resolution = ys.resolution
-        vf_analytics.resolution = resolution
+        resolution = None
+        jpg_folder = None
 
-        jpg_folder=f"assets/jpg/{video_id}_{resolution}"
-        if not os.path.exists(jpg_folder):
-            os.makedirs(jpg_folder)
+        if (not os.path.isfile(f"assets/videos/{video_id}_480p/video.mp4") and not os.path.isfile(f"assets/videos/{video_id}_720p/video.mp4")):
+            ys = youtube_helper.get_stream(url)
+            resolution = ys.resolution
+            vf_analytics.resolution = resolution
 
-        if (video_folder_param is not None):
-            video_folder = video_folder_param
+            if (video_folder_param is not None):
+                video_folder = video_folder_param
+            else:
+                video_folder=f"assets/videos/{video_id}_{resolution}/"
+            video_path  =f"assets/videos/{video_id}_{resolution}/video.mp4"
+
+            if not os.path.exists(video_folder):
+                os.makedirs(video_folder)
+
+            if (not os.path.isfile(video_path)):
+                try:
+                    logger.debug(f"Downloading video {url} at {resolution}")
+                    temp_path = youtube_helper.download_video(ys, video_id, resolution=resolution)
+
+                    print(f"Renaming video after download: {temp_path} to {video_path}")
+                    if (resolution != '480p' and resize_video):
+                        ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()
+                        os.remove(temp_path)
+                    else:
+                        os.rename(temp_path, video_path)
+                except Exception as e:
+                    print(f"error downloading \"{url}\" ")
+                    print(ys)
+                    print(repr(e))
+                    return None
+            else:
+                print(f"Not downloading because exists: {video_path}")
         else:
-            video_folder=f"assets/videos/{video_id}_{resolution}/"
-        video_path  =f"assets/videos/{video_id}_{resolution}/video.mp4"
+            if (os.path.isfile(f"assets/videos/{video_id}_480p/video.mp4")):
+                resolution = "480p"
+            else:
+                resolution = "720p"
+            video_path  =f"assets/videos/{video_id}_{resolution}/video.mp4"
 
-        if not os.path.exists(video_folder):
-            os.makedirs(video_folder)
-
-        if (not os.path.isfile(video_path)):
-            try:
-                logger.debug(f"Downloading video {url} at {resolution}")
-                temp_path = youtube_helper.download_video(ys, video_id, resolution=resolution)
-
-                print(f"Renaming video after download: {temp_path} to {video_path}")
-                if (resolution != '480p' and resize_video):
-                    ffmpeg.input(temp_path).output(video_path, vf='scale=854:480').run()
-                    os.remove(temp_path)
-                else:
-                    os.rename(temp_path, video_path)
-            except Exception as e:
-                print(f"error downloading \"{url}\" ")
-                print(ys)
-                print(repr(e))
-                return None
-        else:
-            print(f"Not downloading because exists: {video_path}")
+    jpg_folder=f"assets/jpg/{video_id}_{resolution}"
+    if not os.path.exists(jpg_folder):
+        os.makedirs(jpg_folder)
 
     print("Extracting frames")
     start = timer()
@@ -613,7 +622,6 @@ def process_playlists(playlist_array):
         process_playlist(playlist)
 
 # Main function to run the whole process
-@profile
 def main(video_url = None, playlists_file=None, playlist_file=None, cam=-1):
 
     if (video_url is not None and "list=" in video_url):
