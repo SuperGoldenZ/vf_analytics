@@ -239,14 +239,13 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             if (got_all_vs_info(match)):
                 state="fight"
                 logger.debug(f"{video_id} {count:13d} - fight")
-                print_csv(match, round, "0", video_id, count)
+                print_csv(match, round, "0", video_id, count, "n/a")
 
                 skipFrames=(int) (25/interval)
                 #skipFrames for 1
                 #skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
-
                 continue
             else:
                 save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
@@ -307,7 +306,13 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             round[f"player{player_num}_rounds"] = round[f"player{player_num}_rounds"] + 1
 
             try:
-                print_csv(match, round, round_num, video_id, count)
+                try:
+                    time_seconds = vf_analytics.get_time_seconds(frame)
+                    time_ms = vf_analytics.get_time_ms(frame)
+
+                    print_csv(match, round, round_num, video_id, count, f"{time_seconds}.{time_ms}")
+                except:
+                    print_csv(match, round, round_num, video_id, count, "n/a")
 
                 suffix=""
                 if (is_excellent):
@@ -389,7 +394,7 @@ def all_but_black(roi):
     cleaned_text = cv2.medianBlur(filled_text, 3)
     return cleaned_text
 
-def print_csv(match, round, round_num, video_id, frame_count):
+def print_csv(match, round, round_num, video_id, frame_count, time):
     f = open("match_data.csv", "a")
 
     if (video_id is None):
@@ -469,6 +474,12 @@ def print_csv(match, round, round_num, video_id, frame_count):
 
     try:
         f.write(str(round["player2_excellent"]))
+    except:
+        f.write("0")
+
+    f.write(",")
+    try:
+        f.write(str(time))
     except:
         f.write("0")
 
