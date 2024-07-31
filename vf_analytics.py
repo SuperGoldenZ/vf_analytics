@@ -65,6 +65,8 @@ regions_480p = {
     ,'ko': (250, 170, 350, 140)
     ,'excellent': (75, 200, 700, 80)
     ,'ro': (185, 204, 484, 80)
+    ,'time_seconds': (400, 15, 54, 34)
+    ,'time_ms': (414, 48, 25, 14)
 }
 
 #regions_720p = {
@@ -430,13 +432,8 @@ def is_ko(frame, override_region=None):
     return False
 
 def is_excellent(frame, override_region=None):
-
-    if (is_ringout(frame)):
-        return False
-
     (p1green, p1black, p1grey) = get_player_health(frame, 1)
     (p2green, p2black, p2grey) = get_player_health(frame, 2)
-
 
     logger.debug(f"is_excellent got health {p1black} {p1green} - {p2black} {p2green} ")
     p1excellent = p1black == 0 and p1grey == 0
@@ -468,9 +465,9 @@ def is_excellent(frame, override_region=None):
     #cv2.imshow("excellent", excellent)
     #cv2.waitKey()
 
-    if (is_ko(frame)):
+    #if (is_ko(frame)):
         #print ("1  false")
-        return False
+        #return False
 
     if (resolution == "480p"):
         if (black_count > 2300 and white_count < 15 and red_count < 15 and purple_count < 15):
@@ -1250,16 +1247,6 @@ def is_winning_round(frame):
     (x, y, w, h) = get_dimensions(region_name, resolution)
     roi = frame[y:y+h, x:x+w]
 
-    all_dark_red = count_pixels("#780103", roi, 5)
-    all_dark_maroon = count_pixels("#520004", roi, 5)
-    all_dark_blue = count_pixels("#03176d", roi, 5)
-    other_blue = count_pixels("#36539f", roi, 5)
-    another_blue = count_pixels("#213275", roi, 5)
-    other_db = count_pixels("#1e00b3", roi, 5)
-    other_maroon = count_pixels("#691f34", roi, 5)
-    bar_blue = count_pixels("#0318c6", roi, 5)
-
-
     #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
     #cv2.imshow("roi", roi)
     #cv2.waitKey()
@@ -1268,8 +1255,22 @@ def is_winning_round(frame):
     if (bar_blue_two >= 60):
         return 0
 
-    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10) :
-        return 0
+    all_dark_red = count_pixels("#780103", roi, 5)
+    all_dark_maroon = count_pixels("#520004", roi, 5)
+    other_blue = count_pixels("#36539f", roi, 5)
+    another_blue = count_pixels("#213275", roi, 5)
+    other_db = count_pixels("#1e00b3", roi, 5)
+    other_maroon = count_pixels("#691f34", roi, 5)
+    bar_blue = count_pixels("#0318c6", roi, 5)
+    all_dark_blue = count_pixels("#03176d", roi, 5)
+    more_blue = count_pixels("#443fe7", roi, 5)
+
+    #print(f"adb {all_dark_blue} odb {other_db} ab {another_blue} ob {other_blue} mb {more_blue}")
+    #cv2.imshow("roi", roi)
+    #cv2.waitKey()
+
+    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10 or more_blue > 7) :
+       return 0
 
     for player_num in range(1, 3):
         region_name=f"player{player_num}_rounds"
@@ -1325,3 +1326,52 @@ def is_winning_round(frame):
             return player_num
 
     return 0
+
+def get_time_seconds(frame):
+    region_name=f"time_seconds"
+    (x, y, w, h) = get_dimensions(region_name, resolution)
+
+    roi = frame[y:y+h, x:x+w]
+    gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+    # Apply a threshold to keep only the bright white colors
+    threshold_value = 200
+    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+
+    text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
+    #print(text)
+    #cv2.imshow("grey", thresholded_image)
+    #cv2.waitKey()
+
+    text = text.replace('O', '0').replace('o', '0')
+    re.sub(r'\D', '', text)
+
+    #if (not text.isnumeric()):
+        #return 0
+    return int(text)
+
+def get_time_ms(frame):
+    region_name=f"time_ms"
+    (x, y, w, h) = get_dimensions(region_name, resolution)
+
+    roi = frame[y:y+h, x:x+w]
+    gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+
+    # Apply a threshold to keep only the bright white colors
+    threshold_value = 100
+    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+    #cv2.imshow("grey", thresholded_image)
+    #cv2.waitKey()
+    text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
+    text = text.replace('O', '0').replace('o', '0')
+    re.sub(r'\D', '', text)
+
+    try:
+        intval = int(text)
+    except:
+        return 0
+
+    return intval
