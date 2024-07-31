@@ -2,7 +2,8 @@ import cv2
 import os.path
 import numpy as np
 from timeit import default_timer as timer
-from threading import Thread
+#from threading import Thread
+import threading
 import vf_analytics
 import youtube_helper
 import uuid
@@ -13,6 +14,7 @@ import argparse
 import pathlib
 import ffmpeg
 import time
+import VideoCaptureAsync
 
 logger = None
 resize_video = False
@@ -48,34 +50,45 @@ def get_available_devices():
         index += 1
     return arr
 
-def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
-    hdd = psutil.disk_usage('/')
+def save_image(out_filename, frame):
+    try:
+        cv2.imwrite(out_filename, frame)
+    except Exception as e:
+        logger.error(f"Error writing to image file {out_filename}")
+        logger.error(repr(e))
 
+def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
     if not os.path.exists(jpg_folder + "/original/"):
         os.makedirs(jpg_folder + "/original/")
 
-    out_filename = jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
-    try:
-        if (jpg_folder is not None and hdd.free > 10567308288):
-            cv2.imwrite(out_filename, original_frame)
-    except Exception as e:
-        logger.error(f"Error write to image file {out_filename}")
-        logger.error(repr(e))
+    hdd = psutil.disk_usage('/')
+    if hdd.free < 10567308288:
+        return
+
+    original_out_filename = jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
+    original_thread = threading.Thread(target=save_image, args=(original_out_filename, original_frame))
+    original_thread.start()
 
     out_filename = jpg_folder + "/" + str(f"{count_int}_{suffix}") + ".png"
-    try:
-        if (jpg_folder is not None and hdd.free > 10567308288):
-            cv2.imwrite(out_filename, frame)
-    except Exception as e:
-        logger.error(f"Error write to image file {out_filename}")
-        logger.error(repr(e))
+    normal_thread = threading.Thread(target=save_image, args=(out_filename, frame))
+    normal_thread.start()
+
 
 
 # Step 2: Extract frames from the video
+@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
+
+    frame_rate = None
+    frame_count = None
+
     if (video_path is not None):
-        cap = cv2.VideoCapture(video_path )
+        #cap = cv2.VideoCapture(video_path )
+        cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
+        frame_rate = cap.get_frame_rate()
+        frame_count = cap.get_frame_count()
+
     else:
         cap = cv2.VideoCapture(cam)
         cap.set( cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -85,8 +98,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             print (f"Failed to open CAM {cam}")
             return
 
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_rate = cap.get(cv2.CAP_PROP_FPS)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     end_frame = None
     if end_frame is None or end_frame > frame_count:
         end_frame = frame_count
@@ -154,10 +168,11 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 actual_count = count-1
 
             while (actual_count < count_int):
-                ret, frame = cap.read()
+                #ret, frame = cap.read()
+                frame = cap.read()
                 actual_count = actual_count + 1
 
-            if not ret:
+            if not ret and frame is None:
                 print("could not read frame")
                 logger.warning(f"Skipping frame {count:13d} because no return")
                 continue
@@ -189,7 +204,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 else:
                     print(f"camera: {cam} {count:13d} - got stage {stage} and setting to vs")
             else:
-                count+=int(frame_rate * interval*40)
+                count+=int(frame_rate * interval*20)
                 continue
 
         if (state == "vs"):
@@ -227,17 +242,18 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 logger.debug(f"{video_id} {count:13d} - fight")
                 print_csv(match, round, "0", video_id, count)
 
-                skipFrames=(int) (45/interval)
+                skipFrames=(int) (25/interval)
                 #skipFrames for 1
                 #skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
-                fight_time = timer()
+
                 continue
             else:
                 save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
 
         if (state == "fight"):
+            #save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
             is_excellent = vf_analytics.is_excellent(frame)
             is_ko = not is_excellent and vf_analytics.is_ko(frame)
             is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
@@ -321,7 +337,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 round_num+=1
 
                 if (cam == -1):
-                    skipFrames = 20/interval
+                    skipFrames = 10/interval
 
                 print(f"{count} new round")
             else:
@@ -597,6 +613,7 @@ def process_playlists(playlist_array):
         process_playlist(playlist)
 
 # Main function to run the whole process
+@profile
 def main(video_url = None, playlists_file=None, playlist_file=None, cam=-1):
 
     if (video_url is not None and "list=" in video_url):
