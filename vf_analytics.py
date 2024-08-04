@@ -403,10 +403,11 @@ def is_excellent(frame, override_region=None):
     (p1green, p1black, p1grey) = get_player_health(frame, 1)
     (p2green, p2black, p2grey) = get_player_health(frame, 2)
 
-    logger.debug(f"is_excellent got health {p1black} {p1green} - {p2black} {p2green} ")
+    logger.debug(f"is_excellent p1 - black {p1black} {p1green} - p2 black {p2black} {p2green} ")
     p1excellent = p1black == 0 and p1grey == 0
     p2excellent = p2black == 0 and p2grey == 0
     if (not p1excellent and not p2excellent):
+        logger.debug("is_excellent not so returning fast")
         return False
 
     region_name="excellent"
@@ -467,10 +468,18 @@ def is_excellent(frame, override_region=None):
         if (250 <= white_count <= 300 and 50 <= gold_count <= 100):
             return True
 
-        if (140 < gold_count < 550 and red_count < 700 and 400 < black_count < 3500):
+        if (140 < gold_count < 550 and red_count < 700 and 250 < black_count < 3500):
             return True
 
-        #print ("2nd before default false")
+        if (215-10 <= white_count <= 215+10 and 50 <= gold_count <= 100):
+            return True
+
+        if (215-50 <= white_count <= 215-50 and 75 <= gold_count <= 125):
+            return True
+
+        if (476-50 <= white_count <= 476+50 and 28 <= gold_count <= 48):
+            return True
+
         return black_count > 900 and white_count < 150 and red_count < 100 and purple_count < 120
 
     #print ("default false")
@@ -1400,7 +1409,6 @@ def is_winning_round(frame):
         (x, y, w, h) = get_dimensions(region_name, resolution)
         roi = frame[y:y+h, x:x+w]
 
-        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal} whiterblue {whiter_blue}")
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
 
@@ -1435,14 +1443,20 @@ def is_winning_round(frame):
             return player_num
 
         white_count = count_pixels("#ffffff", roi, 5)
+        white_red_count = count_pixels("#fff5ee", roi, 5)
         pink_count = count_pixels("#f6d8be", roi, 5)
         light_blue_count = count_pixels("#71fffe", roi, 5)
         grey_count = count_pixels("#aaaaac", roi, 5)
+
+        #print(f"white count {white_count} wrc {white_red_count}")
+        #print(f"white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} off {off_white_count} wb {white_blue_count} teal {teal} lightteal {light_teal} at {another_teal} whiterblue {whiter_blue}")
+
         if (player_num == 1):
             op = count_pixels("#fee5f0", roi, 5)
             if (op > 5):
                 return player_num
-
+            if (white_red_count >= 15):
+                return player_num
         if (20 <= white_count <= 30 and pink_count == 0):
             return player_num
 
