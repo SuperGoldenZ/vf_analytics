@@ -16,6 +16,8 @@ import ffmpeg
 import time
 import VideoCaptureAsync
 
+DONT_SAVE = True
+
 logger = None
 resize_video = False
 youtube_auth = True
@@ -58,6 +60,8 @@ def save_image(out_filename, frame):
         logger.error(repr(e))
 
 def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
+    if (DONT_SAVE):
+        return
     if not os.path.exists(jpg_folder + "/original/"):
         os.makedirs(jpg_folder + "/original/")
 
@@ -66,16 +70,17 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         return
 
     original_out_filename = jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
-    original_thread = threading.Thread(target=save_image, args=(original_out_filename, original_frame))
-    original_thread.start()
+    if not os.path.isfile(original_out_filename):
+        original_thread = threading.Thread(target=save_image, args=(original_out_filename, original_frame))
+        original_thread.start()
 
     out_filename = jpg_folder + "/" + str(f"{count_int}_{suffix}") + ".png"
-    normal_thread = threading.Thread(target=save_image, args=(out_filename, frame))
-    normal_thread.start()
-
-
+    if not os.path.isfile(out_filename):
+        normal_thread = threading.Thread(target=save_image, args=(out_filename, frame))
+        normal_thread.start()
 
 # Step 2: Extract frames from the video
+@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
 
@@ -128,6 +133,11 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
     #elapsed_time = timer() - start # in seconds
     vf_analytics.resolution="480p"
     actual_count = 0
+
+    old_time = None
+    timestr = None
+    time_matches = 0
+    matches_processed = 0
 
     while count < end_frame or cam != -1:
         count_int = int(count)
@@ -185,13 +195,15 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
         original_frame = frame
         height, width, _ = frame.shape  # Get the dimensions of the frame
+
         if (height != 480):
             frame = cv2.resize(frame, (854, 480))
+            #vf_analytics.resolution = 480
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
             print(f"BEFORE - searching for vs frame count {count}")
-            #if (vf_analytics.is_vs(frame)):
+
             stage=vf_analytics.get_stage(frame)
             if (stage is not None):
                 match["stage"] = stage
@@ -203,7 +215,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 else:
                     print(f"camera: {cam} {count:13d} - got stage {stage} and setting to vs")
             else:
-                count+=int(frame_rate * interval*20)
+                count+=int(frame_rate * interval*40)
                 continue
 
         if (state == "vs"):
@@ -212,12 +224,14 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 if (player1character is not None):
                     match["player1character"] = player1character
                     logger.debug(f"{video_id} {count:13d} - player 1 character {player1character}")
+                    save_cam_frame(jpg_folder, original_frame, frame, count, "player1_character")
 
             if (match.get('player2character') is None):
                 player2character = vf_analytics.get_character_name(2, frame)
                 if (player2character is not None):
                     match["player2character"] = player2character
                     logger.debug(f"{video_id} {count:13d} - player 2 character {player2character}")
+                    save_cam_frame(jpg_folder, original_frame, frame, count, "player2_character")
 
             if (not "player1ringname" in match or match["player1ringname"] is None):
                 player1ringname = vf_analytics.get_ringname(1, frame)
@@ -247,17 +261,49 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 print(f"got all match info: {count:13d} - fight")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
                 continue
-            else:
-                save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
+            #else:
+                #save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
 
         if (state == "fight"):
+            time_seconds = vf_analytics.get_time_seconds(frame)
+            if (time_seconds == "43" or time_seconds == "44" or time_seconds == "45"):
+                count+=int(frame_rate * interval)
+                continue
+            time_ms = vf_analytics.get_time_ms(frame)
+            old_time = timestr
+            timestr = f"{time_seconds}.{time_ms}"
+
+            if (old_time == timestr and timestr != "45.00" and time_seconds != ""):
+                time_matches = time_matches + 1
+            else:
+                time_matches = 0
+
+            player_num = 0
+
+            if (time_matches >= 2):
+                player_num = vf_analytics.is_winning_round(frame)
+                #if (player_num != 0):
+                    #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}_won")
+                #else:
+                    #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
+            #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
+
+            if (player_num == 0 ):
+
+                #save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
+                #logger.debug(f"{count_int} is not a winning round so continue")
+                #print(f"{count_int} is not a winning round so continue")
+                #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
+                count+=1
+                continue
+
             #save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
             is_excellent = vf_analytics.is_excellent(frame)
             is_ko = not is_excellent and vf_analytics.is_ko(frame)
             is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
 
             if (not is_excellent and not is_ko and not is_ro):
-                count+=int(frame_rate * interval) * 3
+                count+=1
                 continue
 
             if ("player1rank" not in match or match["player1rank"] == 0):
@@ -276,11 +322,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 except:
                     match["player2rank"] = 0
 
-            player_num = vf_analytics.is_winning_round(frame)
-            if (player_num == 0 ):
-                #save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
-                logger.debug(f"{count_int} is not a winning round so continue")
-                #save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
+            #print(f"{timestr} vs old {old_time}")
+
+            if (timestr != old_time):
                 count+=int(frame_rate * interval) * 3
                 continue
 
@@ -288,13 +332,13 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
             if (is_excellent):
                 round[f"player{player_num}_excellent"] = 1
-                print(f"{count} got excellent for player {player_num}")
+                print(f"{count} got EX for player {player_num}")
             elif (is_ko):
                 round[f"player{player_num}_ko"] = 1
-                print(f"{count} got KO player {player_num}")
+                print(f"{count} got KO for player {player_num}")
             elif (is_ro):
                 round[f"player{player_num}_ringout"] = 1
-                print(f"{count} got ringout player {player_num}")
+                print(f"{count} got RO for player {player_num}")
             else:
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count+=int(frame_rate * interval)
@@ -344,8 +388,8 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
                 if (cam == -1):
                     skipFrames = 10/interval
-
-                print(f"{count} new round")
+                time_matches = 0
+                #print(f"{count} new round")
             else:
                 state="before"
                 round=new_round()
@@ -355,6 +399,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 match["id"] = uuid.uuid4()
                 logger.debug(f"{video_id} {count:13d} - match finished")
                 skipFrames=2
+                matches_processed+=1
 
                 #elapsed_time = timer() - fight_time # in seconds
                 #print(f"time in fight state: {elapsed_time}")
@@ -372,7 +417,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
         os.remove(video_path)
 
     cap.release()
-    return
+    return (count, matches_processed)
 
 def all_but_black(roi):
     lower_black = np.array([0, 0, 0])  # Lower bound of white color
@@ -397,7 +442,7 @@ def all_but_black(roi):
     return cleaned_text
 
 def print_csv(match, round, round_num, video_id, frame_count, time):
-    f = open("match_data.csv", "a")
+    f = open(f"match_data_{video_id}.csv", "a")
 
     if (video_id is None):
         f.write("cam")
@@ -528,6 +573,7 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
 
     return
 
+@profile
 def analyze_video(url, cam=-1):
     start = timer()
     p = pathlib.Path('match_data.csv')
@@ -601,11 +647,14 @@ def analyze_video(url, cam=-1):
     resolution = "480p"
 
     fps=0.05
-    extract_frames(video_path, fps, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
+    processed, matches_processed = extract_frames(video_path, fps, video_id, jpg_folder, cam=cam)  # Extract a frame every 7 seconds
 
 
     elapsed_time = timer() - start # in seconds
-    print(f"{elapsed_time} seconds to run")
+    fps = processed / elapsed_time
+    mps = elapsed_time / matches_processed
+
+    print(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match")
 
 def process_playlist(playlist):
     urls = youtube_helper.get_video_urls_from_playlist(playlist)
