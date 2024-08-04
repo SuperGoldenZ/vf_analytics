@@ -64,33 +64,13 @@ character_count <- function(data) {
   }
 }
 
-character_count(data)
-quit(save="no")
-# Convert match_end_time to numeric, converting non-numeric values to NA
-#data$match_end_time <- as.numeric(as.character(data$match_end_time))
-
-# Filter out rows with match_end_time equal to 45.00 and remove NA values
-sorted_df <- data[order(data$round_end_time), ]
-
-# Display the rows with the highest numeric values
-print(sorted_df)
-
-print(unique(data['stage']))
-nrow(data)
-unique(data$player1character)
-unique(data$player1ringname)
-unique(data$stage)
-mean(data$player1rank)
-
 stage_count <- function(data) {
   winning_rounds <- data %>%
     filter(player1_rounds_won == 3 | player2_rounds_won == 3)
   
-  print(nrow(winning_rounds))
   stage_counts = winning_rounds %>% count(stage, name = "Count")
   
   stage_counts$stage <- factor(stage_counts$stage, levels = stage_counts$stage[order(stage_counts$Count, decreasing = TRUE)])  
-  
   
   ggplot(stage_counts, aes(x = stage, y = Count)) +
     geom_bar(stat = "identity") +
@@ -99,48 +79,11 @@ stage_count <- function(data) {
     ggtitle(paste("VF5es",nrow(winning_rounds),"match sample")) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-  return (stage_counts)
 }
-
-character_count(data)
-
-stage_count(data)
-
-character_matchup_distribution <- function(data){
-  winning_rounds <- data %>%
-    filter(player1_rounds_won == 3 | player2_rounds_won == 3)  %>%
-    filter(player1rank >= 21 & player1rank <= 46,
-           player2rank >= 21 & player2rank <= 46) 
-  
-  matches_combined <- winning_rounds %>%
-    mutate(combination1 = paste(player1character, player2character, sep = " vs "),
-           combination2 = paste(player2character, player1character, sep = " vs ")) %>%
-    select(combination1, combination2) %>%
-    pivot_longer(cols = everything(), names_to = "combination_type", values_to = "character_combination") %>%
-    select(character_combination)  
-
-  print(matches_combined)  
-  
-  match_counts <- matches_combined %>%
-    separate(character_combination, into = c("player1_character", "player2_character"), sep = " vs ") %>%
-    count(player1_character, player2_character) %>%
-    complete(player1_character = sort(unique(c(winning_rounds$player1character, winning_rounds$player2character))),
-             player2_character = sort(unique(c(winning_rounds$player1character, winning_rounds$player2character))),
-             fill = list(n = 0))  
-  
-  # Spread the data to create a matrix-like table
-  match_table <- match_counts %>%
-    spread(key = player2_character, value = n)
-  
-  # Print the table
-  print(match_table)  
-  
-}
-
-character_matchup_distribution(data)
 
 rank_winrate_distribution <- function(data){
+  cat("\n\nWin probability table\n")
+  cat("=========================\n")
   winning_rounds <- data %>%
     filter(player1_rounds_won == 3 | player2_rounds_won == 3)  %>%
     filter(player1rank >= 21 & player1rank <= 46,
@@ -152,8 +95,6 @@ rank_winrate_distribution <- function(data){
     select(combination1, combination2) %>%
     pivot_longer(cols = everything(), names_to = "combination_type", values_to = "rank_combination") %>%
     select(rank_combination)  
-  
-  print(matches_combined)  
   
   match_counts <- matches_combined %>%
     separate(rank_combination, into = c("player1_rank", "player2_rank"), sep = " vs ", convert = TRUE) %>%
@@ -172,7 +113,7 @@ rank_winrate_distribution <- function(data){
   rank_range <- 21:46
   win_counts <- matrix(0, nrow = length(rank_range), ncol = length(rank_range), 
                        dimnames = list(rank_range, rank_range))
-
+  
   for (i in 1:nrow(winning_rounds)) {
     p1_rank <- winning_rounds$player1rank[i]
     p2_rank <- winning_rounds$player2rank[i]
@@ -209,6 +150,60 @@ rank_winrate_distribution <- function(data){
   win_percentages[win_percentages=="0%"]<-""
   print(noquote(win_percentages))
 }
+
+character_count(data)
+stage_count(data)
+rank_winrate_distribution(data)
+quit(save="no")
+# Convert match_end_time to numeric, converting non-numeric values to NA
+#data$match_end_time <- as.numeric(as.character(data$match_end_time))
+
+# Filter out rows with match_end_time equal to 45.00 and remove NA values
+sorted_df <- data[order(data$round_end_time), ]
+
+# Display the rows with the highest numeric values
+print(sorted_df)
+
+print(unique(data['stage']))
+nrow(data)
+unique(data$player1character)
+unique(data$player1ringname)
+unique(data$stage)
+mean(data$player1rank)
+
+character_matchup_distribution <- function(data){
+  winning_rounds <- data %>%
+    filter(player1_rounds_won == 3 | player2_rounds_won == 3)  %>%
+    filter(player1rank >= 21 & player1rank <= 46,
+           player2rank >= 21 & player2rank <= 46) 
+  
+  matches_combined <- winning_rounds %>%
+    mutate(combination1 = paste(player1character, player2character, sep = " vs "),
+           combination2 = paste(player2character, player1character, sep = " vs ")) %>%
+    select(combination1, combination2) %>%
+    pivot_longer(cols = everything(), names_to = "combination_type", values_to = "character_combination") %>%
+    select(character_combination)  
+
+  print(matches_combined)  
+  
+  match_counts <- matches_combined %>%
+    separate(character_combination, into = c("player1_character", "player2_character"), sep = " vs ") %>%
+    count(player1_character, player2_character) %>%
+    complete(player1_character = sort(unique(c(winning_rounds$player1character, winning_rounds$player2character))),
+             player2_character = sort(unique(c(winning_rounds$player1character, winning_rounds$player2character))),
+             fill = list(n = 0))  
+  
+  # Spread the data to create a matrix-like table
+  match_table <- match_counts %>%
+    spread(key = player2_character, value = n)
+  
+  # Print the table
+  print(match_table)  
+  
+}
+
+character_matchup_distribution(data)
+
 
 rank_winrate_distribution(data)
 
