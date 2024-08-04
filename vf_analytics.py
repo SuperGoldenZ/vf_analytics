@@ -66,7 +66,12 @@ regions_480p = {
     ,'excellent': (75, 200, 700, 80)
     ,'ro': (185, 204, 484, 80)
     ,'time_seconds': (400, 15, 54, 34)
+    ,'time_seconds_digit1': (403, 15, 25, 34)
+    ,'time_seconds_digit2': (427, 15, 25, 34)
     ,'time_ms': (414, 48, 25, 14)
+    ,'time_ms_digit1': (414, 48, 12, 14)
+    ,'time_ms_digit2': (426, 48, 24, 14)
+
 }
 
 #regions_720p = {
@@ -100,6 +105,7 @@ regions_360p = {
     ,'excellent': (167, 341, 1146, 155)
 }
 
+
 # min width 25
 def get_player_rank(player_num, frame, retry=0, override_regions=None):
     if (retry > 8):
@@ -107,6 +113,18 @@ def get_player_rank(player_num, frame, retry=0, override_regions=None):
 
     region_name=f"player{player_num}rank_full"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_regions)
+
+    factor = 1.0
+
+    height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    if (height == 720):
+        factor = 1.5
+
+    x = int(x*factor)
+    y = int(y*factor)
+    w = int(w*factor)
+    h = int(h*factor)
 
     roi = frame[y:y+h, x:x+w]
 
@@ -332,56 +350,6 @@ def is_vs_text(text):
     if ("AS" in text):
         return True
     return False
-
-#min width = 50
-def is_vs(frame, retry = 0, override_regions = None):
-    if (retry == 4):
-        return False
-
-    (x, y, w, h) = (0, 0, 0, 0)
-
-    if (override_regions is not None):
-        (x, y, w, h) = override_regions["vs"]
-    elif (resolution == '480p'):
-        (x, y, w, h) = regions_480p["vs"]
-
-    if (retry == 1):
-        x += 8
-        y += 3
-        w -= 13
-        h -= 8
-    if (retry == 2):
-        x -= 20
-        y -= 20
-        w += 30
-        h += 30
-    if (retry == 3):
-        x += 8
-        #y += 8
-        w -= 15
-        h -= 8
-
-    roi = frame[y:y+h, x:x+w]
-
-    all_black_roi = all_but_black_range(roi,
-        np.array([0,0,0]),
-        np.array([25,25,15])
-        )
-
-    text = pytesseract.image_to_string(all_black_roi, config="--psm 7")
-    if (is_vs_text(text)):
-        return True
-
-    all_white_roi = all_but_black_range(roi,
-            np.array([100,100,100]),
-            np.array([255,255,255])
-    )
-
-    text = pytesseract.image_to_string(all_white_roi, config="--psm 7")
-    if (is_vs_text(text)):
-        return True
-
-    return is_vs(frame, retry+1, override_regions)
 
 def is_ko(frame, override_region=None):
     region_name='ko'
@@ -894,6 +862,7 @@ def all_but_white_vftv(roi, lower=np.array([100, 100, 100])):
     return white_only_roi
 
 def get_ringname(player_num, frame, region_override=None):
+    return "n/a"
     region_name=f"player{player_num}ringname"
 
     (x, y, w, h) = get_dimensions(region_name, resolution, region_override)
@@ -952,20 +921,111 @@ def get_dimensions(region_name, resolution, override_region=None):
 def get_stage(frame, override_region=None):
     region_name="stage"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
+
+
+    factor = 1.0
+
+    height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    if (height == 720):
+        factor = 1.5
+
+    x = int(x*factor)
+    y = int(y*factor)
+    w = int(w*factor)
+    h = int(h*factor)
+
     roi = frame[y:y+h, x:x+w]
 
+    if (True):
+        (b,g,r) = frame[91, 21]
+        if (r < 80):
+            return None
+
+        (b,g,r) = frame[91, 847]
+        if (b < 80):
+            return None
+
+        gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        threshold_value = 15
+        _, thresholded_frame = cv2.threshold(gray_frame, threshold_value, 255, cv2.THRESH_BINARY)
+
+        #gray_frame = frame
+        #(r,g,b) = gray_frame[25, 50]
+
+        #color = thresholded_frame[0, 50]
+        #thresholded_frame[25, 50] = 255
+
+        threshold_value = 225
+        _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+        n_white_pix = np.sum(thresholded_image == 255)
+
+        frame[0,100] = (255,0,0)
+        thresholded_frame[0:0,100:100] = 200
+
+
+        #print(f"{r} {g} {b}")
+
+        #cv2.imshow("frame", frame)
+        #cv2.imshow("thres_frame", thresholded_frame)
+        #cv2.imshow("threshold", thresholded_image)
+        #print(f"for resolution {resolution} white count {n_white_pix}")
+        #cv2.waitKey()
+
+        #if (thresholded_frame[0, 0] == 0 and thresholded_frame[height-1, 0] == 0 and
+            #thresholded_frame[height-1, width-1] == 0 and thresholded_frame[0, width-1] == 0):
+            #return None
+        (b,g,r) = frame[202, 377]
+        if (r < 45 and g < 45 and b < 45):
+            return None
+
+        (b,g,r) = frame[178, 365]
+        if (r > 45 and g > 45 and b > 45):
+            return None
+
+        if (height == 720 and 1439-10 <= n_white_pix <= 1439+10):
+            return "Deep Mountain"
+
+        if (height == 480 and (587-10)*factor <= n_white_pix <= (587+10)*factor):
+            return "Deep Mountain"
+
+        #if (310 <= n_white_pix <= 365):
+            #return "Island"
+
+        if (510 <= n_white_pix <= 525):
+            return "Sumo Ring"
+
+        if (590 <= n_white_pix <= 600):
+            return "Training Room"
+
+        if (370 <= n_white_pix <= 390):
+            return "Genesis"
+
+        if (220 <= n_white_pix <= 245):
+            return "City"
+
+        if (490 <= n_white_pix <= 510):
+            return "Snow Mountain"
+
+        if (340 <= n_white_pix <= 350):
+            return "Terrace"
+
+
+        #if (560 <= n_white_pix <= 580):
+            #return "Waterfalls"
+    #raise Exception ("oh noes stage")
+    #return None
+
     all_white_roi = all_but_grey(roi)
-    #all_white_roi = image_resize(all_white_roi, width = 85)
 
     imagem = cv2.bitwise_not(all_white_roi)
 
     text = pytesseract.image_to_string(imagem, config="--psm 6")
     text = str.replace(text, "\n\x0c", "").upper()
-
-    #cv2.imshow("original: ", frame)
-    #cv2.imshow("roi", roi)
-    #print(f"{text} for resolution {resolution}")
-    #cv2.waitKey()
 
     if (text == "WATER FALLS"):
         return "Waterfalls"
@@ -1063,6 +1123,52 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
     region_name = f"player{player_num}character"
 
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
+    factor = 1.0
+
+    height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    if (height == 720):
+        factor = 1.5
+
+    x = int(x*factor)
+    y = int(y*factor)
+    w = int(w*factor)
+    h = int(h*factor)
+
+    roi = frame[y:y+h, x:x+w]
+
+    gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+    threshold_value = 225
+    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+    n_white_pix = np.sum(thresholded_image == 255)
+
+    #cv2.imshow("roi", thresholded_image)
+    #print(f"n_white for character {n_white_pix}")
+    #cv2.waitKey()
+
+    if (height == 720 and 3814-10 <= n_white_pix <= 3814+10):
+        print( "short circuit kage")
+        return "Kage"
+
+    if (height == 720 and 3384-10 <= n_white_pix <= 3814+10):
+        print ("short circuit Jean")
+        return "Jean"
+
+    if (1400 <= n_white_pix <= 1500):
+
+        print( "short circuit kage")
+        return "Kage Maru"
+
+    if (1200 <= n_white_pix <= 1300):
+        print ("short circuit Jean")
+        return "Jean"
+
+    #return None
+    #cv2.imshow("threshold", thresholded_image)
+    #print(f"for resolution {player_num} white count {n_white_pix}")
+    #cv2.waitKey()
 
     if (retry == 1 and player_num == 1):
         w = w - 75
@@ -1245,6 +1351,19 @@ def compare_images_histogram(imageA, imageB):
 def is_winning_round(frame):
     region_name="all_rounds"
     (x, y, w, h) = get_dimensions(region_name, resolution)
+
+    factor = 1.0
+
+    height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    if (height == 720):
+        factor = 1.5
+
+    x = int(x*factor)
+    y = int(y*factor)
+    w = int(w*factor)
+    h = int(h*factor)
+
     roi = frame[y:y+h, x:x+w]
 
     #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
@@ -1252,25 +1371,29 @@ def is_winning_round(frame):
     #cv2.waitKey()
 
     bar_blue_two = count_pixels("#0636a5", roi, 5)
-    if (bar_blue_two >= 60):
+    if (bar_blue_two >= 60*factor):
         return 0
 
     all_dark_red = count_pixels("#780103", roi, 5)
     all_dark_maroon = count_pixels("#520004", roi, 5)
     other_blue = count_pixels("#36539f", roi, 5)
-    another_blue = count_pixels("#213275", roi, 5)
+    another_blue = count_pixels("#213275", roi, 1)
     other_db = count_pixels("#1e00b3", roi, 5)
     other_maroon = count_pixels("#691f34", roi, 5)
     bar_blue = count_pixels("#0318c6", roi, 5)
     all_dark_blue = count_pixels("#03176d", roi, 5)
     more_blue = count_pixels("#443fe7", roi, 5)
 
-    #print(f"adb {all_dark_blue} odb {other_db} ab {another_blue} ob {other_blue} mb {more_blue}")
+    #print(f"adb {all_dark_blue} adr {all_dark_red} adm {all_dark_maroon} odb {other_db} ab {another_blue} ob {other_blue} mb {more_blue} om {other_maroon} bb {bar_blue} ")
     #cv2.imshow("roi", roi)
     #cv2.waitKey()
 
-    if (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10 or more_blue > 7) :
+    if (height == 480 and (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 15 or bar_blue >= 10 or more_blue > 7)):
+       #print ("arbot a")
        return 0
+
+    #if (all_dark_blue >= 5*factor or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10 or more_blue > 7):
+       #return 0
 
     for player_num in range(1, 3):
         region_name=f"player{player_num}_rounds"
@@ -1315,6 +1438,11 @@ def is_winning_round(frame):
         pink_count = count_pixels("#f6d8be", roi, 5)
         light_blue_count = count_pixels("#71fffe", roi, 5)
         grey_count = count_pixels("#aaaaac", roi, 5)
+        if (player_num == 1):
+            op = count_pixels("#fee5f0", roi, 5)
+            if (op > 5):
+                return player_num
+
         if (20 <= white_count <= 30 and pink_count == 0):
             return player_num
 
@@ -1328,50 +1456,242 @@ def is_winning_round(frame):
     return 0
 
 def get_time_seconds(frame):
-    region_name=f"time_seconds"
-    (x, y, w, h) = get_dimensions(region_name, resolution)
+    text=""
 
-    roi = frame[y:y+h, x:x+w]
-    gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    #if (height != 480):
+    #{todo remove this for testing or implement for 720p}
+    #frame = cv2.resize(frame, (854, 480))
 
-    # Apply a threshold to keep only the bright white colors
-    threshold_value = 200
-    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+    for digit_num in range(1, 3):
+        region_name=f"time_seconds_digit{digit_num}"
+        (x, y, w, h) = get_dimensions(region_name, resolution)
+
+        factor = 1.0
+
+        height, width, _ = frame.shape  # Get the dimensions of the frame
+
+        if (height == 720):
+            factor = 1.5
+
+        x = int(x*factor)
+        y = int(y*factor)
+        w = int(w*factor)
+        h = int(h*factor)
+
+        roi = frame[y:y+h, x:x+w]
+        rh, rw, _ = roi.shape  # Get the dimensions of the frame
+        (b,g,r) = roi[rh-1,rw-1]
+        if (r > 50):
+            return "45"
+
+        gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        # Apply a threshold to keep only the bright white colors
+        threshold_value = 200
+        _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+        contours, _ = cv2.findContours(thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+            # Crop the image to the bounding box
+            thresholded_image = thresholded_image[y:y+h, x:x+w]
+
+        n_white_pix = np.sum(thresholded_image == 255)
+
+        #print(f"seconds n_white {n_white_pix} for {height}")
+        #cv2.imshow("frame", frame)
+        #cv2.imshow("roi", roi)
+        #cv2.imshow("grey", thresholded_image)
+        #cv2.waitKey()
+
+        #digit = pytesseract.image_to_string(thresholded_image, timeout=2, config="--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789")
+        #print(f"digit {digit}")
+        #re.sub(r'\D', '', digit)
+        #text = f"{text}{digit}"
+        #continue
+
+        #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
+        if (height == 480):
+            if (n_white_pix <= 175 and n_white_pix > 10):
+                text = f"{text}1"
+            elif (226 <= n_white_pix <= 253 or (264-10 <= n_white_pix <= 264) or (n_white_pix == 237)) or (n_white_pix == 246 or n_white_pix == 242 or n_white_pix == 241 or n_white_pix == 234 or n_white_pix >= 266 and n_white_pix <= 276):
+                color = thresholded_image[3, 3]
 
 
-    text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
-    #print(text)
-    #cv2.imshow("grey", thresholded_image)
-    #cv2.waitKey()
+                height, width = thresholded_image.shape  # Get the dimensions of the frame
+                veryupperleft = thresholded_image[0, 0]
+                upperleft = thresholded_image[3, width-1]
+                upper_right = thresholded_image[0, width-1]
+                lower_right = thresholded_image[height-1, width-1]
+                lowerleft = thresholded_image[height-1, 0]
+                lowerleft2 = thresholded_image[height-2, 0]
 
-    text = text.replace('O', '0').replace('o', '0')
-    re.sub(r'\D', '', text)
+                top_middle = thresholded_image[0, int(width*0.5)]
+
+                midleftquarter = thresholded_image[(int)(height/2), int(width*0.25)]
+                middle = thresholded_image[int(height/2), int(width/2)]
+                bottom_middle = thresholded_image[int(height*0.75), int(width/2)]
+                midleft = thresholded_image[int(height/2), 0]
+
+                left_quarter = thresholded_image[int(height*0.70), 0]
+                thresholded_image[int(height*0.70), 0] = 100
+
+                #print ("\nbig block")
+                #print(repr(color))
+                #print(f"seconds n_white {n_white_pix}")
+                #cv2.imshow("grey", thresholded_image)
+                #cv2.waitKey()
+
+                if (middle == 0 and upper_right == 0 and lowerleft == 0 and veryupperleft == 0 and lower_right == 0 and midleftquarter != 0 and top_middle != 0):
+                    text = f"{text}0"
+                elif (bottom_middle == 0 and left_quarter != 0 and midleft != 0):
+                    text = f"{text}6"
+                elif(lower_right == 0 and lowerleft == 0 and lowerleft2 == 0 and upper_right == 0 and veryupperleft == 0 and midleft == 0 and midleftquarter == 0) :
+                    text = f"{text}3"
+                elif (upper_right == 0 and color != 0):
+                    text = f"{text}9"
+                elif(upperleft != 0 and lowerleft == 0 and upper_right != 0 and digit_num == 2):
+                    text = f"{text}5"
+                elif (upper_right != 0 and top_middle != 0 and digit_num == 2):
+                    text = f"{text}5"
+                elif(color == 0 and lowerleft2 == 0):
+                    text = f"{text}4"
+                else:
+                    text = f"{text}2"
+            elif (n_white_pix == 252):
+                color = thresholded_image[10, 5]
+                thresholded_image[10, 5] = 100
+
+                #print(repr(color))
+                #print(f"seconds n_white {n_white_pix}")
+                #cv2.imshow("grey", thresholded_image)
+                #cv2.waitKey()
+
+                #print(f"rgb {r} {g} {b}")
+                if (color == 0):
+                    text = f"{text}2"
+                else:
+                    text = f"{text}5"
+            elif (n_white_pix >= 278-5):
+                height, width = thresholded_image.shape  # Get the dimensions of the frame
+                middle = thresholded_image[int(height/2), int(width/2)]
+                middle2 = thresholded_image[int(height/2)-1, int(width/2)]
+                midleft = thresholded_image[int(height/2), 0]
+                upper_right = thresholded_image[int(height*0.25), 0]
+
+                #cv2.imshow("thresh", thresholded_image)
+                #cv2.waitKey()
+
+                if (middle == 0 and middle2 == 0 and upper_right == 0):
+                    text = f"{text}0"
+                elif (midleft != 0):
+                    text = f"{text}6"
+                else:
+                    text = f"{text}8"
+            elif (n_white_pix == 231 or n_white_pix == 228 or n_white_pix == 230 or n_white_pix == 233):
+                text = f"{text}3"
+            elif (n_white_pix == 169):
+                text = f"{text}1"
+            elif (194-5 <= n_white_pix <= 194+5 ):
+                text = f"{text}7"
+
+    #text = text.replace('O', '0').replace('o', '0')
+    #re.sub(r'\D', '', text)
 
     #if (not text.isnumeric()):
         #return 0
-    return int(text)
+
+    return text
 
 def get_time_ms(frame):
-    region_name=f"time_ms"
-    (x, y, w, h) = get_dimensions(region_name, resolution)
+    text=""
 
-    roi = frame[y:y+h, x:x+w]
-    gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    #if (height != 480):
+    #{todo remove this for testing or implement for 720p}
+    #frame = cv2.resize(frame, (854, 480))
 
+    for digit_num in range(1, 3):
+        #print(f"\nin loop {digit_num}")
+        region_name=f"time_ms_digit{digit_num}"
+        (x, y, w, h) = get_dimensions(region_name, resolution)
 
-    # Apply a threshold to keep only the bright white colors
-    threshold_value = 100
-    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+        factor = 1.0
 
-    #cv2.imshow("grey", thresholded_image)
-    #cv2.waitKey()
-    text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
-    text = text.replace('O', '0').replace('o', '0')
-    re.sub(r'\D', '', text)
+        height, width, _ = frame.shape  # Get the dimensions of the frame
 
-    try:
-        intval = int(text)
-    except:
-        return 0
+        if (height == 720):
+            factor = 1.5
 
-    return intval
+        x = int(x*factor)
+        y = int(y*factor)
+        w = int(w*factor)
+        h = int(h*factor)
+
+        roi = frame[y:y+h, x:x+w]
+        gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        # Apply a threshold to keep only the bright white colors
+        threshold_value = 125
+        _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+        contours, _ = cv2.findContours(thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+            # Crop the image to the bounding box
+            thresholded_image = thresholded_image[y:y+h, x:x+w]
+
+        n_white_pix = np.sum(thresholded_image == 255)
+
+#        print(f"seconds n_white {n_white_pix} for {height}")
+#        cv2.imshow("frame", frame)
+#        cv2.imshow("roi", roi)
+#        cv2.imshow("grey", thresholded_image)
+#        cv2.waitKey()
+
+        #digit = pytesseract.image_to_string(thresholded_image, timeout=2, config="--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789")
+        #print(f"digit {digit}")
+        #re.sub(r'\D', '', digit)
+        #text = f"{text}{digit}"
+        #continue
+
+        #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
+        if (height == 480):
+            height, width = thresholded_image.shape  # Get the dimensions of the frame
+            lower_left = thresholded_image[height-1, 0]
+            upper_right= thresholded_image[0,width-1]
+            lower_right= thresholded_image[height-1,width-1]
+            upper_left= thresholded_image[0,0]
+            middle = thresholded_image[int(height/2)-1, int(width/2)]
+
+            if (n_white_pix <= 22):
+                if ((upper_right != 0 and upper_left == 0) or (n_white_pix == 19 or n_white_pix == 20)):
+                    text = f"{text}7"
+                else:
+                    text = f"{text}1"
+            elif (n_white_pix == 32 and upper_right != 0 and lower_left != 0):
+                text = f"{text}2"
+            elif (n_white_pix == 30):
+                text = f"{text}4"
+            elif (32 <= n_white_pix <= 39 and middle != 0):
+                if (upper_right != 0 and upper_left == 0 and lower_left == 0 and lower_right == 0 and n_white_pix != 32 and n_white_pix != 33):
+                    text = f"{text}3"
+                else:
+                    text = f"{text}6"
+            elif (n_white_pix == 36):
+                if (middle == 0):
+                    text = f"{text}0"
+                else:
+                    text = f"{text}9"
+            elif (n_white_pix == 37 and middle == 0):
+                text = f"{text}0"
+            elif (n_white_pix == 38 or n_white_pix == 40):
+                text = f"{text}8"
+            else:
+                text = f"{text}0"
+    #text = text.replace('O', '0').replace('o', '0')
+    #re.sub(r'\D', '', text)
+
+    #if (not text.isnumeric()):
+        #return 0
+
+    return text
