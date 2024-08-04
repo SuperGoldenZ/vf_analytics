@@ -80,7 +80,6 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         normal_thread.start()
 
 # Step 2: Extract frames from the video
-@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
 
@@ -573,7 +572,6 @@ def perform_ocr_on_frames(frames, video_id="n/a"):
 
     return
 
-@profile
 def analyze_video(url, cam=-1):
     start = timer()
     p = pathlib.Path('match_data.csv')
