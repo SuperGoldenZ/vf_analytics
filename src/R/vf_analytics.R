@@ -21,7 +21,7 @@ find_fast_rounds <- function (df) {
       filter(round_num != 0)
   
   pattern <- "^39\\.|^40\\.|^41\\.|^42\\.|^43\\."
-  matching_rows <- grep(pattern, df$round_end_time)
+  matching_rows <- grep(pattern, rounds$round_end_time)
   result_df <- rounds[matching_rows, ]
   cat("Fast ending rounds report\n=========================\n")
   cat(sprintf("%d rounds analyzed\n", nrow(rounds)))
