@@ -326,31 +326,6 @@ def load_sample_with_transparency(path):
 
     return sample_image
 
-def is_vs_text(text):
-    text = text.strip()
-
-    if (len(text) > 20):
-        return False
-    if ("Wiss" in text):
-        return True
-    if ("WV" in text):
-        return True
-    if ("WIS" in text):
-        return True
-    if ("WES" in text):
-        return True
-    if ("WAS" in text):
-        return True
-    if ("NS" in text):
-        return True
-    if ("WS" in text):
-        return True
-    if ("VS" in text):
-        return True
-    if ("AS" in text):
-        return True
-    return False
-
 def is_ko(frame, override_region=None):
     region_name='ko'
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
@@ -926,6 +901,57 @@ def get_dimensions(region_name, resolution, override_region=None):
         h = (int) (h*1.5)
     return (x, y, w, h)
 
+
+IS_VS_RED_COORDINATES = {
+    480: [91, 21],
+    720: [int(91*1.5), int(21*1.5)]
+}
+
+IS_VS_BLUE_COORDINATES = {
+    480: [91, 847],
+    720: [int(91*1.5), int(847*1.5)]
+}
+
+IS_P2_BLUE_COORDINATES = {
+    480: [296, 587],
+    720: [int(296*1.5), int(587*1.5)]
+}
+
+VS_GRAY_COORDINATES = {
+    480: [186, 369],
+    720: [int(186*1.5), int(369*1.5)]
+}
+
+VS_BLACK_COORDINATES = {
+    480: [178, 363],
+    720: [int(178*1.5), int(363*1.5)]
+}
+
+def is_vs(frame):
+    height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    (b,g,r) = frame[IS_VS_RED_COORDINATES[height][0], IS_VS_RED_COORDINATES[height][1]]
+    if (r < 80):
+        return False
+
+    (b,g,r) = frame[IS_VS_BLUE_COORDINATES[height][0], IS_VS_BLUE_COORDINATES[height][1]]
+    if (b < 80):
+        return False
+
+    (b,g,r) = frame[IS_P2_BLUE_COORDINATES[height][0], IS_P2_BLUE_COORDINATES[height][1]]
+    if (b < 80):
+        return False
+
+    (b,g,r) = frame[VS_GRAY_COORDINATES[height][0], VS_GRAY_COORDINATES[height][1]]
+    if (b < 90 or g < 90 or r < 90):
+        return False
+
+    (b,g,r) = frame[VS_BLACK_COORDINATES[height][0], VS_BLACK_COORDINATES[height][1]]
+    if (b > 10 or g > 10 or r > 10):
+        return False
+
+    return True
+
 # Min width of frame is 85
 def get_stage(frame, override_region=None):
     region_name="stage"
@@ -946,14 +972,7 @@ def get_stage(frame, override_region=None):
 
     roi = frame[y:y+h, x:x+w]
 
-    if (True):
-        (b,g,r) = frame[91, 21]
-        if (r < 80):
-            return None
-
-        (b,g,r) = frame[91, 847]
-        if (b < 80):
-            return None
+    if (False):
 
         gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -1157,22 +1176,23 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
     #print(f"n_white for character {n_white_pix}")
     #cv2.waitKey()
 
-    if (height == 720 and 3814-10 <= n_white_pix <= 3814+10):
-        print( "short circuit kage")
-        return "Kage"
+    if (False):
+        if (height == 720 and 3814-10 <= n_white_pix <= 3814+10):
+            print( "short circuit kage")
+            return "Kage"
 
-    if (height == 720 and 3384-10 <= n_white_pix <= 3814+10):
-        print ("short circuit Jean")
-        return "Jean"
+        if (height == 720 and 3384-10 <= n_white_pix <= 3814+10):
+            print ("short circuit Jean")
+            return "Jean"
 
-    if (1400 <= n_white_pix <= 1500):
+        if (1400 <= n_white_pix <= 1500):
 
-        print( "short circuit kage")
-        return "Kage Maru"
+            print( "short circuit kage")
+            return "Kage Maru"
 
-    if (1200 <= n_white_pix <= 1300):
-        print ("short circuit Jean")
-        return "Jean"
+        if (1200 <= n_white_pix <= 1300):
+            print ("short circuit Jean")
+            return "Jean"
 
     #return None
     #cv2.imshow("threshold", thresholded_image)
@@ -1472,6 +1492,13 @@ def is_winning_round(frame):
 def get_time_seconds(frame):
     text=""
 
+    frame_height, width, _ = frame.shape  # Get the dimensions of the frame
+    factor = 1.0
+
+
+    if (frame_height == 720):
+        factor = 1.5
+
     #if (height != 480):
     #{todo remove this for testing or implement for 720p}
     #frame = cv2.resize(frame, (854, 480))
@@ -1480,12 +1507,6 @@ def get_time_seconds(frame):
         region_name=f"time_seconds_digit{digit_num}"
         (x, y, w, h) = get_dimensions(region_name, resolution)
 
-        factor = 1.0
-
-        height, width, _ = frame.shape  # Get the dimensions of the frame
-
-        if (height == 720):
-            factor = 1.5
 
         x = int(x*factor)
         y = int(y*factor)
@@ -1495,6 +1516,12 @@ def get_time_seconds(frame):
         roi = frame[y:y+h, x:x+w]
         rh, rw, _ = roi.shape  # Get the dimensions of the frame
         (b,g,r) = roi[rh-1,rw-1]
+
+        #cv2.imshow("frame", frame)
+        #cv2.imshow("roi", roi)
+        #cv2.imshow("grey", thresholded_image)
+        #cv2.waitKey()
+
         if (r > 50):
             return "45"
 
@@ -1510,7 +1537,9 @@ def get_time_seconds(frame):
             # Crop the image to the bounding box
             thresholded_image = thresholded_image[y:y+h, x:x+w]
 
-        n_white_pix = np.sum(thresholded_image == 255)
+        height, width = thresholded_image.shape  # Get the dimensions of the frame
+
+        #roi[5] = (255,0,0)
 
         #print(f"seconds n_white {n_white_pix} for {height}")
         #cv2.imshow("frame", frame)
@@ -1525,10 +1554,62 @@ def get_time_seconds(frame):
         #continue
 
         #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
-        if (height == 480):
-            if (n_white_pix <= 175 and n_white_pix > 10):
+        n_white_pix = 0
+        if (frame_height == 720):
+            points = {}
+            points[1] = thresholded_image[height-1, 0]
+            points[7] = thresholded_image[0, 0]
+            points[9] = thresholded_image[0, width-1]
+            points[3] = thresholded_image[height-1, width-1]
+            points[4] = thresholded_image[int(height/2), 0]
+            points[4.5] = thresholded_image[int(height/2), int(width*0.25)]
+            points[5] = thresholded_image[int(height/2), int(width/2)]
+            points[5.5] = thresholded_image[int(height/2), int(width*0.75)]
+            points[59] = thresholded_image[int(height*0.25), int(width*0.75)]
+            points[58] = thresholded_image[int(height*0.25), int(width*0.50)]
+            points[57] = thresholded_image[int(height*0.25), int(width*0.25)]
+            points[6] = thresholded_image[int(height/2), width-1]
+            points[8] = thresholded_image[0, int(width/2)]
+            points[2] = thresholded_image[height-1, int(width/2)]
+            points[1.5] = thresholded_image[height-1, int(width*0.25)]
+
+            try:
+                points[244] = thresholded_image[24, 4]
+            except:
+                return "00.00"
+
+            if (points[5] != 0 and points[8] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0 and points[59] != 0) and points[244] != 0:
+                text = f"{text}8"
+            elif (points[5] != 0 and points[4] == 0 and points [4.5] != 0 and points[5.5] != 0 and points[57] != 0 and points[59] != 0):
+                text = f"{text}9"
+            elif (points[5] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0):
+                #and points[59] == 0)
+                text = f"{text}6"
+            elif (points[9] != 0 and points[5] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0) and points[59] == 0:
+                text = f"{text}5"
+            elif (points[9] != 0 and points[5] == 0):
+                text = f"{text}4"
+            elif (points[5] == 0 and points[4.5] != 0 and points[5.5] != 0):
+                text = f"{text}0"
+            elif (points[5] != 0 and points[8] != 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] == 0 and points[3] == 0 and points[6] == 0 and points [57] != 0 and points [4.5] == 0):
+                text = f"{text}3"
+            elif (points[5] == 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] != 0 and points[3] == 0):
+                text = f"{text}2"
+            elif (points[5] != 0 and points[8] != 0 and points[2] == 0 and points[1.5] != 0):
+                text = f"{text}7"
+            elif (points[9] != 0 and points[5] != 0):
                 text = f"{text}1"
-            elif (226 <= n_white_pix <= 253 or (264-10 <= n_white_pix <= 264) or (n_white_pix == 237)) or (n_white_pix == 246 or n_white_pix == 242 or n_white_pix == 241 or n_white_pix == 234 or n_white_pix >= 266 and n_white_pix <= 276):
+            elif (points[5] != 0):
+                if (digit_num == 1):
+                    text = f"{text}3"
+                else:
+                    text = f"{text}9"
+        else:
+            n_white_pix = np.sum(thresholded_image == 255)
+        if (frame_height == 480):
+            if (n_white_pix <= 175 * factor and n_white_pix > 10 * factor):
+                text = f"{text}1"
+            elif (226*factor <= n_white_pix <= 253*factor or ((264-10)*factor <= n_white_pix <= 264*factor) or (n_white_pix == 237)) or (n_white_pix == 246 or n_white_pix == 242 or n_white_pix == 241 or n_white_pix == 234 or n_white_pix >= 266*factor and n_white_pix <= 276*factor):
                 color = thresholded_image[3, 3]
 
 
@@ -1614,11 +1695,18 @@ def get_time_seconds(frame):
 
     #if (not text.isnumeric()):
         #return 0
-
+    #print (f"returning {text}")
     return text
 
 def get_time_ms(frame):
     text=""
+
+    factor = 1.0
+
+    frame_height, width, _ = frame.shape  # Get the dimensions of the frame
+
+    if (frame_height == 720):
+        factor = 1.5
 
     #if (height != 480):
     #{todo remove this for testing or implement for 720p}
@@ -1629,12 +1717,6 @@ def get_time_ms(frame):
         region_name=f"time_ms_digit{digit_num}"
         (x, y, w, h) = get_dimensions(region_name, resolution)
 
-        factor = 1.0
-
-        height, width, _ = frame.shape  # Get the dimensions of the frame
-
-        if (height == 720):
-            factor = 1.5
 
         x = int(x*factor)
         y = int(y*factor)
@@ -1654,13 +1736,87 @@ def get_time_ms(frame):
             # Crop the image to the bounding box
             thresholded_image = thresholded_image[y:y+h, x:x+w]
 
-        n_white_pix = np.sum(thresholded_image == 255)
+        height, width = thresholded_image.shape  # Get the dimensions of the frame
+        n_white_pix = 0
+
+        if (frame_height == 720):
+            n_white_pix = np.sum(thresholded_image == 255)
+
+            #print(f"n_white_count {n_white_pix}")
+            points = {}
+            points[1] = thresholded_image[height-1, 0]
+            points[7] = thresholded_image[0, 0]
+            points[9] = thresholded_image[0, width-1]
+            points[3] = thresholded_image[height-1, width-1]
+            points[4] = thresholded_image[int(height/2), 0]
+            points[4.5] = thresholded_image[int(height/2), int(width*0.25)]
+            points[5] = thresholded_image[int(height/2), int(width/2)]
+            points[5.5] = thresholded_image[int(height/2), int(width*0.75)]
+            points[59] = thresholded_image[int(height*0.25), int(width*0.75)]
+            points[58] = thresholded_image[int(height*0.25), int(width*0.50)]
+            points[57] = thresholded_image[int(height*0.25), int(width*0.25)]
+            points[6] = thresholded_image[int(height/2), width-1]
+            points[8] = thresholded_image[0, int(width/2)]
+            points[2.5] = thresholded_image[height-1, int(width*0.75)]
+            points[2] = thresholded_image[height-1, int(width/2)]
+            points[1.5] = thresholded_image[height-1, int(width*0.25)]
+            #points[244] = thresholded_image[height-1, int(width*0.25)]
+            #try:
+                #points[244] = thresholded_image[24, 4]
+            #except:
+                #return "00.00"
+
+            if (n_white_pix == 80):
+                text = f"{text}3"
+                continue
+
+            if (86 <= n_white_pix <= 89 and points[8] != 0 and points[2] != 0):
+                text = f"{text}8"
+                continue
+
+            if (n_white_pix >= 90):
+                text = f"{text}8"
+                continue
+            if (n_white_pix >= 71 and points[5] == 0 and points[8] == 0):
+                text = f"{text}4"
+                continue
+
+            if (n_white_pix <= 36):
+                text = f"{text}1"
+                continue
+
+            if (points[5] != 0 and points[8] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0 and points[59] != 0) : #and points[244] != 0
+                text = f"{text}8"
+            elif (points[5] != 0 and points[4] == 0 and points [4.5] != 0 and points[5.5] != 0 and points[57] != 0 and points[59] != 0):
+                text = f"{text}9"
+            elif (points[8] != 0 and points[2] != 0 and points[2.5] != 0):
+                #and points[59] == 0)
+                text = f"{text}6"
+            elif (points[9] != 0 and points[5] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0) and points[59] == 0:
+                text = f"{text}5"
+            elif (points[9] != 0 and points[5] == 0):
+                text = f"{text}4"
+            elif (points[5] == 0 and points[8] != 0 and points[2] != 0):
+                text = f"{text}0"
+            elif (points[8] != 0 and points[2] != 0):
+                text = f"{text}3"
+            elif (points[5] == 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] != 0 and points[3] == 0):
+                text = f"{text}2"
+            elif (points[5] != 0 and points[9] != 0 and points[1] != 0 ):
+                text = f"{text}7"
+            elif (points[9] != 0 and points[5] != 0):
+                text = f"{text}1"
+            elif (points[5] != 0):
+                if (digit_num == 1):
+                    text = f"{text}3"
+                else:
+                    text = f"{text}9"
 
 #        print(f"seconds n_white {n_white_pix} for {height}")
-#        cv2.imshow("frame", frame)
-#        cv2.imshow("roi", roi)
-#        cv2.imshow("grey", thresholded_image)
-#        cv2.waitKey()
+            #cv2.imshow("frame", frame)
+            #cv2.imshow("roi", roi)
+            #cv2.imshow("grey", thresholded_image)
+            #cv2.waitKey()
 
         #digit = pytesseract.image_to_string(thresholded_image, timeout=2, config="--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789")
         #print(f"digit {digit}")
@@ -1669,7 +1825,8 @@ def get_time_ms(frame):
         #continue
 
         #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
-        if (height == 480):
+        elif (frame_height == 480):
+            n_white_pix = np.sum(thresholded_image == 255)
             height, width = thresholded_image.shape  # Get the dimensions of the frame
             lower_left = thresholded_image[height-1, 0]
             upper_right= thresholded_image[0,width-1]
@@ -1708,4 +1865,5 @@ def get_time_ms(frame):
     #if (not text.isnumeric()):
         #return 0
 
+    #print (f"ms {text}")
     return text
