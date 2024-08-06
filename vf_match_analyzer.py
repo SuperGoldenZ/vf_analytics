@@ -321,8 +321,8 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             is_ko = not is_excellent and vf_analytics.is_ko(frame)
             is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
 
-            if (not is_excellent and not is_ko and not is_ro):
-                logger.warning(f"{video_id} {count} - unknown way to win the round!")
+            #if (not is_excellent and not is_ko and not is_ro):
+                #logger.warning(f"{video_id} {count} - unknown way to win the round!")
                 #count = count +1
                 #continue
 
@@ -675,7 +675,7 @@ def analyze_video(url, cam=-1):
     if (matches_processed != 0):
         mps = elapsed_time / matches_processed
 
-    print(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match")
+    logger.info(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match")
 
 def process_playlist(playlist):
     urls = youtube_helper.get_video_urls_from_playlist(playlist)
@@ -754,7 +754,7 @@ def main(video_url = None, playlists_file=None, playlist_file=None, cam=-1):
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
-    logging.basicConfig(filename='vf_match_analyzer.log', encoding='utf-8', level=logging.DEBUG)
+    logging.basicConfig(filename='vf_match_analyzer.log', encoding='utf-8', level=logging.INFO)
 
     parser=argparse.ArgumentParser(description="Download and extract match data from VF5ES videos")
     parser.add_argument('--youtube-auth', default=True)
