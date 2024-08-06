@@ -195,15 +195,21 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
         original_frame = frame
         height, width, _ = frame.shape  # Get the dimensions of the frame
 
-        if (height != 480):
-            frame = cv2.resize(frame, (854, 480))
-            #vf_analytics.resolution = 480
+        frame_480p = None
 
         if (state == "before"):
             logger.debug(f"BEFORE - searching for vs frame count {count}")
             print(f"BEFORE - searching for vs frame count {count}")
 
-            stage=vf_analytics.get_stage(frame)
+            stage = None
+            if (vf_analytics.is_vs(frame)):
+                if (height != 480):
+                    frame_480p = cv2.resize(frame, (854, 480))
+
+                stage=vf_analytics.get_stage(frame_480p)
+                if (stage is None):
+                    save_cam_frame(jpg_folder, original_frame, frame, count, "invalid_is_vs")
+
             if (stage is not None):
                 match["stage"] = stage
                 state="vs"
@@ -216,6 +222,13 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             else:
                 count+=int(frame_rate * interval*40)
                 continue
+
+#        if (height != 480 and frame_480p is None):
+#            frame = cv2.resize(frame, (854, 480))
+#        elif (height == 480):
+#            frame = frame_480p
+
+            #vf_analytics.resolution = 480
 
         if (state == "vs"):
             if (match.get('player1character') is None):
@@ -269,6 +282,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 count+=int(frame_rate * interval)
                 continue
             time_ms = vf_analytics.get_time_ms(frame)
+
             old_time = timestr
             timestr = f"{time_seconds}.{time_ms}"
 
@@ -280,20 +294,26 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             player_num = 0
 
             if (time_matches >= 2):
+                if (height != 480 and frame_480p is None):
+                    frame = cv2.resize(frame, (854, 480))
+                elif (height == 480):
+                    frame = frame_480p
+
                 player_num = vf_analytics.is_winning_round(frame)
                 #if (player_num != 0):
                     #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}_won")
                 #else:
                     #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
             #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
+            else:
+                count+=1
+                continue
 
             if (player_num == 0 ):
-
-                #save_cam_frame(jpg_folder, original_frame, frame, count, "notwin")
-                #logger.debug(f"{count_int} is not a winning round so continue")
-                #print(f"{count_int} is not a winning round so continue")
+                #logger.debug(f"{count_int} could not determine which player won so skipping")
                 #save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
                 count+=1
+
                 continue
 
             #save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
@@ -302,8 +322,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
 
             if (not is_excellent and not is_ko and not is_ro):
-                count+=1
-                continue
+                logger.warning(f"{video_id} {count} - unknown way to win the round!")
+                #count = count +1
+                #continue
 
             if ("player1rank" not in match or match["player1rank"] == 0):
                 try:
@@ -650,7 +671,9 @@ def analyze_video(url, cam=-1):
 
     elapsed_time = timer() - start # in seconds
     fps = processed / elapsed_time
-    mps = elapsed_time / matches_processed
+    mps = 0
+    if (matches_processed != 0):
+        mps = elapsed_time / matches_processed
 
     print(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match")
 
