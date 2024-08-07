@@ -1158,7 +1158,11 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
     if (height == 720):
         factor = 1.5
 
-    x = int(x*factor)
+    xFactor = 0
+    if (player_num == 1):
+        xFactor = 20
+
+    x = int(x*factor)-xFactor
     y = int(y*factor)
     w = int(w*factor)
     h = int(h*factor)
@@ -1167,7 +1171,7 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
 
     gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-    threshold_value = 225
+    threshold_value = 250
     _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
 
     n_white_pix = np.sum(thresholded_image == 255)
@@ -1175,6 +1179,16 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
     #cv2.imshow("roi", thresholded_image)
     #print(f"n_white for character {n_white_pix}")
     #cv2.waitKey()
+
+    if (height == 720):
+        if (n_white_pix == 2944 or n_white_pix == 2430):
+            return "Jean"
+        if (n_white_pix == 3664):
+            return "Lion"
+        if (n_white_pix == 3833):
+            return "Aoi"
+        if (n_white_pix == 2778):
+            return "Brad"
 
     if (False):
         if (height == 720 and 3814-10 <= n_white_pix <= 3814+10):
@@ -1228,8 +1242,10 @@ def get_character_name(player_num, frame, retry=0, override_region=None):
 
 
     white_only_roi = all_but_white(roi)
-    text = pytesseract.image_to_string(white_only_roi, config="--psm 6").strip()
-
+    text = pytesseract.image_to_string(white_only_roi, config="--psm 7").strip()
+    #print(f"{text}")
+    if ("Tagan Kirin" in text):
+        return "Jean"
     if ("Brad" in text):
         text="Brad"
     if ("Kage" in text):
@@ -1449,21 +1465,24 @@ def is_winning_round(frame):
             if (10 <= light_teal <= 25):
                 return player_num
 
+            white_blue_count = count_pixels("#e4feff", roi, 5)
+            if (white_blue_count > 20):
+                return player_num
+
+
         dark_blue = count_pixels("#03176d", roi, 5)
         dark_red = count_pixels("#780103", roi, 5)
         if (dark_red > 50 or dark_blue > 50):
             return 0
 
-        white_blue_count = count_pixels("#e4feff", roi, 5)
-        if (white_blue_count > 20):
-            return player_num
+
 
         off_white_count = count_pixels("#f9fff2", roi, 5)
         if (off_white_count > 15):
             return player_num
 
         white_count = count_pixels("#ffffff", roi, 5)
-        white_red_count = count_pixels("#fff5ee", roi, 5)
+        white_red_count = count_pixels("#fff5ee", roi, 4)
         pink_count = count_pixels("#f6d8be", roi, 5)
         light_blue_count = count_pixels("#71fffe", roi, 5)
         grey_count = count_pixels("#aaaaac", roi, 5)
@@ -1713,7 +1732,6 @@ def get_time_ms(frame):
     #frame = cv2.resize(frame, (854, 480))
 
     for digit_num in range(1, 3):
-        #print(f"\nin loop {digit_num}")
         region_name=f"time_ms_digit{digit_num}"
         (x, y, w, h) = get_dimensions(region_name, resolution)
 
