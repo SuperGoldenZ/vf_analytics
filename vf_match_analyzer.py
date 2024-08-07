@@ -16,7 +16,7 @@ import ffmpeg
 import time
 import VideoCaptureAsync
 
-DONT_SAVE = True
+DONT_SAVE = False
 
 logger = None
 resize_video = False
@@ -80,6 +80,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         normal_thread.start()
 
 # Step 2: Extract frames from the video
+@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
 
@@ -138,7 +139,10 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
     time_matches = 0
     matches_processed = 0
 
+    time_seconds = None
     while count < end_frame or cam != -1:
+
+
         count_int = int(count)
 
         #use epoch time for cam
@@ -236,14 +240,14 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 if (player1character is not None):
                     match["player1character"] = player1character
                     logger.debug(f"{video_id} {count:13d} - player 1 character {player1character}")
-                    save_cam_frame(jpg_folder, original_frame, frame, count, "player1_character")
+                    save_cam_frame(jpg_folder, original_frame, frame, count, f"player1_character-{player1character}")
 
             if (match.get('player2character') is None):
                 player2character = vf_analytics.get_character_name(2, frame)
                 if (player2character is not None):
                     match["player2character"] = player2character
                     logger.debug(f"{video_id} {count:13d} - player 2 character {player2character}")
-                    save_cam_frame(jpg_folder, original_frame, frame, count, "player2_character")
+                    save_cam_frame(jpg_folder, original_frame, frame, count, f"player2_character-{player2character}")
 
             if (not "player1ringname" in match or match["player1ringname"] is None):
                 player1ringname = vf_analytics.get_ringname(1, frame)
@@ -277,14 +281,20 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 #save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
 
         if (state == "fight"):
+            old_time_seconds = time_seconds
             time_seconds = vf_analytics.get_time_seconds(frame)
-            if (time_seconds == "43" or time_seconds == "44" or time_seconds == "45"):
+            if (time_seconds == "43" or time_seconds == "44" or time_seconds == "45") or (time_seconds != old_time_seconds) or old_time_seconds is None:
                 count+=int(frame_rate * interval)
                 continue
             time_ms = vf_analytics.get_time_ms(frame)
 
             old_time = timestr
             timestr = f"{time_seconds}.{time_ms}"
+
+#            print(timestr)
+#            cv2.imshow("image", frame)
+            #cv2.waitKey()
+
 
             if (old_time == timestr and timestr != "45.00" and time_seconds != ""):
                 time_matches = time_matches + 1
@@ -675,7 +685,7 @@ def analyze_video(url, cam=-1):
     if (matches_processed != 0):
         mps = elapsed_time / matches_processed
 
-    logger.info(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match")
+    logger.info(f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished")
 
 def process_playlist(playlist):
     urls = youtube_helper.get_video_urls_from_playlist(playlist)
