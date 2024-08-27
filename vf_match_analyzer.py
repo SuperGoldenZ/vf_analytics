@@ -79,7 +79,6 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         normal_thread.start()
 
 # Step 2: Extract frames from the video
-@profile
 def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
     cap = None
 
