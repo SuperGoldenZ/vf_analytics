@@ -700,7 +700,7 @@ def process_videos_list(urls):
     for url in urls:
         try:
             analyze_video(url)
-        except:
+        except Exception as e:
             logger.error(f"Error processing {url}")
             logger.error(repr(e))
             print(f"Error processing {url}")
@@ -746,19 +746,6 @@ def main(video_url = None, playlists_file=None, playlist_file=None, cam=-1):
                     videos.append(line)
         process_videos_list(videos)
         return
-
-    threads = []
-    thread = Thread(target=process_playlists,args=[youtube_helper.play_collection])
-    thread.start()
-    threads.append(thread)
-
-    thread = Thread(target=process_playlists,args=[youtube_helper.playlists])
-    thread.start()
-    threads.append(thread)
-
-    print("going to join threads")
-    threads[0].join()
-    threads[1].join()
 
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
