@@ -1,20 +1,19 @@
-import cv2
-import os.path
-import numpy as np
+import os
 from timeit import default_timer as timer
-#from threading import Thread
 import threading
-import vf_analytics
-import youtube_helper
 import uuid
 import sys
-import psutil
 import logging
 import argparse
 import pathlib
-import ffmpeg
 import time
+import ffmpeg
+import cv2
+import psutil
+import numpy as np
 import VideoCaptureAsync
+import vf_analytics
+import youtube_helper
 
 DONT_SAVE = False
 
