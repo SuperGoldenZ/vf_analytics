@@ -1,8 +1,8 @@
-from pytube import YouTube
-from pytube import Playlist
 from urllib.parse import urlparse, parse_qs
 import os
 import logging
+from pytubefix import YouTube
+from pytubefix import Playlist
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='analyze_youtube.log', encoding='utf-8', level=logging.DEBUG)
