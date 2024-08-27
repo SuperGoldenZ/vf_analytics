@@ -804,29 +804,6 @@ def all_but_black(image):
     image = cv2.bitwise_not(image)
     return all_but_white(image)
 
-    inverted_image = PIL.ImageOps.invert(image)
-    lower_white = np.array([0, 0, 0])  # Lower bound of white color
-    upper_white = np.array([1, 1, 1])  # Upper bound of white color
-    mask = cv2.inRange(image, lower_white, upper_white)
-    return mask
-    # Apply the mask to keep only white areas in the ROI
-    #white_only_roi = cv2.bitwise_and(image, image, mask=mask)
-
-    # Convert to grayscale (optional, if your image is colored)
-    #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Create a mask where black pixels are identified (thresholding)
-    # The threshold can be adjusted if needed; here we assume an intensity of 0 is black
-    #_, mask = cv2.threshold(image, 2, 255, cv2.THRESH_BINARY_INV)
-
-    # Create an output image, initialized to white
-    #output = np.ones_like(image) * 255
-
-    # Copy the black pixels from the original image to the output image using the mask
-    #output[mask == 255] = image[mask == 255]
-
-    return output
-
 def all_but_grey(roi):
     lower_white = np.array([165, 165, 165])  # Lower bound of white color
     upper_white = np.array([255, 255, 255])  # Upper bound of white color
