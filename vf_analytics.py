@@ -825,14 +825,14 @@ def all_but_white_vftv(roi, lower=np.array([100, 100, 100])):
 def get_ringname(player_num, frame, region_override=None):
     return "n/a"
 
-def get_dimensions(region_name, resolution, override_region=None):
+def get_dimensions(region_name, local_resolution, override_region=None):
     (x, y, w, h) = (0, 0, 0, 0)
 
     if (override_region is not None):
         (x, y, w, h) = override_region[region_name]
-    elif (resolution == '480p'):
+    elif (local_resolution == '480p'):
         (x, y, w, h) = regions_480p[region_name]
-    elif (resolution == '720p'):
+    elif (local_resolution == '720p'):
         (x, y, w, h) = regions_480p[region_name]
         x = (int) (x * 1.5)
         y = (int) (y*1.5)
@@ -866,8 +866,12 @@ VS_BLACK_COORDINATES = {
     720: [int(178*1.5), int(363*1.5)]
 }
 
-def is_vs(frame):
-    height, width, _ = frame.shape  # Get the dimensions of the frame
+def is_vs(frame, debug=False):
+    height = frame.shape[0]  # Get the dimensions of the frame
+
+    if (debug):
+        cv2.imshow(f"frame height {height}", frame)
+        cv2.waitKey()
 
     (b,g,r) = frame[IS_VS_RED_COORDINATES[height][0], IS_VS_RED_COORDINATES[height][1]]
     if (r < 80):
@@ -886,7 +890,7 @@ def is_vs(frame):
         return False
 
     (b,g,r) = frame[VS_BLACK_COORDINATES[height][0], VS_BLACK_COORDINATES[height][1]]
-    if (b > 10 or g > 10 or r > 10):
+    if (b > 40 or g > 40 or r > 40):
         return False
 
     return True
@@ -896,10 +900,9 @@ def get_stage(frame, override_region=None):
     region_name="stage"
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
-
     factor = 1.0
 
-    height, width, _ = frame.shape  # Get the dimensions of the frame
+    height = frame.shape[0]  # Get the dimensions of the frame
 
     if (height == 720):
         factor = 1.5
