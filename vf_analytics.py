@@ -1,13 +1,13 @@
+import re
+import logging
 import cv2
 import numpy as np
 import pytesseract
-import re
-import logging
 
 # PS4 Resolution is 1920 x 1080 1080P
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='vf_analytics.log', encoding='utf-8', level=logging.INFO)
+logging.basicConfig(filename='vf_analytics.log', encoding='utf-8', level=logging.DEBUG)
 
 resolution='1080p'
 excellent = cv2.imread("assets/test_images/480p/excellent/excellent.png")
@@ -1455,7 +1455,6 @@ def get_time_digit_720p(thresholded_image, width, height, digit_num):
     points[3] = thresholded_image[height-1, width-1]
     points[4] = thresholded_image[int(height/2), 0]
     points[4.5] = thresholded_image[int(height/2), int(width*0.25)]
-    points["above_five"] = thresholded_image[int(height/2)-2, int(width/2)]
     points[5] = thresholded_image[int(height/2), int(width/2)]
     points[5.5] = thresholded_image[int(height/2), int(width*0.75)]
     points[59] = thresholded_image[int(height*0.25), int(width*0.75)]
@@ -1468,6 +1467,7 @@ def get_time_digit_720p(thresholded_image, width, height, digit_num):
 
     try:
         points[244] = thresholded_image[24, 4]
+        points["above_five"] = thresholded_image[int(height/2)-2, int(width/2)]
     except:
         return "00.00"
 
@@ -1512,6 +1512,21 @@ def get_time_digit_720p(thresholded_image, width, height, digit_num):
     return -1
 
 
+def is_time_running_out(frame, debug=False):
+    height = frame.shape[0]
+
+    region_name=f"time_seconds_digit1"
+    (x, y, w, h) = get_dimensions(region_name, f"{height}p")
+    roi = frame[y:y+h, x:x+w]
+
+    red_count = count_pixels("#FF0000", roi)
+
+    if (debug):
+        cv2.imshow(f"roi {red_count}", roi)
+        cv2.waitKey()
+
+    return red_count > 100
+
 def get_time_seconds(frame):
     text=""
 
@@ -1521,6 +1536,8 @@ def get_time_seconds(frame):
 
     if (frame_height == 720):
         factor = 1.5
+
+
 
     #if (height != 480):
     #{todo remove this for testing or implement for 720p}
@@ -1536,18 +1553,21 @@ def get_time_seconds(frame):
         w = int(w*factor)
         h = int(h*factor)
 
-        roi = frame[y:y+h, x:x+w]
-        rh, rw, _ = roi.shape  # Get the dimensions of the frame
-        (b,g,r) = roi[rh-1,rw-1]
+        #rh, rw, _ = roi.shape  # Get the dimensions of the frame
+        #(b,g,r) = roi[rh-1,rw-1]
 
         #cv2.imshow("frame", frame)
         #cv2.imshow("roi", roi)
         #cv2.imshow("grey", thresholded_image)
         #cv2.waitKey()
 
-        if (r > 50):
-            return "45"
+        #if (r > 50):
+            #return "45"
 
+        running_out = is_time_running_out(frame)
+        if (running_out):
+            x = (int) (x + w / 2)
+        roi = frame[y:y+h, x:x+w]
         gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
         # Apply a threshold to keep only the bright white colors
@@ -1562,20 +1582,12 @@ def get_time_seconds(frame):
 
         height, width = thresholded_image.shape  # Get the dimensions of the frame
 
-        #roi[5] = (255,0,0)
-
-
-        #digit = pytesseract.image_to_string(thresholded_image, timeout=2, config="--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789")
-        #print(f"digit {digit}")
-        #re.sub(r'\D', '', digit)
-        #text = f"{text}{digit}"
-        #continue
-
-        #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
         n_white_pix = 0
         if (frame_height == 720):
             digit = get_time_digit_720p(thresholded_image, width, height, digit_num)
             text = f"{text}{digit}"
+            if (running_out):
+                return text
         else:
             n_white_pix = np.sum(thresholded_image == 255)
         if (frame_height == 480):
