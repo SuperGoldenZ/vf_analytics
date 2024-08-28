@@ -25,6 +25,8 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        apt install tesseract-ocr
+        apt install libtesseract-dev
         python -m pip install --upgrade pip
         pip install flake8 pytest opencv-python pytesseract
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
