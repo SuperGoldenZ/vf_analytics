@@ -824,44 +824,6 @@ def all_but_white_vftv(roi, lower=np.array([100, 100, 100])):
 
 def get_ringname(player_num, frame, region_override=None):
     return "n/a"
-    region_name=f"player{player_num}ringname"
-
-    (x, y, w, h) = get_dimensions(region_name, resolution, region_override)
-
-    roi = frame[y:y+h, x:x+w]
-
-    all_white_roi = all_but_grey(roi)
-    imagem = cv2.bitwise_not(all_white_roi)
-
-    text = pytesseract.image_to_string(imagem, config="--psm 6")
-    text = str.replace(text, "\n\x0c", "")
-    text = str.replace(text, " ", "")
-    text = str.replace(text, "‘", "")
-    text = str.replace(text, ":", "-")
-    text = str.replace(text, "{", "")
-    text = str.replace(text, "|", "")
-    text = str.replace(text, ",", "")
-    text = str.replace(text, "?", "")
-    text = str.replace(text, "(", "")
-    text = str.replace(text, ")", "")
-    text = str.replace(text, "}", "")
-    text = str.replace(text, "{", "")
-    text = str.replace(text, "!", "")
-    text = str.replace(text, "”", "")
-
-    if ("\"" in text):
-        return "n/a"
-
-    if ("\n" in text):
-        return "n/a"
-
-    if ("=" in text):
-        return "n/a"
-
-    if (len(text) >= 3):
-        return text
-
-    return "n/a"
 
 def get_dimensions(region_name, resolution, override_region=None):
     (x, y, w, h) = (0, 0, 0, 0)
@@ -1485,6 +1447,71 @@ def is_winning_round(frame):
 
     return 0
 
+def get_time_digit_720p(thresholded_image, width, height, digit_num):
+    points = {}
+    points[1] = thresholded_image[height-1, 0]
+    points[7] = thresholded_image[0, 0]
+    points[9] = thresholded_image[0, width-1]
+    points[3] = thresholded_image[height-1, width-1]
+    points[4] = thresholded_image[int(height/2), 0]
+    points[4.5] = thresholded_image[int(height/2), int(width*0.25)]
+    points["above_five"] = thresholded_image[int(height/2)-2, int(width/2)]
+    points[5] = thresholded_image[int(height/2), int(width/2)]
+    points[5.5] = thresholded_image[int(height/2), int(width*0.75)]
+    points[59] = thresholded_image[int(height*0.25), int(width*0.75)]
+    points[58] = thresholded_image[int(height*0.25), int(width*0.50)]
+    points[57] = thresholded_image[int(height*0.25), int(width*0.25)]
+    points[6] = thresholded_image[int(height/2), width-1]
+    points[8] = thresholded_image[0, int(width/2)]
+    points[2] = thresholded_image[height-1, int(width/2)]
+    points[1.5] = thresholded_image[height-1, int(width*0.25)]
+
+    try:
+        points[244] = thresholded_image[24, 4]
+    except:
+        return "00.00"
+
+    if (points[5] != 0 and
+        points[8] == 0 and
+        points[2] != 0 and
+        points[7] == 0 and
+        points[1] == 0 and
+        points[9] == 0 and
+        points[3] == 0 and
+        points[5.5] != 0 and
+        points[4.5] != 0 and
+        points[59] != 0 and
+        points[244] != 0):
+        return 8
+    elif (points[5] != 0 and points[4] == 0 and points [4.5] != 0 and points[5.5] != 0 and points[57] != 0 and points[59] != 0):
+        return 9
+    elif (points[5] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0):
+        return 6
+    elif (points["above_five"] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0):
+        return 6
+    elif (points[9] != 0 and points[5] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0) and points[59] == 0:
+        return 5
+    elif (points[9] != 0 and points[5] == 0):
+        return 4
+    elif (points[5] == 0 and points[4.5] != 0 and points[5.5] != 0):
+        return 0
+    elif (points[5] != 0 and points[8] != 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] == 0 and points[3] == 0 and points[6] == 0 and points [57] != 0 and points [4.5] == 0):
+        return 3
+    elif (points[5] == 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] != 0 and points[3] == 0):
+        return 2
+    elif (points[5] != 0 and points[8] != 0 and points[2] == 0 and points[1.5] != 0):
+        return 7
+    elif (points[9] != 0 and points[5] != 0):
+        return 1
+    elif (points[5] != 0):
+        if (digit_num == 1):
+            return 3
+        else:
+            return 9
+
+    return -1
+
+
 def get_time_seconds(frame):
     text=""
 
@@ -1537,11 +1564,6 @@ def get_time_seconds(frame):
 
         #roi[5] = (255,0,0)
 
-        #print(f"seconds n_white {n_white_pix} for {height}")
-        #cv2.imshow("frame", frame)
-        #cv2.imshow("roi", roi)
-        #cv2.imshow("grey", thresholded_image)
-        #cv2.waitKey()
 
         #digit = pytesseract.image_to_string(thresholded_image, timeout=2, config="--oem 3 --psm 10 -c tessedit_char_whitelist=0123456789")
         #print(f"digit {digit}")
@@ -1552,54 +1574,8 @@ def get_time_seconds(frame):
         #text = pytesseract.image_to_string(thresholded_image, timeout=2, config="--psm 6")
         n_white_pix = 0
         if (frame_height == 720):
-            points = {}
-            points[1] = thresholded_image[height-1, 0]
-            points[7] = thresholded_image[0, 0]
-            points[9] = thresholded_image[0, width-1]
-            points[3] = thresholded_image[height-1, width-1]
-            points[4] = thresholded_image[int(height/2), 0]
-            points[4.5] = thresholded_image[int(height/2), int(width*0.25)]
-            points[5] = thresholded_image[int(height/2), int(width/2)]
-            points[5.5] = thresholded_image[int(height/2), int(width*0.75)]
-            points[59] = thresholded_image[int(height*0.25), int(width*0.75)]
-            points[58] = thresholded_image[int(height*0.25), int(width*0.50)]
-            points[57] = thresholded_image[int(height*0.25), int(width*0.25)]
-            points[6] = thresholded_image[int(height/2), width-1]
-            points[8] = thresholded_image[0, int(width/2)]
-            points[2] = thresholded_image[height-1, int(width/2)]
-            points[1.5] = thresholded_image[height-1, int(width*0.25)]
-
-            try:
-                points[244] = thresholded_image[24, 4]
-            except:
-                return "00.00"
-
-            if (points[5] != 0 and points[8] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0 and points[59] != 0) and points[244] != 0:
-                text = f"{text}8"
-            elif (points[5] != 0 and points[4] == 0 and points [4.5] != 0 and points[5.5] != 0 and points[57] != 0 and points[59] != 0):
-                text = f"{text}9"
-            elif (points[5] != 0 and points[7] == 0 and points[1] == 0 and points[9] == 0 and points[3] == 0 and points[5.5] != 0 and points[4.5] != 0):
-                #and points[59] == 0)
-                text = f"{text}6"
-            elif (points[9] != 0 and points[5] == 0 and points[2] != 0 and points[7] == 0 and points[1] == 0) and points[59] == 0:
-                text = f"{text}5"
-            elif (points[9] != 0 and points[5] == 0):
-                text = f"{text}4"
-            elif (points[5] == 0 and points[4.5] != 0 and points[5.5] != 0):
-                text = f"{text}0"
-            elif (points[5] != 0 and points[8] != 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] == 0 and points[3] == 0 and points[6] == 0 and points [57] != 0 and points [4.5] == 0):
-                text = f"{text}3"
-            elif (points[5] == 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] != 0 and points[3] == 0):
-                text = f"{text}2"
-            elif (points[5] != 0 and points[8] != 0 and points[2] == 0 and points[1.5] != 0):
-                text = f"{text}7"
-            elif (points[9] != 0 and points[5] != 0):
-                text = f"{text}1"
-            elif (points[5] != 0):
-                if (digit_num == 1):
-                    text = f"{text}3"
-                else:
-                    text = f"{text}9"
+            digit = get_time_digit_720p(thresholded_image, width, height, digit_num)
+            text = f"{text}{digit}"
         else:
             n_white_pix = np.sum(thresholded_image == 255)
         if (frame_height == 480):
