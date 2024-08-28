@@ -1500,6 +1500,8 @@ def get_time_digit_720p(thresholded_image, width, height, digit_num):
         return 0
     elif (points[5] != 0 and points[8] != 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] == 0 and points[3] == 0 and points[6] == 0 and points [57] != 0 and points [4.5] == 0):
         return 3
+    elif (points[5] != 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] == 0 and points[3] == 0 and points[6] == 0 and points [57] != 0 and points [4.5] == 0):
+        return 3
     elif (points[5] == 0 and points[2] != 0 and points[9] == 0 and points[7] == 0 and points[1] != 0 and points[3] == 0):
         return 2
     elif (points[5] != 0 and points[8] != 0 and points[2] == 0 and points[1.5] != 0):
@@ -1534,7 +1536,7 @@ def is_time_running_out(frame, debug=False):
 
     return red_count > threshold
 
-def get_time_seconds(frame):
+def get_time_seconds(frame, debug=False):
     text=""
 
     frame_height, width, _ = frame.shape  # Get the dimensions of the frame
@@ -1560,17 +1562,6 @@ def get_time_seconds(frame):
         w = int(w*factor)
         h = int(h*factor)
 
-        #rh, rw, _ = roi.shape  # Get the dimensions of the frame
-        #(b,g,r) = roi[rh-1,rw-1]
-
-        #cv2.imshow("frame", frame)
-        #cv2.imshow("roi", roi)
-        #cv2.imshow("grey", thresholded_image)
-        #cv2.waitKey()
-
-        #if (r > 50):
-            #return "45"
-
         running_out = is_time_running_out(frame)
         if (running_out):
             x = (int) (x + w / 2)
@@ -1590,6 +1581,7 @@ def get_time_seconds(frame):
         height, width = thresholded_image.shape  # Get the dimensions of the frame
 
         n_white_pix = 0
+
         if (frame_height == 720):
             digit = get_time_digit_720p(thresholded_image, width, height, digit_num)
             text = f"{text}{digit}"
