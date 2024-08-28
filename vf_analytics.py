@@ -1525,7 +1525,11 @@ def is_time_running_out(frame, debug=False):
         cv2.imshow(f"roi {red_count}", roi)
         cv2.waitKey()
 
-    return red_count > 100
+    threshold = 100
+    if (h == 480):
+        threshold = 50
+
+    return red_count > threshold
 
 def get_time_seconds(frame):
     text=""
