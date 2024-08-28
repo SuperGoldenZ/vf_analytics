@@ -131,7 +131,7 @@ playlists_worldx = [
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwxBcPmBVcNQ2jI_IKjnRYb"
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kzhysQA_1QsTGJtKHrk28hc"
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5ky04zvm8hTVjJ3KyyydKvL4"
-    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwOe2-EzspVez6mvFTQhLIV"    
+    ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwOe2-EzspVez6mvFTQhLIV"
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwqfXUzc0BIFj-U1JbvR2Bl"
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwmALMSoRxtEB7GTUTq2wqS"
     ,"https://www.youtube.com/playlist?list=PL-QUVETUF5kwTInxwfnCChRWPLQj74o1X"
@@ -153,22 +153,24 @@ playlists_worldx = [
 #panchan_videos = [
 #]
 
-def get_stream(url, resolution="480p", youtube_auth=True):
-    logger.debug(f"get_stream {url} {resolution}" )
+def get_stream(url, resolution="480p", youtube_auth=True, fps=30):
+    logger.debug(f"get_stream {url} PARAMS - {resolution} {fps}" )
     yt = YouTube(url, use_oauth=youtube_auth)
-    fps = 30
-    if (resolution=="720p"):
-        fps=30
 
     try:
-        logger.debug(f"got streams {yt.streams}")
+
+        for stream in yt.streams:
+            logger.debug(f"got stream {stream}")
+
         ys = yt.streams.filter(res=resolution, fps=fps).first()
         if (ys is None and resolution == "480p"):
-            return get_stream(url, '720p')
+            return get_stream(url, '720p', True, 30)
+        if (ys is None and resolution == "720p"):
+            return get_stream(url, '720p', True, 60)
         return ys
     except Exception as error:
         logger.error(f"error occured getting stream {error}")
-        if (resolution == '480p'):            
+        if (resolution == '480p'):
             return get_stream(url, '720p')
     raise Exception(f"Resolution not found for {url} {resolution}")
 
