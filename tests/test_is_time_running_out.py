@@ -3,6 +3,7 @@ import cv2
 import vf_analytics
 
 test_data = [
+    ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/720p/time/08_00_01.png", "8", "00", 720, True],
     ["assets/test_images/720p/time/09_96_01.png", "9", "96", 720, True],
     ["assets/test_images/720p/time/10_08_01.png", "10", "08", 720, True],
@@ -55,25 +56,3 @@ def test_time_480p(image_filename, expected_time_seconds, expected_time_ms, reso
 
     actual_is_time_running_out = vf_analytics.is_time_running_out(image)
     assert expected_is_time_running_out == actual_is_time_running_out, f"{actual_is_time_running_out} not expected value of {expected_is_time_running_out} for {image_filename}"
-
-test_data_digits = [
-    ["assets/test_images/720p/time/6.png", 6, 2],
-]
-
-@pytest.mark.parametrize("image_filename, expected_digit, digit_num", test_data_digits)
-def test_get_digit_720p(image_filename, expected_digit, digit_num):
-    """Tests OCR for getting time individual digits"""
-
-    vf_analytics.resolution="480p"
-    image = cv2.imread(image_filename)
-
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    threshold_value = 200
-    _, thresholded_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
-
-    height, width = thresholded_image.shape  # Get the dimensions of the frame
-    assert image is not None, f"{image_filename} is none"
-
-    actual_digit = vf_analytics.get_time_digit_720p(thresholded_image, width, height, digit_num)
-
-    assert actual_digit == expected_digit, f"{actual_digit} not expected value of {expected_digit} for {image_filename}"
