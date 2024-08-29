@@ -1335,7 +1335,7 @@ def compare_images_histogram(imageA, imageB):
     similarity = cv2.compareHist(histA, histB, cv2.HISTCMP_INTERSECT)
     return similarity
 
-def is_winning_round(frame):
+def is_winning_round(frame, debug=False):
     region_name="all_rounds"
     (x, y, w, h) = get_dimensions(region_name, resolution)
 
@@ -1354,8 +1354,9 @@ def is_winning_round(frame):
     roi = frame[y:y+h, x:x+w]
 
     #print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
-    #cv2.imshow("roi", roi)
-    #cv2.waitKey()
+    if (debug):
+        cv2.imshow("roi", roi)
+        cv2.waitKey()
 
     bar_blue_two = count_pixels("#0636a5", roi, 5)
     if (bar_blue_two >= 60*factor):
