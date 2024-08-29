@@ -398,7 +398,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 else:
                     suffix=f"unknownwin_for_player{player_num}"
 
-                save_cam_frame(jpg_folder, original_frame, frame, count, f"{suffix}_{timestr}")
+                save_cam_frame(jpg_folder, original_frame, frame, count, f"{rounds_won[0]}_{rounds_won[1]}_{suffix}_{timestr}")
             except:
                 logger.error(f"{video_id} {count:13d} ERROR write to csv")
             logger.debug(f"{video_id} {count:13d} - round {round_num} finished player {player_num} won")
