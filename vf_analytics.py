@@ -1341,7 +1341,7 @@ def is_winning_round(frame):
 
     factor = 1.0
 
-    height, width, _ = frame.shape  # Get the dimensions of the frame
+    height = frame.shape[0]  # Get the dimensions of the frame
 
     if (height == 720):
         factor = 1.5
@@ -1361,6 +1361,10 @@ def is_winning_round(frame):
     if (bar_blue_two >= 60*factor):
         return 0
 
+    teal = count_pixels("#68fffe", roi, 5)
+    if (teal > 15):
+        return 0
+
     all_dark_red = count_pixels("#780103", roi, 5)
     all_dark_maroon = count_pixels("#520004", roi, 5)
     other_blue = count_pixels("#36539f", roi, 5)
@@ -1370,10 +1374,6 @@ def is_winning_round(frame):
     bar_blue = count_pixels("#0318c6", roi, 5)
     all_dark_blue = count_pixels("#03176d", roi, 5)
     more_blue = count_pixels("#443fe7", roi, 5)
-
-    #print(f"adb {all_dark_blue} adr {all_dark_red} adm {all_dark_maroon} odb {other_db} ab {another_blue} ob {other_blue} mb {more_blue} om {other_maroon} bb {bar_blue} ")
-    #cv2.imshow("roi", roi)
-    #cv2.waitKey()
 
     if (height == 480 and (all_dark_blue >= 5 or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 15 or bar_blue >= 10 or more_blue > 7)):
        #print ("arbot a")
