@@ -15,7 +15,7 @@ import VideoCaptureAsync
 import vf_analytics
 import youtube_helper
 
-DONT_SAVE = False
+DONT_SAVE = True
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -26,6 +26,7 @@ resize_video = False
 youtube_auth = True
 force_append = False
 video_folder_param = None
+
 
 def get_available_devices():
     index = 0
