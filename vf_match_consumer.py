@@ -1,13 +1,23 @@
 import os
+import logging
+
 import confluent_kafka
 from confluent_kafka import Consumer
 import vf_match_analyzer
+
+logger = None
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="vf_match_consumer.log", encoding="utf-8", level=logging.INFO)
 
 # Kafka configuration
 conf = {
     "bootstrap.servers": os.environ["KAFKA_BOOTSTRAP_SERVER"],
     "group.id": "youtube_processor_group",
     "auto.offset.reset": "earliest",
+    'security.protocol': 'SASL_SSL',
+    'sasl.mechanism': 'PLAIN',
+    'sasl.username': os.environ["KAFKA_SASL_USERNAME"],
+    'sasl.password': os.environ["KAFKA_SASL_PASSWORD"]
 }
 
 # Kafka topic to subscribe to
@@ -37,13 +47,15 @@ try:
 
         # Get the YouTube URL from the message
         url = msg.value().decode("utf-8")
-        print(f"Received URL: {url}")
+        print(f"Received URL: {url}", end=" ", flush=True)
 
         # Process the YouTube video
         vf_match_analyzer.analyze_video(url)
+        print("done!", flush=True)        
 
 except KeyboardInterrupt:
     pass
 finally:
+    print("Closing consumer")
     # Close the consumer
     consumer.close()
