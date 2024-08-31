@@ -1,6 +1,6 @@
 import os
 import logging
-import argparse
+import gc
 import confluent_kafka
 from confluent_kafka import Consumer
 import vf_match_analyzer
@@ -53,6 +53,7 @@ try:
 
         try:
             vf_match_analyzer.analyze_video(url)
+            gc.collect()
         except Exception:
             print("\terror occured, skipping video")
         # Process the YouTube video
