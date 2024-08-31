@@ -10,7 +10,7 @@ conf = {
     "auto.offset.reset": "earliest",
     'security.protocol': 'SASL_SSL',
     'sasl.mechanism': 'PLAIN',
-    'sasl.username': 'sasl.username': os.environ["KAFKA_SASL_USERNAME"],
+    'sasl.username': os.environ["KAFKA_SASL_USERNAME"],
     'sasl.password': os.environ["KAFKA_SASL_PASSWORD"]
 }
 
