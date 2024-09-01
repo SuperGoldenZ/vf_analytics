@@ -9,4 +9,5 @@ __js__ = None
 __js_url__ = None
 
 from vf_cv.timer import Timer
+from vf_cv.cv_helper import CvHelper
 from vf_cv.version import __version__
