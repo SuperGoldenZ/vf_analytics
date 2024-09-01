@@ -18,22 +18,20 @@ class Timer:
     }
 
     frame = None
-    resolution = None
     frame_height = None
 
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-        self.resolution = f"{frame.shape[0]}p"
         self.frame_height = frame.shape[0]
 
-    def get_roi(self, region_name):
+    def get_roi(self, region_name, override=None):
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.resolution == "480p":
+        if self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
-        elif self.resolution == "720p":
+        elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 1.5)
             y = (int)(y * 1.5)
@@ -227,10 +225,10 @@ class Timer:
         """Returns true if last 10 seconds of a round"""
 
         region_name = "time_seconds_digit1"
-        (x, y, w, h) = self.get_roi(region_name)
+        (x, y, w, h) = self.get_roi(region_name, "720p")
         roi = self.frame[y : y + h, x : x + w]
 
-        red_count = vf_cv.CvHelper.count_pixels("#FF0000", roi)
+        count = vf_cv.CvHelper.count_pixels("#FF0000", roi)
 
         if debug:
             cv2.imshow(f"roi {red_count}", roi)
@@ -240,7 +238,7 @@ class Timer:
         if h == 480:
             threshold = 50
 
-        return red_count > threshold
+        return count > threshold
 
     def get_time_seconds(self, debug=False):
         """Returns number of seconds remaining in a round"""
@@ -258,7 +256,11 @@ class Timer:
 
         for digit_num in range(1, 3):
             region_name = f"time_seconds_digit{digit_num}"
+            old = self.frame_height
+            self.frame_height = 480
+
             (x, y, w, h) = self.get_roi(region_name)
+            self.frame_height = old
 
             x = int(x * factor)
             y = int(y * factor)
@@ -298,7 +300,7 @@ class Timer:
                     return text
             else:
                 n_white_pix = np.sum(thresholded_image == 255)
-            if self.frame_height == 480:
+            if True:
                 if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
                     text = f"{text}1"
                 elif (
@@ -434,7 +436,8 @@ class Timer:
         # print (f"returning {text}")
         return text
 
-    def get_time_digit_720p(self, thresholded_image, width, height, digit_num):
+    @staticmethod
+    def get_time_digit_720p(thresholded_image, width, height, digit_num):
         """Returns one digit of the time remaining in a match"""
 
         points = {}
@@ -459,7 +462,7 @@ class Timer:
             points["above_five"] = thresholded_image[
                 int(height / 2) - 2, int(width / 2)
             ]
-        except Exception:
+        except:
             return "00.00"
 
         if (
