@@ -14,6 +14,7 @@ import numpy as np
 import VideoCaptureAsync
 import vf_analytics
 import youtube_helper
+import vf_cv
 
 DONT_SAVE = True
 
@@ -27,6 +28,7 @@ youtube_auth = True
 force_append = False
 video_folder_param = None
 
+time_cv = vf_cv.Timer()
 
 def get_available_devices():
     index = 0
@@ -312,7 +314,8 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             ):
                 count += int(frame_rate * interval)
                 continue
-            time_ms = vf_analytics.get_time_ms(frame)
+
+            time_ms = time_cv.get_time_ms(frame, vf_analytics.resolution)
 
             old_time = timestr
             timestr = f"{time_seconds}.{time_ms}"
@@ -410,7 +413,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 timestr = None
                 try:
                     time_seconds = vf_analytics.get_time_seconds(frame)
-                    time_ms = vf_analytics.get_time_ms(frame)
+                    time_ms = time_cv.get_time_ms(frame, vf_analytics.resolution)
                     timestr = f"{time_seconds}.{time_ms}"
                 except:
                     timestr = "na"
