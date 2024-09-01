@@ -306,7 +306,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
         if state == "fight":
             old_time_seconds = time_seconds
-            time_seconds = vf_analytics.get_time_seconds(frame)
+
+            time_cv.set_frame(frame)
+            time_seconds = time_cv.get_time_seconds(frame)
             if (
                 (time_seconds == "43" or time_seconds == "44" or time_seconds == "45")
                 or (time_seconds != old_time_seconds)
@@ -315,7 +317,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 count += int(frame_rate * interval)
                 continue
 
-            time_ms = time_cv.get_time_ms(frame, vf_analytics.resolution)
+            time_ms = time_cv.get_time_ms()
 
             old_time = timestr
             timestr = f"{time_seconds}.{time_ms}"
@@ -413,7 +415,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 timestr = None
                 try:
                     time_seconds = vf_analytics.get_time_seconds(frame)
-                    time_ms = time_cv.get_time_ms(frame, vf_analytics.resolution)
+                    time_ms = time_cv.get_time_ms()
                     timestr = f"{time_seconds}.{time_ms}"
                 except:
                     timestr = "na"
