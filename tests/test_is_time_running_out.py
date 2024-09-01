@@ -1,6 +1,6 @@
 import pytest
 import cv2
-import vf_analytics
+import vf_cv
 
 test_data = [
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
@@ -42,17 +42,33 @@ test_data = [
     ["assets/test_images/480p/time/43_96.png", "43", "96", 720, False],
 ]
 
-@pytest.mark.parametrize("image_filename, expected_time_seconds, expected_time_ms, resolution, expected_is_time_running_out", test_data)
-def test_time_480p(image_filename, expected_time_seconds, expected_time_ms, resolution, expected_is_time_running_out):
+
+@pytest.mark.parametrize(
+    "image_filename, expected_time_seconds, expected_time_ms, resolution, expected_is_time_running_out",
+    test_data,
+)
+def test_time_480p(
+    image_filename,
+    expected_time_seconds,
+    expected_time_ms,
+    resolution,
+    expected_is_time_running_out,
+):
     """Tests OCR for getting time remaining during a match with 480p resolution"""
 
-    vf_analytics.resolution=f"480p"
     image = cv2.imread(image_filename)
 
     assert image is not None, f"{image_filename} is none"
 
-    height = image.shape[0]  # Get the dimensions of the frame
-    assert height == resolution, f"{image_filename} is {height}p instead of expected {resolution}p"
+    timer = vf_cv.Timer()
+    timer.set_frame(image)
 
-    actual_is_time_running_out = vf_analytics.is_time_running_out(image)
-    assert expected_is_time_running_out == actual_is_time_running_out, f"{actual_is_time_running_out} not expected value of {expected_is_time_running_out} for {image_filename}"
+    height = image.shape[0]  # Get the dimensions of the frame
+    assert (
+        height == resolution
+    ), f"{image_filename} is {height}p instead of expected {resolution}p"
+
+    actual_is_time_running_out = timer.is_time_running_out()
+    assert (
+        expected_is_time_running_out == actual_is_time_running_out
+    ), f"{actual_is_time_running_out} not expected value of {expected_is_time_running_out} for {image_filename}"
