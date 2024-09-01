@@ -231,7 +231,7 @@ class Timer:
         count = vf_cv.CvHelper.count_pixels("#FF0000", roi)
 
         if debug:
-            cv2.imshow(f"roi {red_count}", roi)
+            cv2.imshow(f"roi {count}", roi)
             cv2.waitKey()
 
         threshold = 100
