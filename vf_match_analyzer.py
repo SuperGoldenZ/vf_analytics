@@ -29,6 +29,9 @@ force_append = False
 video_folder_param = None
 
 time_cv = vf_cv.Timer()
+winning_round = vf_cv.WinningRound()
+player_rank = vf_cv.PlayerRank()
+
 
 def get_available_devices():
     index = 0
@@ -62,6 +65,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
     if hdd.free < 10567308288:
         return
 
+    original_thread = None
     original_out_filename = (
         jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
     )
@@ -71,37 +75,29 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         )
         original_thread.start()
 
+    normal_thread = None
     out_filename = jpg_folder + "/" + str(f"{count_int}_{suffix}") + ".png"
     if not os.path.isfile(out_filename):
         normal_thread = threading.Thread(target=save_image, args=(out_filename, frame))
         normal_thread.start()
 
+    if original_thread is not None:
+        original_thread.join()
+
+    if normal_thread is not None:
+        normal_thread.join()
+
 
 # Step 2: Extract frames from the video
-def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-1):
-    cap = None
-
-    frame_rate = None
-    frame_count = None
-
-    if video_path is not None:
-        # cap = cv2.VideoCapture(video_path )
-        cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
-        frame_rate = cap.get_frame_rate()
-        frame_count = cap.get_frame_count()
-
-    else:
-        cap = cv2.VideoCapture(cam)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-
-        if not cap.isOpened():
-            print(f"Failed to open CAM {cam}")
-            return
-
-        frame_rate = cap.get(cv2.CAP_PROP_FPS)
-        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
+def extract_frames(
+    cap,
+    interval,
+    video_id="n/a",
+    jpg_folder="jpg",
+    cam=-1,
+    frame_rate=None,
+    frame_count=None,
+):
     end_frame = None
     if end_frame is None or end_frame > frame_count:
         end_frame = frame_count
@@ -118,7 +114,6 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
     match["id"] = uuid.uuid4()
 
     skipFrames = 0
-    hdd = psutil.disk_usage("/")
 
     if cam != -1:
         jpg_folder = "assets/jpg/cam"
@@ -197,7 +192,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             continue
 
         original_frame = frame
-        height, width, _ = frame.shape  # Get the dimensions of the frame
+        height = frame.shape[0]  # Get the dimensions of the frame
 
         frame_480p = None
 
@@ -233,6 +228,8 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                     )
             else:
                 count += int(frame_rate * interval * 40)
+                del frame
+                del original_frame
                 continue
 
         #        if (height != 480 and frame_480p is None):
@@ -300,6 +297,10 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 # skipFrames=28
                 print(f"got all match info: {count:13d} - fight")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "start")
+
+                del frame
+                del original_frame
+
                 continue
             # else:
             # save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
@@ -315,6 +316,10 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 or old_time_seconds is None
             ):
                 count += int(frame_rate * interval)
+
+                del frame
+                del original_frame
+
                 continue
 
             time_ms = time_cv.get_time_ms()
@@ -339,7 +344,8 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 elif height == 480:
                     frame = frame_480p
 
-                player_num = vf_analytics.is_winning_round(frame)
+                winning_round.set_frame(frame)
+                player_num = winning_round.is_winning_round()
                 # if (player_num != 0):
                 # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}_won")
                 # else:
@@ -347,12 +353,17 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
             else:
                 count += 1
+                del frame
+                del original_frame
+
                 continue
 
             if player_num == 0:
                 # logger.debug(f"{count_int} could not determine which player won so skipping")
                 # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
                 count += 1
+                del frame
+                del original_frame
 
                 continue
 
@@ -366,9 +377,10 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
             # count = count +1
             # continue
 
+            player_rank.set_frame(frame)
             if "player1rank" not in match or match["player1rank"] == 0:
                 try:
-                    player1rank = vf_analytics.get_player_rank(1, frame, True)
+                    player1rank = player_rank.get_player_rank(1)
                     match["player1rank"] = player1rank
                     logger.debug(f"{video_id} {count:13d} - player1rank {player1rank}")
                 except:
@@ -376,7 +388,7 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
             if "player2rank" not in match or match["player2rank"] == 0:
                 try:
-                    player2rank = vf_analytics.get_player_rank(2, frame, True)
+                    player2rank = player_rank.get_player_rank(2)
                     match["player2rank"] = player2rank
                     logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
                 except:
@@ -386,6 +398,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
 
             if timestr != old_time:
                 count += int(frame_rate * interval) * 3
+                del frame
+                del original_frame
+
                 continue
 
             logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
@@ -404,6 +419,9 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
                 count += int(frame_rate * interval)
 
                 save_cam_frame(jpg_folder, original_frame, frame, count, "unknown_skip")
+                del frame
+                del original_frame
+
                 continue
 
             rounds_won[player_num - 1] = rounds_won[player_num - 1] + 1
@@ -482,15 +500,18 @@ def extract_frames(video_path, interval, video_id="n/a", jpg_folder="jpg", cam=-
         # time.sleep(0.25)
 
         count += int(frame_rate * interval)
+        del frame
+        del original_frame
 
     if state != "before":
         logger.error(f"{video_id} {count:13d} - premature match aborted")
-    hdd = psutil.disk_usage("/")
 
-    if hdd.free < 10567308288:
-        os.remove(video_path)
+    # hdd = psutil.disk_usage("/")
 
-    cap.release()
+    # if hdd.free < 10567308288:
+    # os.remove(video_path)
+
+    # cap.release()
     return (count, matches_processed)
 
 
@@ -518,96 +539,94 @@ def all_but_black(roi):
 
 
 def print_csv(match, round, round_num, video_id, frame_count, time):
-    f = open(f"match_data_{video_id}.csv", "a")
+    with open(f"match_data_{video_id}.csv", "a") as f:
+        if video_id is None:
+            f.write("cam")
+        else:
+            f.write(video_id)
 
-    if video_id is None:
-        f.write("cam")
-    else:
-        f.write(video_id)
+        f.write(",")
+        f.write(str(frame_count))
+        f.write(",")
+        f.write(str(match["id"]))
+        f.write(",")
+        if not "stage" in match or match["stage"] is None:
+            f.write("n/a")
+        else:
+            f.write(match["stage"])
+        f.write(",")
+        f.write(match["player1ringname"])
+        f.write(",")
+        try:
+            f.write(str(match["player1rank"]))
+        except:
+            f.write("0")
+        f.write(",")
+        f.write(match["player1character"])
+        f.write(",")
+        f.write(match["player2ringname"])
+        f.write(",")
+        try:
+            f.write(str(match["player2rank"]))
+        except:
+            f.write("0")
+        f.write(",")
+        f.write(match["player2character"])
+        f.write(",")
+        f.write(str(round_num))
+        f.write(",")
+        try:
+            f.write(str(round["player1_rounds"]))
+        except:
+            f.write("0")
+        f.write(",")
+        try:
+            f.write(str(round["player1_ko"]))
+        except:
+            f.write("0")
+        f.write(",")
 
-    f.write(",")
-    f.write(str(frame_count))
-    f.write(",")
-    f.write(str(match["id"]))
-    f.write(",")
-    if not "stage" in match or match["stage"] is None:
-        f.write("n/a")
-    else:
-        f.write(match["stage"])
-    f.write(",")
-    f.write(match["player1ringname"])
-    f.write(",")
-    try:
-        f.write(str(match["player1rank"]))
-    except:
-        f.write("0")
-    f.write(",")
-    f.write(match["player1character"])
-    f.write(",")
-    f.write(match["player2ringname"])
-    f.write(",")
-    try:
-        f.write(str(match["player2rank"]))
-    except:
-        f.write("0")
-    f.write(",")
-    f.write(match["player2character"])
-    f.write(",")
-    f.write(str(round_num))
-    f.write(",")
-    try:
-        f.write(str(round["player1_rounds"]))
-    except:
-        f.write("0")
-    f.write(",")
-    try:
-        f.write(str(round["player1_ko"]))
-    except:
-        f.write("0")
-    f.write(",")
+        try:
+            f.write(str(round["player1_ringout"]))
+        except:
+            f.write("0")
 
-    try:
-        f.write(str(round["player1_ringout"]))
-    except:
-        f.write("0")
+        f.write(",")
+        try:
+            f.write(str(round["player1_excellent"]))
+        except:
+            f.write("0")
 
-    f.write(",")
-    try:
-        f.write(str(round["player1_excellent"]))
-    except:
-        f.write("0")
+        f.write(",")
+        try:
+            f.write(str(round["player2_rounds"]))
+        except:
+            f.write("0")
+        f.write(",")
+        try:
+            f.write(str(round["player2_ko"]))
+        except:
+            f.write("0")
+        f.write(",")
 
-    f.write(",")
-    try:
-        f.write(str(round["player2_rounds"]))
-    except:
-        f.write("0")
-    f.write(",")
-    try:
-        f.write(str(round["player2_ko"]))
-    except:
-        f.write("0")
-    f.write(",")
+        try:
+            f.write(str(round["player2_ringout"]))
+        except:
+            f.write("0")
+        f.write(",")
 
-    try:
-        f.write(str(round["player2_ringout"]))
-    except:
-        f.write("0")
-    f.write(",")
+        try:
+            f.write(str(round["player2_excellent"]))
+        except:
+            f.write("0")
 
-    try:
-        f.write(str(round["player2_excellent"]))
-    except:
-        f.write("0")
+        f.write(",")
+        try:
+            f.write(str(time))
+        except:
+            f.write("0")
 
-    f.write(",")
-    try:
-        f.write(str(time))
-    except:
-        f.write("0")
-
-    f.write("\n")
-    f.close()
+        f.write("\n")
 
 
 def new_round():
@@ -731,9 +750,43 @@ def analyze_video(url, cam=-1):
     resolution = "480p"
 
     fps = 0.05
-    processed, matches_processed = extract_frames(
-        video_path, fps, video_id, jpg_folder, cam=cam
-    )  # Extract a frame every 7 seconds
+    frame_rate = None
+    frame_count = None
+
+    try:
+        if video_path is not None:
+            # cap = cv2.VideoCapture(video_path )
+            cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
+            frame_rate = cap.get_frame_rate()
+            frame_count = cap.get_frame_count()
+        else:
+            cap = cv2.VideoCapture(cam)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+            if not cap.isOpened():
+                print(f"Failed to open CAM {cam}")
+                return
+
+            frame_rate = cap.get(cv2.CAP_PROP_FPS)
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        processed = 0
+        matches_processed = 0
+
+        processed, matches_processed = extract_frames(
+            cap,
+            fps,
+            video_id,
+            jpg_folder,
+            cam=cam,
+            frame_rate=frame_rate,
+            frame_count=frame_count,
+        )  # Extract a frame every 7 seconds
+    except Exception as e:
+        logger.error(f"An exception occured {e}")
+        logger.error(repr(e))
+    finally:
+        cap.release()
 
     elapsed_time = timer() - start  # in seconds
     fps = processed / elapsed_time
