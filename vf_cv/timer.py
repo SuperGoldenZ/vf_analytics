@@ -19,7 +19,7 @@ class Timer:
 
     frame = None
     frame_height = None
-
+        
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -278,10 +278,11 @@ class Timer:
             _, thresholded_image = cv2.threshold(
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
-
-            contours, _ = cv2.findContours(
+            
+            contours = cv2.findContours(
                 thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
+            )[0]
+
             if contours:
                 x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
                 # Crop the image to the bounding box
