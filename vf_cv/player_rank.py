@@ -50,63 +50,63 @@ class PlayerRank:
         REGULAR_REGION = f"player{player_num}rank"
         REGULAR_REGION_ROI = self.get_roi(REGULAR_REGION)
 
+        (full_x, full_y, full_w, full_h) = FULL_REGION_ROI
+
+        factor = 1.0
+
+        if self.frame_height == 720:
+            factor = 1.5
+
+        full_x = int(full_x * factor)
+        full_y = int(full_y * factor)
+        full_w = int(full_w * factor)
+        full_h = int(full_h * factor)
+
+        full_roi = self.frame[full_y : full_y + full_h, full_x : full_x + full_w]
+
+        white_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 50)
+        purple_count = vf_cv.CvHelper.count_pixels("#7600b9", full_roi)
+        grey = vf_cv.CvHelper.count_pixels("#908f95", full_roi)
+        dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", full_roi)
+        teal_count = vf_cv.CvHelper.count_pixels("#558784", full_roi)
+        grellow_count = vf_cv.CvHelper.count_pixels("#8e9a52", full_roi)
+        gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", full_roi)
+        ry = vf_cv.CvHelper.count_pixels("#cc5b31", full_roi)
+        black_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 5)
+
+        if (
+            dark_purple_count > 100
+            and teal_count > 100
+            and grellow_count > 100
+            and black_count < 50
+        ):
+            return 39
+
+        if grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50:
+            return 43
+
+        if purple_count > 8:
+            return 42
+
         for retry in range(0, 9):
-
-            (x, y, w, h) = FULL_REGION_ROI
-
-            factor = 1.0
-
-            if self.frame_height == 720:
-                factor = 1.5
-
-            x = int(x * factor)
-            y = int(y * factor)
-            w = int(w * factor)
-            h = int(h * factor)
-
-            roi = self.frame[y : y + h, x : x + w]
-
-            white_count = vf_cv.CvHelper.count_pixels("#000000", roi, 50)
-            purple_count = vf_cv.CvHelper.count_pixels("#7600b9", roi)
-            grey = vf_cv.CvHelper.count_pixels("#908f95", roi)
-            dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", roi)
-            teal_count = vf_cv.CvHelper.count_pixels("#558784", roi)
-            grellow_count = vf_cv.CvHelper.count_pixels("#8e9a52", roi)
-            gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", roi)
-            ry = vf_cv.CvHelper.count_pixels("#cc5b31", roi)
-            black_count = vf_cv.CvHelper.count_pixels("#000000", roi, 5)
-
-            if (
-                dark_purple_count > 100
-                and teal_count > 100
-                and grellow_count > 100
-                and black_count < 50
-            ):
-                return 39
-
-            if grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50:
-                return 43
-
-            if purple_count > 8:
-                return 42
 
             if retry == 8:
                 compares = vf_cv.CvHelper.compare_images_histogram(
-                    roi, self.rank_images[37]
+                    full_roi, self.rank_images[37]
                 )
 
                 if compares > 38:
                     return 37
 
                 compares = vf_cv.CvHelper.compare_images_histogram(
-                    roi, self.rank_images[43]
+                    full_roi, self.rank_images[43]
                 )
 
                 if compares > 38:
                     return 43
 
                 compares = vf_cv.CvHelper.compare_images_histogram(
-                    roi, self.rank_images[44]
+                    full_roi, self.rank_images[44]
                 )
 
                 if compares > 38:
