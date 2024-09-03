@@ -15,6 +15,7 @@ import VideoCaptureAsync
 import vf_analytics
 import youtube_helper
 import vf_cv
+import traceback
 
 DONT_SAVE = True
 
@@ -31,6 +32,7 @@ video_folder_param = None
 time_cv = vf_cv.Timer()
 winning_round = vf_cv.WinningRound()
 player_rank = vf_cv.PlayerRank()
+character = vf_cv.Character()
 
 
 def get_available_devices():
@@ -89,6 +91,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
 
 # Step 2: Extract frames from the video
+@profile
 def extract_frames(
     cap,
     interval,
@@ -154,8 +157,10 @@ def extract_frames(
 
         original_frame = None
 
-        if cam == -1 and os.path.isfile(
-            jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg"
+        if (
+            DONT_SAVE == False
+            and cam == -1
+            and os.path.isfile(jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg")
         ):
             try:
                 filename = jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg"
@@ -241,7 +246,8 @@ def extract_frames(
 
         if state == "vs":
             if match.get("player1character") is None:
-                player1character = vf_analytics.get_character_name(1, frame)
+                character.set_frame(frame)
+                player1character = character.get_character_name(1)
                 if player1character is not None:
                     match["player1character"] = player1character
                     logger.debug(
@@ -256,7 +262,8 @@ def extract_frames(
                     )
 
             if match.get("player2character") is None:
-                player2character = vf_analytics.get_character_name(2, frame)
+                character.set_frame(frame)
+                player2character = character.get_character_name(2)
                 if player2character is not None:
                     match["player2character"] = player2character
                     logger.debug(
@@ -784,6 +791,7 @@ def analyze_video(url, cam=-1):
     except Exception as e:
         logger.error(f"An exception occured {e}")
         logger.error(repr(e))
+        logger.error(traceback.format_exc())
     finally:
         cap.release()
 
