@@ -686,10 +686,9 @@ def analyze_video(url, cam=-1):
 
     if url is not None:
         video_id = youtube_helper.get_youtube_video_id(url)
-        with open("match_data.csv") as f:
-            if video_id in f.read() and force_append == False:
-                print(f"Skipping {video_id} since it's already in match data")
-                return
+        if pathlib.Path(f"match_data_{video_id}.csv").is_file():
+            print(f"Skipping {video_id} since it's already in match data")
+            return
 
         resolution = None
         jpg_folder = None
