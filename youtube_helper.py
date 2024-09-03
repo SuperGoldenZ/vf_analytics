@@ -171,27 +171,32 @@ playlists_worldx = [
 # panchan_videos = [
 # ]
 
+STREAM_SEARCH = [
+    {"resolution": "480p", "fps": 30},
+    {"resolution": "480p", "fps": 60},
+    {"resolution": "720p", "fps": 30},
+    {"resolution": "720p", "fps": 60},
+]
 
-def get_stream(url, resolution="480p", youtube_auth=True, fps=30):
-    logger.debug(f"get_stream {url} PARAMS - {resolution} {fps}")
+
+def get_stream(url, youtube_auth=True):
     yt = YouTube(url, use_oauth=youtube_auth)
 
-    try:
+    for stream_params in STREAM_SEARCH:
+        try:
+            for stream in yt.streams:
+                logger.debug(f"got stream {stream}")
 
-        for stream in yt.streams:
-            logger.debug(f"got stream {stream}")
+            ys = yt.streams.filter(
+                res=stream_params["resolution"], fps=stream_params["fps"]
+            ).first()
+            if ys is not None:
+                return ys
+        except Exception as error:
+            logger.error(f"error occured getting stream {error}")
+            logger.error(repr(error))
 
-        ys = yt.streams.filter(res=resolution, fps=fps).first()
-        if ys is None and resolution == "480p":
-            return get_stream(url, "720p", True, 30)
-        if ys is None and resolution == "720p":
-            return get_stream(url, "720p", True, 60)
-        return ys
-    except Exception as error:
-        logger.error(f"error occured getting stream {error}")
-        if resolution == "480p":
-            return get_stream(url, "720p")
-    raise Exception(f"Resolution not found for {url} {resolution}")
+    raise Exception(f"Not suitable resolution and FPS found for {url}")
 
 
 # Step 1: Download the YouTube video
