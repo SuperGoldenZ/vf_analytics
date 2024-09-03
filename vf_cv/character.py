@@ -31,6 +31,12 @@ class Character:
             y = (int)(y * 1.5)
             w = (int)(w * 1.5)
             h = (int)(h * 1.5)
+        elif self.frame_height == 1080:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 2.25)
+            y = (int)(y * 2.25)
+            w = (int)(w * 2.25)
+            h = (int)(h * 2.25)
         return (x, y, w, h)
     
     def get_character_name(self, player_num):

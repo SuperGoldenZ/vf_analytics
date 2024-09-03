@@ -29,7 +29,7 @@ class WinningRound:
         self.frame = frame
         self.frame_height = frame.shape[0]
 
-    def get_roi(self, region_name, override=None):
+    def get_roi(self, region_name):
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
@@ -41,6 +41,12 @@ class WinningRound:
             y = (int)(y * 1.5)
             w = (int)(w * 1.5)
             h = (int)(h * 1.5)
+        elif self.frame_height == 1080:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 2.25)
+            y = (int)(y * 2.25)
+            w = (int)(w * 2.25)
+            h = (int)(h * 2.25)
         return (x, y, w, h)
 
     def is_winning_round(self, debug=False):
