@@ -32,8 +32,7 @@ class Character:
             w = (int)(w * 1.5)
             h = (int)(h * 1.5)
         return (x, y, w, h)
-
-    @profile
+    
     def get_character_name(self, player_num):
         """Returns the name of the character a certain player is using"""
         region_name = f"player{player_num}character"
@@ -77,47 +76,47 @@ class Character:
                 if n_white_pix == 2778:
                     return "Brad"
 
-            if False:
-                if height == 720 and 3814 - 10 <= n_white_pix <= 3814 + 10:
-                    print("short circuit kage")
-                    return "Kage"
-
-                if height == 720 and 3384 - 10 <= n_white_pix <= 3814 + 10:
-                    print("short circuit Jean")
-                    return "Jean"
-
-                if 1400 <= n_white_pix <= 1500:
-
-                    print("short circuit kage")
-                    return "Kage Maru"
-
-                if 1200 <= n_white_pix <= 1300:
-                    print("short circuit Jean")
-                    return "Jean"
-                if retry == 1 and player_num == 1:
-                    w = w - 75
-                    h = h - 15
-                elif retry == 1 and player_num == 2:
-                    x = x - 20
-                    w = w + 20
-
-                if retry == 2 and player_num == 1:
-                    x = x + 20
-                    w = w - 100
-                    h = h - 20
-                elif retry == 2 and player_num == 2:
-                    x = x + 50
-                    w = w - 100
-
-                if retry == 3 and player_num == 1:
-                    x = x + 20
-                    w = w - 100
-                    h = h - 20
-                elif retry == 3 and player_num == 2:
-                    x = x + 175
-                    w = w - 175
-                    y = y + 10
-                    h = h - 10
+#            if False:
+#                if height == 720 and 3814 - 10 <= n_white_pix <= 3814 + 10:
+#                    print("short circuit kage")
+#                    return "Kage"
+#
+#                if height == 720 and 3384 - 10 <= n_white_pix <= 3814 + 10:
+#                    print("short circuit Jean")
+#                    return "Jean"
+#
+#                if 1400 <= n_white_pix <= 1500:
+#
+#                    print("short circuit kage")
+#                    return "Kage Maru"
+#
+#                if 1200 <= n_white_pix <= 1300:
+#                    print("short circuit Jean")
+#                    return "Jean"
+#                if retry == 1 and player_num == 1:
+#                    w = w - 75
+#                    h = h - 15
+#                elif retry == 1 and player_num == 2:
+#                    x = x - 20
+#                    w = w + 20
+#
+#                if retry == 2 and player_num == 1:
+#                    x = x + 20
+#                    w = w - 100
+#                    h = h - 20
+#                elif retry == 2 and player_num == 2:
+#                    x = x + 50
+#                    w = w - 100
+#
+#                if retry == 3 and player_num == 1:
+#                    x = x + 20
+#                    w = w - 100
+#                    h = h - 20
+#                elif retry == 3 and player_num == 2:
+#                    x = x + 175
+#                    w = w - 175
+#                    y = y + 10
+#                    h = h - 10
 
             roi = self.frame[y : y + h, x : x + w]
 
