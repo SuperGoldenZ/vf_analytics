@@ -580,6 +580,7 @@ def count_rounds_won(frame, playerNumber, override_region=None, wonSoFar=0):
 
     return 0
 
+
 def all_but_white_strict(roi):
     lower_white = np.array([236, 236, 236])  # Lower bound of white color
     upper_white = np.array([255, 255, 255])  # Upper bound of white color
@@ -637,15 +638,35 @@ def get_dimensions(region_name, local_resolution, override_region=None):
     return (x, y, w, h)
 
 
-IS_VS_RED_COORDINATES = {480: [91, 21], 720: [int(91 * 1.5), int(21 * 1.5)]}
+IS_VS_RED_COORDINATES = {
+    480: [91, 21],
+    720: [int(91 * 1.5), int(21 * 1.5)],
+    1080: [int(91 * 2.25), int(21 * 2.25)],
+}
 
-IS_VS_BLUE_COORDINATES = {480: [91, 847], 720: [int(91 * 1.5), int(847 * 1.5)]}
+IS_VS_BLUE_COORDINATES = {
+    480: [91, 847],
+    720: [int(91 * 1.5), int(847 * 1.5)],
+    1080: [int(91 * 2.25), int(847 * 2.25)],
+}
 
-IS_P2_BLUE_COORDINATES = {480: [296, 587], 720: [int(296 * 1.5), int(587 * 1.5)]}
+IS_P2_BLUE_COORDINATES = {
+    480: [296, 587],
+    720: [int(296 * 1.5), int(587 * 1.5)],
+    1080: [int(296 * 2.25), int(587 * 2.25)],
+}
 
-VS_GRAY_COORDINATES = {480: [186, 369], 720: [int(186 * 1.5), int(369 * 1.5)]}
+VS_GRAY_COORDINATES = {
+    480: [186, 369],
+    720: [int(186 * 1.5), int(369 * 1.5)],
+    1080: [int(186 * 2.25), int(369 * 2.25)],
+}
 
-VS_BLACK_COORDINATES = {480: [178, 363], 720: [int(178 * 1.5), int(363 * 1.5)]}
+VS_BLACK_COORDINATES = {
+    480: [178, 363],
+    720: [int(178 * 1.5), int(363 * 1.5)],
+    1080: [int(178 * 2.25), int(363 * 2.25)],
+}
 
 
 def is_vs(frame, debug=False):
@@ -879,6 +900,7 @@ def get_stage(frame, override_region=None):
         return "Ruins"
 
     return None
+
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and
