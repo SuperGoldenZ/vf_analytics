@@ -3,6 +3,7 @@ import logging
 import cv2
 import numpy as np
 import pytesseract
+import vf_cv
 
 # PS4 Resolution is 1920 x 1080 1080P
 
@@ -603,7 +604,7 @@ def all_but_black_range(roi, low=np.array([0, 0, 0]), high=np.array([120, 120, 1
 
 def all_but_black(image):
     image = cv2.bitwise_not(image)
-    return all_but_white(image)
+    return vf_cv.CvHelper.all_but_white(image)
 
 
 def all_but_grey(roi):
