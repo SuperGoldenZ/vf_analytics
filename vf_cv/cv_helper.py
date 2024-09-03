@@ -56,3 +56,14 @@ class CvHelper:
         # Apply the mask to keep only white areas in the ROI
         white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
         return white_only_roi
+
+    @staticmethod
+    def all_but_white(roi):
+        lower_white = np.array([230, 230, 230])  # Lower bound of white color
+        upper_white = np.array([255, 255, 255])  # Upper bound of white color
+        mask = cv2.inRange(roi, lower_white, upper_white)
+
+        # Apply the mask to keep only white areas in the ROI
+        white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
+        return white_only_roi
+
