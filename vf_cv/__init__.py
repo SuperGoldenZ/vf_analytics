@@ -12,4 +12,5 @@ from vf_cv.timer import Timer
 from vf_cv.cv_helper import CvHelper
 from vf_cv.winning_round import WinningRound
 from vf_cv.player_rank import PlayerRank
+from vf_cv.character import Character
 from vf_cv.version import __version__
