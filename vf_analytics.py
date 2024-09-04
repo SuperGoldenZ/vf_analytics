@@ -8,11 +8,12 @@ import vf_cv
 # PS4 Resolution is 1920 x 1080 1080P
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename="vf_analytics.log",
-                    encoding="utf-8",
-                    level=logging.ERROR,
-                    format='%(asctime)s %(levelname)s:%(name)s:%(message)s'
-                    )
+logging.basicConfig(
+    filename="vf_analytics.log",
+    encoding="utf-8",
+    level=logging.ERROR,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+)
 
 resolution = "1080p"
 excellent = cv2.imread("assets/test_images/480p/excellent/excellent.png")
@@ -153,58 +154,6 @@ def load_sample_with_transparency(path):
 
     return sample_image
 
-
-def is_ko(frame, override_region=None):
-    region_name = "ko"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
-
-    roi = frame[y : y + h, x : x + w]
-    # lower_bound = np.array([77, 78, 78])  # BGR for #c58e4d
-    # upper_bound = np.array([255, 255, 255])  # BGR for #ffffff
-    # text = pytesseract.image_to_string(roi, config="--psm 6")
-
-    gold_count = count_pixels("#ce9e54", roi, override_tolerance=5)
-    red_count = count_pixels("#b3200e", roi, override_tolerance=25)
-    purple_count = count_pixels("#422fc9", roi, override_tolerance=25)
-    black_count = count_pixels("#000000", roi, override_tolerance=25)
-    white_count = count_pixels("#FFFFFF", roi, override_tolerance=25)
-    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=10)
-    blue = count_pixels("#5c78ef", roi)
-
-    logger.debug(
-        f"\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count} blue {blue}"
-    )
-    # print(f"\n\tko count gold {gold_count} red {red_count} purple{purple_count} black {black_count} white {white_count} resolution {resolution} tekken red {red_tekken_count}  blue {blue}")
-    # cv2.imshow("is_ko frame", frame)
-    # cv2.imshow("is_ko roi", roi)
-    # cv2.waitKey()
-    height, width, channels = frame.shape
-
-    # ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
-
-    if resolution == "480p" or height == 480:
-        if blue > 1800:
-            return False
-
-        if purple_count > 140 and black_count > 200:
-            return False
-        if gold_count > 10 and white_count > 7000:
-            # print("true 01", flush=True)
-            return True
-        if white_count > 15000:
-            # print("true 02", flush=True)
-            return True
-        if gold_count > 42 and purple_count > 10:
-            # print("true 03", flush=True)
-            return True
-
-        if red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000:
-            # print("true 04", flush=True)
-            return True
-
-    return False
-
-
 def is_excellent(frame, override_region=None):
     (p1green, p1black, p1grey) = get_player_health(frame, 1)
     (p2green, p2black, p2grey) = get_player_health(frame, 2)
@@ -332,6 +281,7 @@ def count_pixels(target_color, image, override_tolerance=40):
 
     # Count the number of non-zero (white) pixels in the mask
     return cv2.countNonZero(mask)
+
 
 def all_but_white_strict(roi):
     lower_white = np.array([236, 236, 236])  # Lower bound of white color
