@@ -218,9 +218,6 @@ def is_excellent(frame, override_region=None):
     (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
 
     roi = frame[y : y + h, x : x + w]
-    # result = compare_images_histogram(excellent, roi)
-
-    # print(f"compares {result}")
 
     white_count = count_pixels("#ffffff", roi, override_tolerance=5)
     gold_count = count_pixels("#ce9e54", roi, override_tolerance=5)
@@ -234,15 +231,6 @@ def is_excellent(frame, override_region=None):
     logger.debug(
         f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
     )
-    # print(f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}")
-    # cv2.imshow("frame", frame)
-    # cv2.imshow("roi", roi)
-    # cv2.imshow("excellent", excellent)
-    # cv2.waitKey()
-
-    # if (is_ko(frame)):
-    # print ("1  false")
-    # return False
 
     if resolution == "480p":
         if (
@@ -297,29 +285,7 @@ def is_excellent(frame, override_region=None):
             and purple_count < 120
         )
 
-    # print ("default false")
     return False
-
-
-def is_ringout(frame, override_region=None):
-    region_name = "ro"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
-
-    roi = frame[y : y + h, x : x + w]
-
-    green_count = count_pixels("#07a319", roi, override_tolerance=15)
-    black_count = count_pixels("#000000", roi, override_tolerance=15)
-    white_count = count_pixels("#FFFFFF", roi, override_tolerance=15)
-    red_tekken_count = count_pixels("#e42e20", roi, override_tolerance=15)
-
-    logger.debug(
-        f"is_ringout green {green_count} black {black_count} white {white_count} red tekken {red_tekken_count}"
-    )
-    # print(f"is_ringout green {green_count} black {black_count} white {white_count} red tekken {red_tekken_count}")
-    # cv2.imshow("ro frame", frame)
-    # cv2.imshow("ro roi", roi)
-    # cv2.waitKey()
-    return green_count > 300 or red_tekken_count > 2000
 
 
 def resize_sample_if_needed(sample_image, roi):
