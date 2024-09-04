@@ -3,6 +3,7 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/1080p/time/43_66_01.png", "43", "66", 1080, False],
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/720p/time/08_00_01.png", "8", "00", 720, True],
     ["assets/test_images/720p/time/09_96_01.png", "9", "96", 720, True],
@@ -47,7 +48,7 @@ test_data = [
     "image_filename, expected_time_seconds, expected_time_ms, resolution, expected_is_time_running_out",
     test_data,
 )
-def test_time_480p(
+def test_time_running_out(
     image_filename,
     expected_time_seconds,
     expected_time_ms,

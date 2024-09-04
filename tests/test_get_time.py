@@ -3,6 +3,8 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/1080p/time/42_16_01.png", "42", "16", 1080, True],
+    ["assets/test_images/1080p/time/43_66_01.png", "43", "66", 1080, True],
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/480p/time/45_00_02.png", "45", "00", 480, False],
     ["assets/test_images/480p/time/45_00.png", "45", "00", 480, False],
@@ -48,7 +50,7 @@ test_data = [
     "image_filename, expected_time_seconds, expected_time_ms, resolution, expected_is_time_running_out",
     test_data,
 )
-def test_get_time_seconds_480p(
+def test_get_time_seconds(
     image_filename,
     expected_time_seconds,
     expected_time_ms,
@@ -67,7 +69,8 @@ def test_get_time_seconds_480p(
 
     timer = vf_cv.Timer()
     timer.set_frame(image)
-    actual_time_seconds = timer.get_time_seconds()
+    DEBUG=False
+    actual_time_seconds = timer.get_time_seconds(DEBUG)
     assert (
         expected_time_seconds == actual_time_seconds
     ), f"{actual_time_seconds} not expected value of {expected_time_seconds} for {image_filename}"
@@ -96,7 +99,7 @@ def test_get_digit_720p(image_filename, expected_digit, digit_num):
     timer = vf_cv.Timer()
     timer.set_frame(image)
 
-    actual_digit = timer.get_time_digit_720p(
+    actual_digit = timer.get_time_digit(
         thresholded_image, width, height, digit_num
     )
 
