@@ -8,7 +8,11 @@ import vf_cv
 # PS4 Resolution is 1920 x 1080 1080P
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename="vf_analytics.log", encoding="utf-8", level=logging.ERROR)
+logging.basicConfig(filename="vf_analytics.log",
+                    encoding="utf-8",
+                    level=logging.ERROR,
+                    format='%(asctime)s %(levelname)s:%(name)s:%(message)s'
+                    )
 
 resolution = "1080p"
 excellent = cv2.imread("assets/test_images/480p/excellent/excellent.png")
