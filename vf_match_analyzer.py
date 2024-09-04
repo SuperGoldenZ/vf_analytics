@@ -17,7 +17,7 @@ import vf_analytics
 import youtube_helper
 import vf_cv
 
-DONT_SAVE = True
+DONT_SAVE = False
 SAVE_PIC_ALL = False
 
 logger = logging.getLogger(__name__)
@@ -320,12 +320,7 @@ def extract_frames(
             old_time_seconds = time_seconds
 
             time_cv.set_frame(frame)
-            time_seconds = time_cv.get_time_seconds(frame)
-
-            if SAVE_PIC_ALL:
-                save_cam_frame(
-                    jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_"
-                )
+            time_seconds = time_cv.get_time_seconds()
 
             if (
                 (time_seconds == "43" or time_seconds == "44" or time_seconds == "45")
@@ -343,6 +338,11 @@ def extract_frames(
 
             old_time = timestr
             timestr = f"{time_seconds}.{time_ms}"
+
+            if SAVE_PIC_ALL:
+                save_cam_frame(
+                    jpg_folder, original_frame, frame, count, f"fight_{timestr}_"
+                )
 
             #            print(timestr)
             #            cv2.imshow("image", frame)
@@ -384,7 +384,6 @@ def extract_frames(
 
                 continue
 
-            # save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
             winning_frame.set_frame(frame)
             is_ro = winning_frame.is_ringout()
             is_excellent = not is_ro and winning_frame.is_excellent()
@@ -396,6 +395,14 @@ def extract_frames(
                     player1rank = player_rank.get_player_rank(1)
                     match["player1rank"] = player1rank
                     logger.debug(f"{video_id} {count:13d} - player1rank {player1rank}")
+                    if player1rank == 0:
+                        save_cam_frame(
+                            jpg_folder,
+                            original_frame,
+                            frame,
+                            count,
+                            "_rank_0_for_player1",
+                        )
                 except:
                     match["player1rank"] = 0
 
@@ -404,10 +411,16 @@ def extract_frames(
                     player2rank = player_rank.get_player_rank(2)
                     match["player2rank"] = player2rank
                     logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
+                    if player2rank == 0:
+                        save_cam_frame(
+                            jpg_folder,
+                            original_frame,
+                            frame,
+                            count,
+                            "_rank_0_for_player2",
+                        )
                 except:
                     match["player2rank"] = 0
-
-            # print(f"{timestr} vs old {old_time}")
 
             if timestr != old_time:
                 count += int(frame_rate * interval) * 3
