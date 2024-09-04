@@ -387,8 +387,8 @@ def extract_frames(
             # save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
             winning_frame.set_frame(frame)
             is_ro = winning_frame.is_ringout()
-            is_excellent = not is_ro and vf_analytics.is_excellent(frame)
-            is_ko = not is_excellent and not is_ro and vf_analytics.is_ko(frame)
+            is_excellent = not is_ro and winning_frame.is_excellent()
+            is_ko = not is_excellent and not is_ro and winning_frame.is_ko()
 
             player_rank.set_frame(frame)
             if "player1rank" not in match or match["player1rank"] == 0:
