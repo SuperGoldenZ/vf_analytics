@@ -19,11 +19,17 @@ STREAM_SEARCH = [
     {"resolution": "480p", "fps": 60},
     {"resolution": "720p", "fps": 30},
     {"resolution": "720p", "fps": 60},
+    {"resolution": "1080p", "fps": 30},
+    {"resolution": "1080p", "fps": 60},
 ]
 
 
 def get_stream(url, youtube_auth=True):
     yt = YouTube(url, use_oauth=youtube_auth)
+
+    logger.debug(f"made youtube for {url}")
+    for stream in yt.streams:
+        logger.debug(stream)
 
     try:
         for stream_params in STREAM_SEARCH:
