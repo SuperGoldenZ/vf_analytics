@@ -15,9 +15,9 @@ import VideoCaptureAsync
 import vf_analytics
 import youtube_helper
 import vf_cv
-import traceback
 
 DONT_SAVE = True
+SAVE_PIC_ALL = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -31,6 +31,7 @@ video_folder_param = None
 
 time_cv = vf_cv.Timer()
 winning_round = vf_cv.WinningRound()
+winning_frame = vf_cv.WinningFrame()
 player_rank = vf_cv.PlayerRank()
 character = vf_cv.Character()
 
@@ -316,6 +317,12 @@ def extract_frames(
 
             time_cv.set_frame(frame)
             time_seconds = time_cv.get_time_seconds(frame)
+
+            if SAVE_PIC_ALL:
+                save_cam_frame(
+                    jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_"
+                )
+
             if (
                 (time_seconds == "43" or time_seconds == "44" or time_seconds == "45")
                 or (time_seconds != old_time_seconds)
@@ -374,14 +381,10 @@ def extract_frames(
                 continue
 
             # save_cam_frame(jpg_folder, original_frame, frame, count, "fight")
-            is_excellent = vf_analytics.is_excellent(frame)
-            is_ko = not is_excellent and vf_analytics.is_ko(frame)
-            is_ro = not is_excellent and not is_ko and vf_analytics.is_ringout(frame)
-
-            # if (not is_excellent and not is_ko and not is_ro):
-            # logger.warning(f"{video_id} {count} - unknown way to win the round!")
-            # count = count +1
-            # continue
+            winning_frame.set_frame(frame)
+            is_ro = winning_frame.is_ringout()
+            is_excellent = not is_ro and vf_analytics.is_excellent(frame)
+            is_ko = not is_excellent and not is_ro and vf_analytics.is_ko(frame)
 
             player_rank.set_frame(frame)
             if "player1rank" not in match or match["player1rank"] == 0:
@@ -411,15 +414,15 @@ def extract_frames(
 
             logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
 
-            if is_excellent:
+            if is_ro:
+                round[f"player{player_num}_ringout"] = 1
+                print(f"{count} got RO for player {player_num}")
+            elif is_excellent:
                 round[f"player{player_num}_excellent"] = 1
                 print(f"{count} got EX for player {player_num}")
             elif is_ko:
                 round[f"player{player_num}_ko"] = 1
                 print(f"{count} got KO for player {player_num}")
-            elif is_ro:
-                round[f"player{player_num}_ringout"] = 1
-                print(f"{count} got RO for player {player_num}")
             else:
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count += int(frame_rate * interval)
