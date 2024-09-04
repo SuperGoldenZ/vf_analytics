@@ -5,6 +5,7 @@ import vf_analytics
 
 test_data = [
       #['assets/test_images/480p/rank/01_42_001.jpg', 1, 42]
+      ['assets/test_images/1080p/rank/42_41_01.png', 42, 41],
      ['assets/test_images/480p/rank/42_42_001.jpg', 42, 42]
     ,['assets/test_images/480p/rank/40_40_001.jpg', 40, 40]
     ,['assets/test_images/480p/rank/44_44_001.jpg', 44, 44]
