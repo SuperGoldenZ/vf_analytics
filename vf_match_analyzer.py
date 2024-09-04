@@ -755,7 +755,6 @@ def analyze_video(url, cam=-1):
     if not os.path.exists(jpg_folder):
         os.makedirs(jpg_folder)
 
-    print("Extracting frames")
     start = timer()
 
     vf_analytics.resolution = "480p"
@@ -764,6 +763,9 @@ def analyze_video(url, cam=-1):
     fps = 0.05
     frame_rate = None
     frame_count = None
+
+    processed = 0
+    matches_processed = 0
 
     try:
         if video_path is not None:
@@ -782,9 +784,7 @@ def analyze_video(url, cam=-1):
             frame_rate = cap.get(cv2.CAP_PROP_FPS)
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        processed = 0
-        matches_processed = 0
-
+        print("Extracting frames")
         processed, matches_processed = extract_frames(
             cap,
             fps,
@@ -795,10 +795,21 @@ def analyze_video(url, cam=-1):
             frame_count=frame_count,
         )  # Extract a frame every 7 seconds
     except Exception as e:
+        print("error occured")
         logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
+
+        if video_path is not None and os.path.isfile(video_path):
+            os.remove(video_path)
     finally:
+        if (
+            matches_processed == 0
+            and video_path is not None
+            and os.path.isfile(video_path)
+        ):
+            logger.error(f"removing {video_path} since didn't process matches")
+            os.remove(video_path)
         cap.release()
 
     elapsed_time = timer() - start  # in seconds
