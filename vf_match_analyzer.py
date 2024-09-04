@@ -22,7 +22,10 @@ SAVE_PIC_ALL = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    filename="vf_match_analyzer.log", encoding="utf-8", level=logging.INFO
+    filename="vf_match_analyzer.log",
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
 )
 
 resize_video = False
@@ -792,7 +795,7 @@ def analyze_video(url, cam=-1):
             frame_count=frame_count,
         )  # Extract a frame every 7 seconds
     except Exception as e:
-        logger.error(f"An exception occured {e}")
+        logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
     finally:
