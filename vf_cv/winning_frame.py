@@ -3,25 +3,26 @@
 import cv2
 import vf_cv.cv_helper
 
+
 class WinningFrame:
     frame = None
     frame_height = None
 
     REGIONS_480P = {
-         'player1_rounds': (307, 50, 55, 15)
-        ,'player2_rounds': (475, 50, 80, 15)
-        ,'player1_health': (111, 33, 265, 8)
-        ,'player2_health': (483, 36, 265, 8)
-        ,'stage': (342, 295, 200, 25)
-        ,'player1ringname':  (43, 315, 209, 18)
-        ,'player2ringname':  (589, 315, 209, 18)
-        ,'player1character': (35,   228,   245, 32)
-        ,'player2character': (584,  228,   245, 32)
-        ,'all_rounds': (247, 45, 404, 31)
-        ,'vs': (343, 173, 172, 85)
-        ,'ko': (250, 170, 350, 140)
-        ,'excellent': (75, 200, 700, 80)
-        ,'ro': (185, 204, 484, 80)
+        "player1_rounds": (307, 50, 55, 15),
+        "player2_rounds": (475, 50, 80, 15),
+        "player1_health": (111, 33, 265, 8),
+        "player2_health": (483, 36, 265, 8),
+        "stage": (342, 295, 200, 25),
+        "player1ringname": (43, 315, 209, 18),
+        "player2ringname": (589, 315, 209, 18),
+        "player1character": (35, 228, 245, 32),
+        "player2character": (584, 228, 245, 32),
+        "all_rounds": (247, 45, 404, 31),
+        "vs": (343, 173, 172, 85),
+        "ko": (250, 170, 350, 140),
+        "excellent": (75, 200, 700, 80),
+        "ro": (185, 204, 484, 80),
     }
 
     def set_frame(self, frame):
@@ -48,7 +49,7 @@ class WinningFrame:
             w = (int)(w * 2.25)
             h = (int)(h * 2.25)
         return (x, y, w, h)
-    
+
     def is_ringout(self, debug=False):
         region_name = "ro"
         (x, y, w, h) = self.get_roi(region_name)
@@ -57,11 +58,60 @@ class WinningFrame:
 
         green_count = vf_cv.CvHelper.count_pixels("#07a319", roi, override_tolerance=15)
         light_green = vf_cv.CvHelper.count_pixels("#91ff92", roi, override_tolerance=15)
-        red_tekken_count = vf_cv.CvHelper.count_pixels("#e42e20", roi, override_tolerance=15)
+        red_tekken_count = vf_cv.CvHelper.count_pixels(
+            "#e42e20", roi, override_tolerance=15
+        )
 
-        if (debug):
+        if debug:
             cv2.imshow("roi", roi)
-            print(f"green {green_count}  red {red_tekken_count}  light_green {light_green}")
+            print(
+                f"green {green_count}  red {red_tekken_count}  light_green {light_green}"
+            )
             print(green_count > 300 or red_tekken_count > 2000)
             cv2.waitKey()
         return green_count + light_green > 300 or red_tekken_count > 2000
+
+    def is_ko(self):
+        region_name = "ko"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+
+        gold_count = vf_cv.CvHelper.count_pixels("#ce9e54", roi, override_tolerance=5)
+        # red_count = vf_cv.CvHelper.count_pixels("#b3200e", roi, override_tolerance=25)
+        purple_count = vf_cv.CvHelper.count_pixels(
+            "#422fc9", roi, override_tolerance=25
+        )
+        black_count = vf_cv.CvHelper.count_pixels("#000000", roi, override_tolerance=25)
+        white_count = vf_cv.CvHelper.count_pixels("#FFFFFF", roi, override_tolerance=25)
+        red_tekken_count = vf_cv.CvHelper.count_pixels(
+            "#e42e20", roi, override_tolerance=10
+        )
+        blue = vf_cv.CvHelper.count_pixels("#5c78ef", roi)
+
+        # ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
+        if (
+            self.frame_height == 480
+            or self.frame_height == 720
+            or self.frame_height == 1080
+        ):
+            if blue > 1800:
+                return False
+
+            if purple_count > 140 and black_count > 200:
+                return False
+            if gold_count > 10 and white_count > 7000:
+                # print("true 01", flush=True)
+                return True
+            if white_count > 15000:
+                # print("true 02", flush=True)
+                return True
+            if gold_count > 42 and purple_count > 10:
+                # print("true 03", flush=True)
+                return True
+
+            if red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000:
+                # print("true 04", flush=True)
+                return True
+
+        return False
