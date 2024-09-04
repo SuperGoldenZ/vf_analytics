@@ -115,3 +115,98 @@ class WinningFrame:
                 return True
 
         return False
+
+    def is_excellent(self):
+        (p1green, p1black, p1grey) = self.get_player_health(1)
+        (p2green, p2black, p2grey) = self.get_player_health(2)
+
+        p1excellent = p1black == 0 and p1grey == 0
+        p2excellent = p2black == 0 and p2grey == 0
+
+        if not p1excellent and not p2excellent:
+            return False
+
+        region_name = "excellent"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+
+        white_count = vf_cv.CvHelper.count_pixels("#ffffff", roi, override_tolerance=5)
+        gold_count = vf_cv.CvHelper.count_pixels("#ce9e54", roi, override_tolerance=5)
+        red_count = vf_cv.CvHelper.count_pixels("#b3200e", roi, override_tolerance=25)
+        purple_count = vf_cv.CvHelper.count_pixels(
+            "#422fc9", roi, override_tolerance=25
+        )
+        black_count = vf_cv.CvHelper.count_pixels("#000000", roi, override_tolerance=25)
+        # tekken_gold_count = vf_cv.CvHelper.count_pixels("#d9b409", roi, override_tolerance=15)
+
+        # infoString = f"excellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
+
+        # logger.debug(
+        # f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
+        # )
+
+        if (
+            black_count > 2300
+            and white_count < 15
+            and red_count < 15
+            and purple_count < 15
+        ):
+            return False
+
+        if white_count < 10 and gold_count < 10:
+            # print ("2.5  false")
+            return False
+
+        if 150 <= white_count <= 175 and 100 <= gold_count <= 120:
+            return True
+
+        if 1000 <= white_count <= 1250 and 65 <= gold_count <= 100:
+            return True
+
+        if 700 <= white_count <= 850 and 20 <= gold_count <= 30:
+            return True
+
+        if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
+            return True
+
+        if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
+            return True
+
+        if 175 <= white_count <= 200 and 100 <= gold_count <= 145:
+            return True
+
+        if 250 <= white_count <= 300 and 50 <= gold_count <= 100:
+            return True
+
+        if 140 < gold_count < 550 and red_count < 700 and 250 < black_count < 3500:
+            return True
+
+        if 215 - 10 <= white_count <= 215 + 10 and 50 <= gold_count <= 100:
+            return True
+
+        if 215 - 50 <= white_count <= 215 - 50 and 75 <= gold_count <= 125:
+            return True
+
+        if 476 - 50 <= white_count <= 476 + 50 and 28 <= gold_count <= 48:
+            return True
+
+        return (
+            black_count > 900
+            and white_count < 150
+            and red_count < 100
+            and purple_count < 120
+        )
+
+        # return False
+
+    def get_player_health(self, player_num):
+        region_name = f"player{player_num}_health"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+        green_health = vf_cv.CvHelper.count_pixels("#30c90e", roi, override_tolerance=5)
+        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=5)
+        grey_health = vf_cv.CvHelper.count_pixels("#1c211d", roi, override_tolerance=5)
+
+        return [green_health, black_health, grey_health]
