@@ -7,6 +7,7 @@ import logging
 import argparse
 import pathlib
 import time
+import traceback
 import ffmpeg
 import cv2
 import psutil
