@@ -19,7 +19,7 @@ class Timer:
 
     frame = None
     frame_height = None
-        
+
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -45,7 +45,7 @@ class Timer:
             h = (int)(h * 2.25)
         return (x, y, w, h)
 
-    def get_time_ms(self):
+    def get_time_ms(self, debug=False):
         """Returns MS"""
         text = ""
 
@@ -68,6 +68,9 @@ class Timer:
 
             # Apply a threshold to keep only the bright white colors
             threshold_value = 125
+            # if (self.frame_height == 1080):
+            # threshold_value = 75
+
             _, thresholded_image = cv2.threshold(
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
@@ -83,7 +86,16 @@ class Timer:
             height, width = thresholded_image.shape  # Get the dimensions of the frame
             n_white_pix = 0
 
-            if self.frame_height == 720 or self.frame_height == 1080:
+            if self.frame_height == 1080:
+                digit, n_white_pix = Timer.get_time_ms_digit_1080(thresholded_image)
+                text = f"{text}{digit}"
+                if debug:
+                    cv2.imshow(f"roi", roi)
+                    cv2.imshow(f"gray", gray_image)
+                    cv2.imshow(f"thres {n_white_pix}", thresholded_image)
+                    cv2.waitKey()
+
+            if self.frame_height == 720:
                 n_white_pix = np.sum(thresholded_image == 255)
 
                 points = {}
@@ -283,7 +295,7 @@ class Timer:
             _, thresholded_image = cv2.threshold(
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
-            
+
             contours = cv2.findContours(
                 thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )[0]
@@ -294,17 +306,21 @@ class Timer:
                 thresholded_image = thresholded_image[y : y + h, x : x + w]
 
             height, width = thresholded_image.shape  # Get the dimensions of the frame
-            #if (debug):
-                #cv2.imshow("roi", roi)
-                #cv2.imshow("threshold", thresholded_image)
-                #cv2.waitKey()
 
             n_white_pix = 0
 
-            if self.frame_height == 720 or self.frame_height == 1080:
-                digit = self.get_time_digit(
-                    thresholded_image, width, height, digit_num
-                )
+            n_white_pix_1080 = np.sum(thresholded_image == 255)
+            if debug:
+                cv2.imshow("roi", roi)
+                cv2.imshow(f"threshold {n_white_pix_1080}", thresholded_image)
+                cv2.waitKey()
+
+            if self.frame_height == 1080 and n_white_pix_1080 == 1264:
+                text = f"{text}2"
+                if running_out:
+                    return text
+            elif self.frame_height == 720 or self.frame_height == 1080:
+                digit = self.get_time_digit(thresholded_image, width, height, digit_num)
                 text = f"{text}{digit}"
                 if running_out:
                     return text
@@ -448,10 +464,26 @@ class Timer:
         return text
 
     @staticmethod
+    def get_time_ms_digit_1080(thresholded_image):
+        n_white_pix = np.sum(thresholded_image == 255)
+        if 113 <= n_white_pix <= 118 + 5:
+            return "7", n_white_pix
+        if 165 <= n_white_pix <= 175:
+            return "3", n_white_pix
+        if 80 <= n_white_pix <= 90:
+            return "1", n_white_pix
+        if 182 <= n_white_pix <= 192:
+            return "8", n_white_pix
+        if 193 <= n_white_pix <= 201:
+            return "6", n_white_pix
+
+        return "0", n_white_pix
+
+    @staticmethod
     def get_time_digit(thresholded_image, width, height, digit_num, debug=False):
         """Returns one digit of the time remaining in a match"""
 
-        if (debug):
+        if debug:
             cv2.imshow("thresholded_image", thresholded_image)
             cv2.waitKey()
 
@@ -561,7 +593,7 @@ class Timer:
         ):
             return 3
         elif (
-            #points[5] == 0
+            # points[5] == 0
             points[2] != 0
             and points[9] == 0
             and points[7] == 0
