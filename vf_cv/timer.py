@@ -83,7 +83,7 @@ class Timer:
             height, width = thresholded_image.shape  # Get the dimensions of the frame
             n_white_pix = 0
 
-            if self.frame_height == 720:
+            if self.frame_height == 720 or self.frame_height == 1080:
                 n_white_pix = np.sum(thresholded_image == 255)
 
                 points = {}
@@ -255,10 +255,8 @@ class Timer:
 
         if self.frame_height == 720:
             factor = 1.5
-
-        # if (height != 480):
-        # {todo remove this for testing or implement for 720p}
-        # frame = cv2.resize(frame, (854, 480))
+        elif self.frame_height == 1080:
+            factor = 2.25
 
         for digit_num in range(1, 3):
             region_name = f"time_seconds_digit{digit_num}"
@@ -277,6 +275,7 @@ class Timer:
             if running_out:
                 x = (int)(x + w / 2)
             roi = self.frame[y : y + h, x : x + w]
+
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
             # Apply a threshold to keep only the bright white colors
@@ -295,11 +294,15 @@ class Timer:
                 thresholded_image = thresholded_image[y : y + h, x : x + w]
 
             height, width = thresholded_image.shape  # Get the dimensions of the frame
+            #if (debug):
+                #cv2.imshow("roi", roi)
+                #cv2.imshow("threshold", thresholded_image)
+                #cv2.waitKey()
 
             n_white_pix = 0
 
-            if self.frame_height == 720:
-                digit = self.get_time_digit_720p(
+            if self.frame_height == 720 or self.frame_height == 1080:
+                digit = self.get_time_digit(
                     thresholded_image, width, height, digit_num
                 )
                 text = f"{text}{digit}"
@@ -307,6 +310,7 @@ class Timer:
                     return text
             else:
                 n_white_pix = np.sum(thresholded_image == 255)
+
             if True:
                 if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
                     text = f"{text}1"
@@ -444,8 +448,12 @@ class Timer:
         return text
 
     @staticmethod
-    def get_time_digit_720p(thresholded_image, width, height, digit_num):
+    def get_time_digit(thresholded_image, width, height, digit_num, debug=False):
         """Returns one digit of the time remaining in a match"""
+
+        if (debug):
+            cv2.imshow("thresholded_image", thresholded_image)
+            cv2.waitKey()
 
         points = {}
         points[1] = thresholded_image[height - 1, 0]
@@ -553,8 +561,8 @@ class Timer:
         ):
             return 3
         elif (
-            points[5] == 0
-            and points[2] != 0
+            #points[5] == 0
+            points[2] != 0
             and points[9] == 0
             and points[7] == 0
             and points[1] != 0
