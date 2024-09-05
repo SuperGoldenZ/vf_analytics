@@ -96,7 +96,6 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
 
 # Step 2: Extract frames from the video
-@profile
 def extract_frames(
     cap,
     interval,
