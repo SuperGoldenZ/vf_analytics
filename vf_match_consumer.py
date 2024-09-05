@@ -4,6 +4,7 @@ import gc
 import confluent_kafka
 from confluent_kafka import Consumer
 import vf_match_analyzer
+import traceback
 
 logger = None
 logger = logging.getLogger(__name__)
@@ -54,10 +55,12 @@ try:
         try:
             vf_match_analyzer.analyze_video(url)
             gc.collect()
-        except Exception:
-            print("\terror occured, skipping video")
-        # Process the YouTube video
+        except Exception as e:
+            print(f"\terror occured processing {url}, skipping video")
+            print(e)
+            print(traceback.format_exc())
 
+        # Process the YouTube video
         print("done!", flush=True)
 
 except KeyboardInterrupt:
