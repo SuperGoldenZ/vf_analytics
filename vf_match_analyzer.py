@@ -96,6 +96,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
 
 # Step 2: Extract frames from the video
+@profile
 def extract_frames(
     cap,
     interval,
@@ -301,7 +302,7 @@ def extract_frames(
             if got_all_vs_info(match):
                 state = "fight"
                 logger.debug(f"{video_id} {count:13d} - fight")
-                print_csv(match, round, "0", video_id, count, "n/a")
+                print_csv(match, round, "0", video_id, count, "n/a", frame_rate)
 
                 skipFrames = (int)(25 / interval)
                 # skipFrames for 1
@@ -458,13 +459,17 @@ def extract_frames(
             try:
                 timestr = None
                 try:
-                    time_seconds = vf_analytics.get_time_seconds(frame)
+                    time_seconds = time_cv.get_time_seconds(frame)
                     time_ms = time_cv.get_time_ms()
                     timestr = f"{time_seconds}.{time_ms}"
-                except:
+                except Exception as a:
+                    logger.error(
+                        f"Exception occured getting time frame: {frame_count} error: {a}"
+                    )
+                    logger.error(traceback.format_exc())
                     timestr = "na"
 
-                print_csv(match, round, round_num, video_id, count, timestr)
+                print_csv(match, round, round_num, video_id, count, timestr, frame_rate)
 
                 suffix = ""
                 if is_excellent:
@@ -564,7 +569,7 @@ def all_but_black(roi):
     return cleaned_text
 
 
-def print_csv(match, round, round_num, video_id, frame_count, time):
+def print_csv(match, round, round_num, video_id, frame_count, time_remaining, fps):
     with open(f"match_data_{video_id}.csv", "a") as f:
         if video_id is None:
             f.write("cam")
@@ -648,9 +653,17 @@ def print_csv(match, round, round_num, video_id, frame_count, time):
 
         f.write(",")
         try:
-            f.write(str(time))
+            f.write(str(time_remaining))
         except:
             f.write("0")
+
+        f.write(",")
+        try:
+            seconds = int(frame_count / fps)
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}&t={seconds}"
+            f.write(str(youtube_url))
+        except:
+            f.write("n/a")
 
         f.write("\n")
 
@@ -702,7 +715,7 @@ def analyze_video(url, cam=-1):
     if not p.is_file():
         with open("match_data.csv", "a") as the_file:
             the_file.write(
-                "vid,match_id,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex\n"
+                "vid,match_id,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex,time_remaining,youtube_url\n"
             )
 
     video_id = None
