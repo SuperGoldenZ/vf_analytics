@@ -3,6 +3,8 @@ import cv2
 import vf_cv
 
 test_data = [
+    "assets/test_images/1080p/winning_frame/not_winning_frame_01.png",
+    "assets/test_images/480p/winning_frame/not_winning_frame_01.png",
     "assets/test_images/480p/knockout/no_knockout_09.png",
 ]
 
@@ -19,5 +21,5 @@ def test_is_not_winning_round(image_filename):
     winning_round.set_frame(image)
 
     assert (
-        winning_round.is_winning_round() == False
+        winning_round.is_winning_round(False) == 0
     ), f"{image_filename} is unexpectedly winning round"
