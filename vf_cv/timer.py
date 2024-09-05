@@ -258,7 +258,7 @@ class Timer:
 
         return count > threshold
 
-    def get_time_seconds(self, debug=False):
+    def get_time_seconds(self, debug_time=False):
         """Returns number of seconds remaining in a round"""
 
         text = ""
@@ -310,7 +310,7 @@ class Timer:
             n_white_pix = 0
 
             n_white_pix_1080 = np.sum(thresholded_image == 255)
-            if debug:
+            if debug_time is True:
                 cv2.imshow("roi", roi)
                 cv2.imshow(f"threshold {n_white_pix_1080}", thresholded_image)
                 cv2.waitKey()
@@ -367,12 +367,6 @@ class Timer:
 
                     left_quarter = thresholded_image[int(height * 0.70), 0]
                     thresholded_image[int(height * 0.70), 0] = 100
-
-                    # print ("\nbig block")
-                    # print(repr(color))
-                    # print(f"seconds n_white {n_white_pix}")
-                    # cv2.imshow("grey", thresholded_image)
-                    # cv2.waitKey()
 
                     if (
                         middle == 0
