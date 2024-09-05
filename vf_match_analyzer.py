@@ -119,8 +119,6 @@ def extract_frames(
     match = {}
     round_num = 1
 
-    match["id"] = uuid.uuid4()
-
     skipFrames = 0
 
     if cam != -1:
@@ -222,6 +220,8 @@ def extract_frames(
                     )
 
             if stage is not None:
+                formatted_match_id = "%02d" % (matches_processed + 1,)
+                match["id"] = f"{video_id}-{formatted_match_id}"
                 match["stage"] = stage
                 state = "vs"
                 logger.debug(
@@ -577,9 +577,9 @@ def print_csv(match, round, round_num, video_id, frame_count, time_remaining, fp
             f.write(video_id)
 
         f.write(",")
-        f.write(str(frame_count))
-        f.write(",")
         f.write(str(match["id"]))
+        f.write(",")
+        f.write(str(frame_count))
         f.write(",")
         if not "stage" in match or match["stage"] is None:
             f.write("n/a")
@@ -715,7 +715,7 @@ def analyze_video(url, cam=-1):
     if not p.is_file():
         with open("match_data.csv", "a") as the_file:
             the_file.write(
-                "vid,match_id,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex,time_remaining,youtube_url\n"
+                "vid_id,match_id,frame,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex,time_remaining,youtube_url\n"
             )
 
     video_id = None
