@@ -534,6 +534,9 @@ class Timer:
         if n_white_pix == 131 or n_white_pix == 132:
             return "9", n_white_pix
 
+        if height == 11:
+            return "5", n_white_pix
+
         if (
             n_white_pix == 115
             or n_white_pix == 117
@@ -558,12 +561,16 @@ class Timer:
         if n_white_pix == 118 and width == 15:
             return "5", n_white_pix
 
-        if n_white_pix == 123 or n_white_pix == 124:
+        if (
+            n_white_pix == 123
+            or n_white_pix == 124
+            or (n_white_pix == 112 and width == 17)
+        ):
             return "5", n_white_pix
 
         if (
             n_white_pix == 133
-            or n_white_pix == 149
+            or n_white_pix == 148
             or 137 <= n_white_pix <= 140
             or n_white_pix == 149
             or n_white_pix == 152
@@ -571,7 +578,7 @@ class Timer:
             or n_white_pix == 154
             or n_white_pix == 141
             or n_white_pix == 150
-        ):
+        ) and points[4.9] != 0:
             return "8", n_white_pix
 
         if (
@@ -593,7 +600,7 @@ class Timer:
             130 <= n_white_pix <= 144
             or (n_white_pix == 128 and width == 17)
             or (126 <= n_white_pix <= 127 and width == 17)
-        ):
+        ) and points[4.9] != 0:
             return "6", n_white_pix
 
         return "0", n_white_pix
