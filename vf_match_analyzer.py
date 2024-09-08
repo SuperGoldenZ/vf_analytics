@@ -19,6 +19,7 @@ import vf_cv
 
 DONT_SAVE = True
 SAVE_PIC_ALL = False
+DELETE_VIDEO = True
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -84,6 +85,7 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
 
     if original_thread is not None:
         original_thread.join()
+
 
 # Step 2: Extract frames from the video
 def extract_frames(
@@ -816,6 +818,8 @@ def analyze_video(url, cam=-1):
             logger.error(f"removing {video_path} since didn't process matches")
             os.remove(video_path)
         cap.release()
+        if (DELETE_VIDEO and os.path.isfile(video_path)):
+            os.remove(video_path)
 
     elapsed_time = timer() - start  # in seconds
     fps = processed / elapsed_time
