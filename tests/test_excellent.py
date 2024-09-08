@@ -5,6 +5,7 @@ import vf_cv
 
 
 test_data = [
+    ["assets/test_images/1080p/excellent/excellent_for_player_1_01.png", True],
     ["assets/test_images/480p/excellent/excellent_2_0_01.png", True],
     ["assets/test_images/480p/excellent/excellent_1_0_01.png", True],
     ["assets/test_images/480p/excellent/excellent_1118_original.png", True],
@@ -32,6 +33,8 @@ def test_is_excellent(image_filename, expected_result):
 
     frame = cv2.imread(image_filename)
     winning_frame.set_frame(frame)
-    assert (
-        expected_result == winning_frame.is_excellent()
+
+    DEBUG = False
+    assert expected_result == winning_frame.is_excellent(
+        DEBUG
     ), f"{image_filename} is excellent {expected_result} as expected"
