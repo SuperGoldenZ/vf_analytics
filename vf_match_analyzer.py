@@ -82,18 +82,8 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         )
         original_thread.start()
 
-    normal_thread = None
-    out_filename = jpg_folder + "/" + str(f"{count_int}_{suffix}") + ".png"
-    if not os.path.isfile(out_filename):
-        normal_thread = threading.Thread(target=save_image, args=(out_filename, frame))
-        normal_thread.start()
-
     if original_thread is not None:
         original_thread.join()
-
-    if normal_thread is not None:
-        normal_thread.join()
-
 
 # Step 2: Extract frames from the video
 def extract_frames(
