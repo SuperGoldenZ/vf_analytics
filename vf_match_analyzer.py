@@ -17,7 +17,7 @@ import vf_analytics
 import youtube_helper
 import vf_cv
 
-DONT_SAVE = False
+DONT_SAVE = True
 SAVE_PIC_ALL = False
 
 logger = logging.getLogger(__name__)
@@ -355,19 +355,9 @@ def extract_frames(
 
             player_num = 0
 
-            if time_matches >= 2:
-                if height != 480 and frame_480p is None:
-                    frame = cv2.resize(frame, (854, 480))
-                elif height == 480:
-                    frame = frame_480p
-
+            if time_matches >= 4:
                 winning_round.set_frame(frame)
-                player_num = winning_round.is_winning_round()
-                # if (player_num != 0):
-                # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}_won")
-                # else:
-                # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
-            # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
+                player_num = winning_round.is_winning_round(False)
             else:
                 count += 1
                 del frame
