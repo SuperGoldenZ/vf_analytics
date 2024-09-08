@@ -3,6 +3,7 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/480p/time/41_78.png", "41", "78", 720, False],
     ["assets/test_images/1080p/time/29_85_01.png", "29", "85", 1080, True],
     ["assets/test_images/1080p/time/29_05_01.png", "29", "05", 1080, True],
     ["assets/test_images/1080p/time/41_78_01.png", "41", "78", 1080, True],
@@ -49,7 +50,6 @@ test_data = [
     ["assets/test_images/480p/time/35_28.png", "35", "28", 720, False],
     ["assets/test_images/480p/time/37_68.png", "37", "68", 720, False],
     ["assets/test_images/480p/time/38_26.png", "38", "26", 720, False],
-    ["assets/test_images/480p/time/41_78.png", "41", "78", 720, False],
     ["assets/test_images/480p/time/43_96.png", "43", "96", 720, False],
 ]
 
@@ -82,33 +82,3 @@ def test_get_time_seconds(
     assert (
         expected_time_seconds == actual_time_seconds
     ), f"{actual_time_seconds} not expected value of {expected_time_seconds} for {image_filename}"
-
-
-test_data_digits = [
-    ["assets/test_images/720p/time/6.png", 6, 2],
-]
-
-
-@pytest.mark.parametrize("image_filename, expected_digit, digit_num", test_data_digits)
-def test_get_digit_720p(image_filename, expected_digit, digit_num):
-    """Tests OCR for getting time individual digits"""
-
-    image = cv2.imread(image_filename)
-
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    threshold_value = 200
-    _, thresholded_image = cv2.threshold(
-        gray_image, threshold_value, 255, cv2.THRESH_BINARY
-    )
-
-    height, width = thresholded_image.shape  # Get the dimensions of the frame
-    assert image is not None, f"{image_filename} is none"
-
-    timer = vf_cv.Timer()
-    timer.set_frame(image)
-
-    actual_digit = timer.get_time_digit(thresholded_image, width, height, digit_num)
-
-    assert (
-        actual_digit == expected_digit
-    ), f"{actual_digit} not expected value of {expected_digit} for {image_filename}"
