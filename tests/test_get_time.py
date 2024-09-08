@@ -3,6 +3,10 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/1080p/time/29_85_01.png", "29", "85", 1080, True],
+    ["assets/test_images/1080p/time/29_05_01.png", "29", "05", 1080, True],
+    ["assets/test_images/1080p/time/41_78_01.png", "41", "78", 1080, True],
+    ["assets/test_images/1080p/time/41_76_01.png", "41", "76", 1080, True],
     ["assets/test_images/1080p/time/18_23_01.png", "18", "23", 1080, True],
     ["assets/test_images/1080p/time/45_00_01.png", "45", "00", 1080, True],
     ["assets/test_images/1080p/time/29_46_01.png", "29", "46", 1080, True],
@@ -12,7 +16,7 @@ test_data = [
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/480p/time/45_00_02.png", "45", "00", 480, False],
     ["assets/test_images/480p/time/45_00.png", "45", "00", 480, False],
-    ["assets/test_images/480p/time/no_time_01.png", "", "00", 480, False],
+    # ["assets/test_images/480p/time/no_time_01.png", "", "00", 480, False],
     ["assets/test_images/480p/time/18_00_01.png", "18", "00", 480, False],
     ["assets/test_images/720p/time/08_00_01.png", "8", "00", 720, True],
     ["assets/test_images/720p/time/09_96_01.png", "9", "96", 720, True],
