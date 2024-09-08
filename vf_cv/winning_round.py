@@ -65,16 +65,25 @@ class WinningRound:
         h = int(h * factor)
 
         roi = self.frame[y : y + h, x : x + w]
-        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 25)
+        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
+        other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
+        third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
+
+        # if debug_winning_round is True:
+        # cv2.imshow(f"roi dark blue {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue}", roi)
+        # cv2.waitKey()
+
         if self.frame_height == 480 and dark_blue > 70:
             return 0
 
-        if self.frame_height == 1080 and dark_blue > 100:
+        if self.frame_height == 1080 and dark_blue > 200:
             return 0
 
-        if debug_winning_round is True:
-            cv2.imshow(f"roi {dark_blue}   {self.frame_height}", roi)
-            cv2.waitKey()
+        if self.frame_height == 1080 and other_dark_blue >= 25:
+            return 0
+
+        if self.frame_height == 1080 and third_dark_blue >= 13:
+            return 0
 
         bar_blue_two = vf_cv.CvHelper.count_pixels("#0636a5", roi, 5)
         if bar_blue_two >= 60 * factor:
