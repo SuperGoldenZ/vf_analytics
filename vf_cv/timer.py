@@ -547,11 +547,14 @@ class Timer:
             return "3", n_white_pix
 
         if (
-            n_white_pix == 104
-            or n_white_pix == 121
-            or n_white_pix == 122
-            or n_white_pix == 105
-            and (points[2] != 0)
+            (
+                n_white_pix == 104
+                or n_white_pix == 121
+                or n_white_pix == 122
+                or n_white_pix == 124
+                or n_white_pix == 105
+            )
+            and points[2] != 0
             and points[1.5] != 0
             and points[33] == 0
             and width == 18
