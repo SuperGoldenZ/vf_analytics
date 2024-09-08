@@ -31,13 +31,14 @@ def test_is_not_winning_round(image_filename):
 
 
 test_data = [
-    "assets/test_images/1080p/ko/knockout_for_player_1_01.png",
-    "assets/test_images/1080p/ko/knockout_for_player_2_01.png",
+    ["assets/test_images/1080p/ko/knockout_for_player_2_02.png", 2],
+    ["assets/test_images/1080p/ko/knockout_for_player_1_01.png", 1],
+    ["assets/test_images/1080p/ko/knockout_for_player_2_01.png", 2],
 ]
 
 
-@pytest.mark.parametrize("image_filename", test_data)
-def test_is_winning_round(image_filename):
+@pytest.mark.parametrize("image_filename, winning_player", test_data)
+def test_is_winning_round(image_filename, winning_player):
     """Tests OCR for seeing if a winning round or not"""
 
     image = cv2.imread(image_filename)
@@ -48,6 +49,7 @@ def test_is_winning_round(image_filename):
     winning_round.set_frame(image)
 
     DEBUG = False
+    actual_winnner = winning_round.is_winning_round(DEBUG)
     assert (
-        winning_round.is_winning_round(DEBUG) != 0
-    ), f"{image_filename} is not winning frame as expected"
+        actual_winnner == winning_player
+    ), f"{image_filename} is {actual_winnner} not {winning_player} as expected"
