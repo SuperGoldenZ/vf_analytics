@@ -68,8 +68,6 @@ class Timer:
 
             # Apply a threshold to keep only the bright white colors
             threshold_value = 125
-            # if (self.frame_height == 1080):
-            # threshold_value = 75
 
             _, thresholded_image = cv2.threshold(
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
@@ -78,22 +76,51 @@ class Timer:
             contours, _ = cv2.findContours(
                 thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
+
             if contours:
                 x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-                # Crop the image to the bounding box
                 thresholded_image = thresholded_image[y : y + h, x : x + w]
 
-            height, width = thresholded_image.shape  # Get the dimensions of the frame
-            n_white_pix = 0
+                height, width = (
+                    thresholded_image.shape
+                )  # Get the dimensions of the frame
+                n_white_pix = 0
 
-            if self.frame_height == 1080:
-                digit, n_white_pix = Timer.get_time_ms_digit_1080(thresholded_image)
-                text = f"{text}{digit}"
-                if debug:
-                    cv2.imshow(f"roi", roi)
-                    cv2.imshow(f"gray", gray_image)
-                    cv2.imshow(f"thres {n_white_pix}", thresholded_image)
-                    cv2.waitKey()
+                if self.frame_height == 1080:
+                    # Apply a threshold to keep only the bright white colors
+                    threshold_value = 203
+
+                    _, thresholded_image = cv2.threshold(
+                        gray_image, threshold_value, 255, cv2.THRESH_BINARY
+                    )
+
+                    contours, _ = cv2.findContours(
+                        thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                    )
+
+                    if contours:
+                        x, y, w, h = cv2.boundingRect(
+                            max(contours, key=cv2.contourArea)
+                        )
+                        thresholded_image = thresholded_image[y : y + h, x : x + w]
+
+                    height, width = (
+                        thresholded_image.shape
+                    )  # Get the dimensions of the frame
+
+                    digit, n_white_pix = Timer.get_time_ms_digit_1080(
+                        thresholded_image, width, height
+                    )
+                    text = f"{text}{digit}"
+
+                    if debug:
+                        cv2.imshow(f"roi", roi)
+                        cv2.imshow(f"gray", gray_image)
+                        cv2.imshow(
+                            f"threshold 1080 {n_white_pix}   height {height}  width {width}",
+                            thresholded_image,
+                        )
+                        cv2.waitKey()
 
             if self.frame_height == 720:
                 n_white_pix = np.sum(thresholded_image == 255)
@@ -258,6 +285,57 @@ class Timer:
 
         return count > threshold
 
+    @staticmethod
+    def get_thresholded_image(gray_image, threshold_value):
+        _, thresholded_image = cv2.threshold(
+            gray_image, threshold_value, 255, cv2.THRESH_BINARY
+        )
+
+        contours = cv2.findContours(
+            thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )[0]
+
+        if contours:
+            x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+            # Crop the image to the bounding box
+            thresholded_image = thresholded_image[y : y + h, x : x + w]
+
+        return thresholded_image
+
+    def get_time_seconds_digit_1080p(self, gray_image, digit_num, debug_time=False):
+        thresholded_image = Timer.get_thresholded_image(gray_image, 200)
+
+        height, width = thresholded_image.shape  # Get the dimensions of the frame
+
+        n_white_pix_1080 = np.sum(thresholded_image == 255)
+        if debug_time is True:
+            cv2.imshow("grey", gray_image)
+            cv2.imshow(
+                f"threshold height {self.frame_height} {n_white_pix_1080}  width {width}",
+                thresholded_image,
+            )
+            cv2.waitKey()
+
+        upper_right = thresholded_image[0, width - 2]
+
+        if 1335 <= n_white_pix_1080 < 1355 and 45 <= width <= 50 and upper_right == 0:
+            return 2
+        elif 1245 <= n_white_pix_1080 < 1270 and 45 <= width <= 50 and upper_right == 0:
+            return 2
+        elif n_white_pix_1080 < 900 and width <= 35:
+            return 1
+        elif n_white_pix_1080 == 1523 and width == 46:
+            return 9
+        elif 1545 - 10 <= n_white_pix_1080 <= 1545 + 10:
+            return 8
+        elif 1388 - 10 <= n_white_pix_1080 <= 1398 + 10:
+            return 5
+        elif n_white_pix_1080 == 1264:
+            return 2
+        else:
+            digit = self.get_time_digit(thresholded_image, width, height, digit_num)
+            return digit
+
     def get_time_seconds(self, debug_time=False):
         """Returns number of seconds remaining in a round"""
 
@@ -290,52 +368,29 @@ class Timer:
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-            # Apply a threshold to keep only the bright white colors
-            threshold_value = 200
-            _, thresholded_image = cv2.threshold(
-                gray_image, threshold_value, 255, cv2.THRESH_BINARY
-            )
-
-            contours = cv2.findContours(
-                thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )[0]
-
-            if contours:
-                x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-                # Crop the image to the bounding box
-                thresholded_image = thresholded_image[y : y + h, x : x + w]
-
-            height, width = thresholded_image.shape  # Get the dimensions of the frame
-
             n_white_pix = 0
-
-            n_white_pix_1080 = np.sum(thresholded_image == 255)
-            if debug_time is True:
-                cv2.imshow("roi", roi)
-                cv2.imshow(f"threshold {n_white_pix_1080}", thresholded_image)
-                cv2.waitKey()
-
-            if self.frame_height == 1080 and 1545 - 10 <= n_white_pix_1080 <= 1545 + 10:
-                text = f"{text}8"
-                if running_out:
-                    return text
-            elif (
-                self.frame_height == 1080 and 1388 - 10 <= n_white_pix_1080 <= 1398 + 10
-            ):
-                text = f"{text}5"
-                if running_out:
-                    return text
-            elif self.frame_height == 1080 and n_white_pix_1080 == 1264:
-                text = f"{text}2"
-                if running_out:
-                    return text
-            elif self.frame_height == 720 or self.frame_height == 1080:
-                digit = self.get_time_digit(thresholded_image, width, height, digit_num)
+            if self.frame_height == 1080:
+                digit = self.get_time_seconds_digit_1080p(
+                    gray_image, digit_num, debug_time=debug_time
+                )
                 text = f"{text}{digit}"
                 if running_out:
                     return text
             else:
-                n_white_pix = np.sum(thresholded_image == 255)
+                thresholded_image = Timer.get_thresholded_image(gray_image, 200)
+                height, width = (
+                    thresholded_image.shape
+                )  # Get the dimensions of the frame
+
+                if self.frame_height == 720:
+                    digit = self.get_time_digit(
+                        thresholded_image, width, height, digit_num
+                    )
+                    text = f"{text}{digit}"
+                    if running_out:
+                        return text
+                else:
+                    n_white_pix = np.sum(thresholded_image == 255)
 
             if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
                 text = f"{text}1"
@@ -454,22 +509,91 @@ class Timer:
             elif 194 - 5 <= n_white_pix <= 194 + 5:
                 text = f"{text}7"
 
+        if float(text) < 0:
+            raise Exception(f"Found incorrect time {text}")
+
         return text
 
     @staticmethod
-    def get_time_ms_digit_1080(thresholded_image):
+    def get_time_ms_digit_1080(thresholded_image, width, height):
         n_white_pix = np.sum(thresholded_image == 255)
-        if n_white_pix == 176:
-            return "2", n_white_pix
-        if 113 <= n_white_pix <= 118 + 5:
-            return "7", n_white_pix
-        if 165 <= n_white_pix <= 175:
+
+        points = {}
+        points[4.9] = thresholded_image[int(height / 2) - 1, int(width / 2)]
+        points[5] = thresholded_image[int(height / 2), int(width / 2)]
+        points[5.1] = thresholded_image[int(height / 2) + 1, int(width / 2)]
+        points[6] = thresholded_image[int(height / 2) + 1, int(width / 2)]
+        points[2] = thresholded_image[int(height) - 1, int(width / 2)]
+        points[1.5] = thresholded_image[int(height * 0.70), 4]
+
+        try:
+            points[33] = thresholded_image[12, width - 2]
+        except:
+            points[33] = 1
+
+        if n_white_pix == 131 or n_white_pix == 132:
+            return "9", n_white_pix
+
+        if (
+            n_white_pix == 115
+            or n_white_pix == 117
+            or n_white_pix == 110
+            or n_white_pix == 122
+            and width == 17
+        ):
             return "3", n_white_pix
-        if 80 <= n_white_pix <= 90:
-            return "1", n_white_pix
-        if 182 <= n_white_pix <= 192:
+
+        if (
+            n_white_pix == 104
+            or n_white_pix == 121
+            or n_white_pix == 122
+            or n_white_pix == 105
+            and (points[2] != 0)
+            and points[1.5] != 0
+            and points[33] == 0
+            and width == 18
+        ):
+            return "2", n_white_pix
+
+        if n_white_pix == 118 and width == 15:
+            return "5", n_white_pix
+
+        if n_white_pix == 123 or n_white_pix == 124:
+            return "5", n_white_pix
+
+        if (
+            n_white_pix == 133
+            or n_white_pix == 149
+            or 137 <= n_white_pix <= 140
+            or n_white_pix == 149
+            or n_white_pix == 152
+            or n_white_pix == 153
+            or n_white_pix == 154
+            or n_white_pix == 141
+            or n_white_pix == 150
+        ):
             return "8", n_white_pix
-        if 193 <= n_white_pix <= 201:
+
+        if (
+            n_white_pix == 130
+            and width == 17
+            and points[4.9] == 0
+            and points[5] == 0
+            and points[5.1] == 0
+        ):
+            return "0", n_white_pix
+
+        if n_white_pix < 67:
+            return "1", n_white_pix
+
+        if 79 <= n_white_pix <= 81:
+            return "7", n_white_pix
+
+        if (
+            130 <= n_white_pix <= 144
+            or (n_white_pix == 128 and width == 17)
+            or (126 <= n_white_pix <= 127 and width == 17)
+        ):
             return "6", n_white_pix
 
         return "0", n_white_pix
