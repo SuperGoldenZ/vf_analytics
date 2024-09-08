@@ -509,8 +509,8 @@ class Timer:
             elif 194 - 5 <= n_white_pix <= 194 + 5:
                 text = f"{text}7"
 
-        if float(text) < 0:
-            raise Exception(f"Found incorrect time {text}")
+        # if float(text) < 0:
+        # raise Exception(f"Found incorrect time {text}")
 
         return text
 
@@ -519,31 +519,86 @@ class Timer:
         n_white_pix = np.sum(thresholded_image == 255)
 
         points = {}
+        if width <= 3 or height <= 3:
+            return "0", n_white_pix
+
+        points[4.8] = thresholded_image[int(height / 2) - 2, int(width / 2)]
         points[4.9] = thresholded_image[int(height / 2) - 1, int(width / 2)]
         points[5] = thresholded_image[int(height / 2), int(width / 2)]
         points[5.1] = thresholded_image[int(height / 2) + 1, int(width / 2)]
         points[6] = thresholded_image[int(height / 2) + 1, int(width / 2)]
         points[2] = thresholded_image[int(height) - 1, int(width / 2)]
-        points[1.5] = thresholded_image[int(height * 0.70), 4]
+        points[1.5] = 0
+
+        upper_mid_right = 0
+        lower_mid_left = 0
 
         try:
             points[33] = thresholded_image[12, width - 2]
+            upper_mid_right = thresholded_image[14, 4]
+            lower_mid_left = thresholded_image[12, 2]
+            points[1.5] = thresholded_image[int(height * 0.70), 4]
         except:
             points[33] = 1
+            upper_mid_right = 0
+            lower_mid_left = 0
 
-        if n_white_pix == 131 or n_white_pix == 132:
+        if n_white_pix == 111 and width == 17:
+            return "4", n_white_pix
+
+        if (
+            n_white_pix == 138
+            and (
+                points[4.9] != 0
+                or points[5] != 0
+                or points[5.1] != 0
+                or points[4.8] != 0
+            )
+            and lower_mid_left == 0
+        ):
+            return "5", n_white_pix
+
+        if (
+            n_white_pix == 134
+            and height == 18
+            and width == 17
+            and points[4.9] == 0
+            and points[5] == 0
+            and points[5.1] == 0
+            and points[4.8] == 0
+        ):
+            return "0", n_white_pix
+
+        if (
+            n_white_pix == 138
+            and height == 18
+            and width == 17
+            and points[4.9] == 0
+            and points[5] == 0
+            and points[5.1] == 0
+            and points[4.8] == 0
+        ):
+            return "0", n_white_pix
+
+        if (
+            n_white_pix == 131
+            or n_white_pix == 132
+            or (n_white_pix == 127 and height == 17 and width == 17)
+        ):
             return "9", n_white_pix
+
+        if (
+            n_white_pix == 138
+            and height == 17
+            and width == 17
+            and (points[4.9] != 0 or points[5] != 0 or points[5.1] != 0)
+        ):
+            return "8", n_white_pix
 
         if height == 11:
             return "5", n_white_pix
 
-        if (
-            n_white_pix == 115
-            or n_white_pix == 117
-            or n_white_pix == 110
-            or n_white_pix == 122
-            and width == 17
-        ):
+        if (113 <= n_white_pix <= 122 or n_white_pix == 110) and width == 17:
             return "3", n_white_pix
 
         if (
@@ -561,15 +616,39 @@ class Timer:
         ):
             return "2", n_white_pix
 
-        if n_white_pix == 118 and width == 15:
+        if (
+            n_white_pix == 118
+            and width == 15
+            and (
+                points[4.9] != 0
+                or points[5] != 0
+                or points[5.1] != 0
+                or points[4.8] != 0
+            )
+            and lower_mid_left == 0
+        ):
             return "5", n_white_pix
 
         if (
             n_white_pix == 123
             or n_white_pix == 124
             or (n_white_pix == 112 and width == 17)
+            or (n_white_pix == 119 and width == 16)
+            and (
+                points[4.9] != 0
+                or points[5] != 0
+                or points[5.1] != 0
+                or points[4.8] != 0
+            )
+            and lower_mid_left == 0
         ):
             return "5", n_white_pix
+
+        if 143 <= n_white_pix <= 144 and width == 18:
+            return "8", n_white_pix
+
+        if 138 <= n_white_pix <= 138 and width == 17:
+            return "6", n_white_pix
 
         if (
             n_white_pix == 133
@@ -593,16 +672,20 @@ class Timer:
         ):
             return "0", n_white_pix
 
-        if n_white_pix < 67:
+        if n_white_pix <= 74:
             return "1", n_white_pix
 
         if 79 <= n_white_pix <= 81:
             return "7", n_white_pix
 
+        if n_white_pix == 144 and width == 17:
+            return "6", n_white_pix
+
         if (
-            130 <= n_white_pix <= 144
+            130 <= n_white_pix <= 143
             or (n_white_pix == 128 and width == 17)
             or (126 <= n_white_pix <= 127 and width == 17)
+            and upper_mid_right == 0
         ) and points[4.9] != 0:
             return "6", n_white_pix
 
