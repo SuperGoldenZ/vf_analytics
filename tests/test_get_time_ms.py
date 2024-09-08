@@ -3,6 +3,17 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/1080p/time/33_45_01.png", "33", "45", 1080, True],
+    ["assets/test_images/1080p/time/33_43_01.png", "33", "43", 1080, True],
+    ["assets/test_images/1080p/time/33_41_01.png", "33", "41", 1080, True],
+    ["assets/test_images/1080p/time/34_06_01.png", "34", "06", 1080, True],
+    ["assets/test_images/1080p/time/34_08_01.png", "34", "08", 1080, True],
+    ["assets/test_images/1080p/time/34_05_01.png", "34", "05", 1080, True],
+    ["assets/test_images/1080p/time/35_26_01.png", "35", "26", 1080, True],
+    ["assets/test_images/1080p/time/35_28_01.png", "35", "28", 1080, True],
+    ["assets/test_images/1080p/time/42_16_01.png", "42", "16", 1080, True],
+    ["assets/test_images/1080p/time/39_93_01.png", "28", "93", 1080, True],
+    ["assets/test_images/1080p/time/39_91_01.png", "28", "91", 1080, True],
     ["assets/test_images/1080p/time/29_05_01.png", "28", "05", 1080, True],
     ["assets/test_images/1080p/time/29_85_01.png", "29", "85", 1080, True],
     ["assets/test_images/1080p/time/41_78_01.png", "41", "78", 1080, True],
@@ -20,9 +31,22 @@ test_data = [
     ["assets/test_images/1080p/time/34_88_01.png", "34", "88", 1080, False],
     ["assets/test_images/480p/time/45_00_02.png", "45", "20", 480, False],
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
-    ["assets/test_images/1080p/time/42_16_01.png", "42", "16", 1080, True],
     ["assets/test_images/1080p/time/43_66_01.png", "43", "66", 1080, True],
 ]
+
+# test_data = [
+# ["assets/test_images/1080p/time/29_05_01.png", "28", "05", 1080, True],
+# ["assets/test_images/1080p/time/34_88_01.png", "34", "88", 1080, False],
+# ["assets/test_images/1080p/time/34_08_01.png", "34", "08", 1080, True],
+#    ["assets/test_images/1080p/time/34_06_01.png", "34", "06", 1080, True],
+# ["assets/test_images/1080p/time/34_05_01.png", "34", "05", 1080, True],
+
+# ["assets/test_images/1080p/time/39_91_01.png", "28", "91", 1080, True],
+# ["assets/test_images/1080p/time/39_93_01.png", "28", "93", 1080, True],
+# ["assets/test_images/1080p/time/35_26_01.png", "35", "26", 1080, True],
+# ["assets/test_images/1080p/time/35_28_01.png", "35", "28", 1080, True],
+# ["assets/test_images/1080p/time/42_16_01.png", "42", "16", 1080, True],
+# ]
 
 
 @pytest.mark.parametrize(
