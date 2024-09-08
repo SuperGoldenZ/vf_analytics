@@ -151,6 +151,24 @@ class WinningFrame:
 
         if (
             self.frame_height == 1080
+            and white_count > 8000
+            and gold_count > 200
+            and black_count < 100
+        ):
+            return True
+
+        if (
+            self.frame_height == 1080
+            and white_count > 7250
+            and gold_count > 70
+            and red_count > 225
+            and black_count < 75
+        ):
+            return True
+
+
+        if (
+            self.frame_height == 1080
             and white_count > 30000
             and gold_count > 50
             and black_count < 220
