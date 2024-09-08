@@ -50,7 +50,7 @@ class WinningRound:
             h = (int)(h * 2.25)
         return (x, y, w, h)
 
-    def is_winning_round(self, debug=False):
+    def is_winning_round(self, debug_winning_round=False):
         region_name = "all_rounds"
         (x, y, w, h) = self.get_roi(region_name)
 
@@ -65,17 +65,34 @@ class WinningRound:
         h = int(h * factor)
 
         roi = self.frame[y : y + h, x : x + w]
-        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 5)
+        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
+        other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
+        third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
+        light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
+
+        if debug_winning_round is True:
+            cv2.imshow(
+                f"roi dark blue {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue}",
+                roi,
+            )
+            cv2.waitKey()
+
+        if self.frame_height == 1080 and (
+            dark_blue + third_dark_blue + other_dark_blue + light_blue
+        ) >= (15 + 16 + 10 + 85):
+            return 0
+
         if self.frame_height == 480 and dark_blue > 70:
             return 0
 
-        if self.frame_height == 1080 and dark_blue > 375:
+        if self.frame_height == 1080 and dark_blue > 200:
             return 0
 
-        # print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
-        if debug is True:
-            cv2.imshow(f"roi {dark_blue}   {self.frame_height}", roi)
-            cv2.waitKey()
+        if self.frame_height == 1080 and other_dark_blue >= 25:
+            return 0
+
+        if self.frame_height == 1080 and third_dark_blue >= 13:
+            return 0
 
         bar_blue_two = vf_cv.CvHelper.count_pixels("#0636a5", roi, 5)
         if bar_blue_two >= 60 * factor:
@@ -122,6 +139,15 @@ class WinningRound:
 
             if player_num == 2:
                 whiter_blue = vf_cv.CvHelper.count_pixels("#f1ffff", roi, 5)
+                white = vf_cv.CvHelper.count_pixels("#fFffff", roi, 5)
+
+                if debug_winning_round:
+                    cv2.imshow(
+                        f"whiter_bluer {whiter_blue}  white {white}",
+                        roi,
+                    )
+                    cv2.waitKey()
+
                 if 45 <= whiter_blue <= 85:
                     return player_num
 
@@ -161,8 +187,20 @@ class WinningRound:
 
             if player_num == 1:
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, 5)
-                if op > 5:
-                    return player_num
+
+                if debug_winning_round:
+                    cv2.imshow(
+                        f"op {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc",
+                        roi,
+                    )
+                    cv2.waitKey()
+
+                if self.frame_height == 1080:
+                    if op > 15:
+                        return player_num
+                else:
+                    if op > 5:
+                        return player_num
                 if white_red_count >= 15:
                     return player_num
             if 20 <= white_count <= 30 and pink_count == 0:
@@ -173,10 +211,6 @@ class WinningRound:
                 or (pink_count >= 5 and player_num == 1)
                 or light_blue_count >= 5
             ) and (grey_count < 50):
-                # print(f"got winning rounds white count {white_count} pink {pink_count} blue {light_blue_count} dr {dark_red} db {dark_blue} all_maroon {all_dark_maroon} all dark red {all_dark_red} all_dark_blue {all_dark_blue} grey {grey_count}")
-                # cv2.imshow(f"roi for winner {player_num}", roi)
-                # cv2.waitKey()
-
                 return player_num
 
         return 0
