@@ -315,7 +315,17 @@ class Timer:
                 cv2.imshow(f"threshold {n_white_pix_1080}", thresholded_image)
                 cv2.waitKey()
 
-            if self.frame_height == 1080 and n_white_pix_1080 == 1264:
+            if self.frame_height == 1080 and 1545 - 10 <= n_white_pix_1080 <= 1545 + 10:
+                text = f"{text}8"
+                if running_out:
+                    return text
+            elif (
+                self.frame_height == 1080 and 1388 - 10 <= n_white_pix_1080 <= 1398 + 10
+            ):
+                text = f"{text}5"
+                if running_out:
+                    return text
+            elif self.frame_height == 1080 and n_white_pix_1080 == 1264:
                 text = f"{text}2"
                 if running_out:
                     return text
@@ -327,139 +337,130 @@ class Timer:
             else:
                 n_white_pix = np.sum(thresholded_image == 255)
 
-            if True:
-                if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
-                    text = f"{text}1"
-                elif (
-                    226 * factor <= n_white_pix <= 253 * factor
-                    or ((264 - 10) * factor <= n_white_pix <= 264 * factor)
-                    or (n_white_pix == 237)
-                ) or (
-                    n_white_pix == 246
-                    or n_white_pix == 242
-                    or n_white_pix == 241
-                    or n_white_pix == 234
-                    or n_white_pix >= 266 * factor
-                    and n_white_pix <= 276 * factor
+            if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
+                text = f"{text}1"
+            elif (
+                226 * factor <= n_white_pix <= 253 * factor
+                or ((264 - 10) * factor <= n_white_pix <= 264 * factor)
+                or (n_white_pix == 237)
+            ) or (
+                n_white_pix == 246
+                or n_white_pix == 242
+                or n_white_pix == 241
+                or n_white_pix == 234
+                or n_white_pix >= 266 * factor
+                and n_white_pix <= 276 * factor
+            ):
+                color = thresholded_image[3, 3]
+
+                height, width = (
+                    thresholded_image.shape
+                )  # Get the dimensions of the frame
+                veryupperleft = thresholded_image[0, 0]
+                upperleft = thresholded_image[3, width - 1]
+                upper_right = thresholded_image[0, width - 1]
+                lower_right = thresholded_image[height - 1, width - 1]
+                lowerleft = thresholded_image[height - 1, 0]
+                lowerleft2 = thresholded_image[height - 2, 0]
+
+                top_middle = thresholded_image[0, int(width * 0.5)]
+
+                midleftquarter = thresholded_image[(int)(height / 2), int(width * 0.25)]
+                middle = thresholded_image[int(height / 2), int(width / 2)]
+                bottom_middle = thresholded_image[int(height * 0.75), int(width / 2)]
+                midleft = thresholded_image[int(height / 2), 0]
+
+                left_quarter = thresholded_image[int(height * 0.70), 0]
+                thresholded_image[int(height * 0.70), 0] = 100
+
+                if (
+                    middle == 0
+                    and upper_right == 0
+                    and lowerleft == 0
+                    and veryupperleft == 0
+                    and lower_right == 0
+                    and midleftquarter != 0
+                    and top_middle != 0
                 ):
-                    color = thresholded_image[3, 3]
-
-                    height, width = (
-                        thresholded_image.shape
-                    )  # Get the dimensions of the frame
-                    veryupperleft = thresholded_image[0, 0]
-                    upperleft = thresholded_image[3, width - 1]
-                    upper_right = thresholded_image[0, width - 1]
-                    lower_right = thresholded_image[height - 1, width - 1]
-                    lowerleft = thresholded_image[height - 1, 0]
-                    lowerleft2 = thresholded_image[height - 2, 0]
-
-                    top_middle = thresholded_image[0, int(width * 0.5)]
-
-                    midleftquarter = thresholded_image[
-                        (int)(height / 2), int(width * 0.25)
-                    ]
-                    middle = thresholded_image[int(height / 2), int(width / 2)]
-                    bottom_middle = thresholded_image[
-                        int(height * 0.75), int(width / 2)
-                    ]
-                    midleft = thresholded_image[int(height / 2), 0]
-
-                    left_quarter = thresholded_image[int(height * 0.70), 0]
-                    thresholded_image[int(height * 0.70), 0] = 100
-
-                    if (
-                        middle == 0
-                        and upper_right == 0
-                        and lowerleft == 0
-                        and veryupperleft == 0
-                        and lower_right == 0
-                        and midleftquarter != 0
-                        and top_middle != 0
-                    ):
-                        text = f"{text}0"
-                    elif bottom_middle == 0 and left_quarter != 0 and midleft != 0:
-                        text = f"{text}6"
-                    elif (
-                        lower_right == 0
-                        and lowerleft == 0
-                        and lowerleft2 == 0
-                        and upper_right == 0
-                        and veryupperleft == 0
-                        and midleft == 0
-                        and midleftquarter == 0
-                    ):
-                        text = f"{text}3"
-                    elif upper_right == 0 and color != 0:
-                        text = f"{text}9"
-                    elif (
-                        upperleft != 0
-                        and lowerleft == 0
-                        and upper_right != 0
-                        and digit_num == 2
-                    ):
-                        text = f"{text}5"
-                    elif upper_right != 0 and top_middle != 0 and digit_num == 2:
-                        text = f"{text}5"
-                    elif color == 0 and lowerleft2 == 0:
-                        text = f"{text}4"
-                    else:
-                        text = f"{text}2"
-                elif n_white_pix == 252:
-                    color = thresholded_image[10, 5]
-                    thresholded_image[10, 5] = 100
-
-                    # print(repr(color))
-                    # print(f"seconds n_white {n_white_pix}")
-                    # cv2.imshow("grey", thresholded_image)
-                    # cv2.waitKey()
-
-                    # print(f"rgb {r} {g} {b}")
-                    if color == 0:
-                        text = f"{text}2"
-                    else:
-                        text = f"{text}5"
-                elif n_white_pix >= 278 - 5:
-                    height, width = (
-                        thresholded_image.shape
-                    )  # Get the dimensions of the frame
-                    middle = thresholded_image[int(height / 2), int(width / 2)]
-                    middle2 = thresholded_image[int(height / 2) - 1, int(width / 2)]
-                    midleft = thresholded_image[int(height / 2), 0]
-                    upper_right = thresholded_image[int(height * 0.25), 0]
-
-                    # cv2.imshow("thresh", thresholded_image)
-                    # cv2.waitKey()
-
-                    if middle == 0 and middle2 == 0 and upper_right == 0:
-                        text = f"{text}0"
-                    elif midleft != 0:
-                        text = f"{text}6"
-                    else:
-                        text = f"{text}8"
+                    text = f"{text}0"
+                elif bottom_middle == 0 and left_quarter != 0 and midleft != 0:
+                    text = f"{text}6"
                 elif (
-                    n_white_pix == 231
-                    or n_white_pix == 228
-                    or n_white_pix == 230
-                    or n_white_pix == 233
+                    lower_right == 0
+                    and lowerleft == 0
+                    and lowerleft2 == 0
+                    and upper_right == 0
+                    and veryupperleft == 0
+                    and midleft == 0
+                    and midleftquarter == 0
                 ):
                     text = f"{text}3"
-                elif n_white_pix == 169:
-                    text = f"{text}1"
-                elif 194 - 5 <= n_white_pix <= 194 + 5:
-                    text = f"{text}7"
+                elif upper_right == 0 and color != 0:
+                    text = f"{text}9"
+                elif (
+                    upperleft != 0
+                    and lowerleft == 0
+                    and upper_right != 0
+                    and digit_num == 2
+                ):
+                    text = f"{text}5"
+                elif upper_right != 0 and top_middle != 0 and digit_num == 2:
+                    text = f"{text}5"
+                elif color == 0 and lowerleft2 == 0:
+                    text = f"{text}4"
+                else:
+                    text = f"{text}2"
+            elif n_white_pix == 252:
+                color = thresholded_image[10, 5]
+                thresholded_image[10, 5] = 100
 
-        # text = text.replace('O', '0').replace('o', '0')
-        # re.sub(r'\D', '', text)
+                # print(repr(color))
+                # print(f"seconds n_white {n_white_pix}")
+                # cv2.imshow("grey", thresholded_image)
+                # cv2.waitKey()
 
-        # if (not text.isnumeric()):
-        # return 0
-        # print (f"returning {text}")
+                # print(f"rgb {r} {g} {b}")
+                if color == 0:
+                    text = f"{text}2"
+                else:
+                    text = f"{text}5"
+            elif n_white_pix >= 278 - 5:
+                height, width = (
+                    thresholded_image.shape
+                )  # Get the dimensions of the frame
+                middle = thresholded_image[int(height / 2), int(width / 2)]
+                middle2 = thresholded_image[int(height / 2) - 1, int(width / 2)]
+                midleft = thresholded_image[int(height / 2), 0]
+                upper_right = thresholded_image[int(height * 0.25), 0]
+
+                # cv2.imshow("thresh", thresholded_image)
+                # cv2.waitKey()
+
+                if middle == 0 and middle2 == 0 and upper_right == 0:
+                    text = f"{text}0"
+                elif midleft != 0:
+                    text = f"{text}6"
+                else:
+                    text = f"{text}8"
+            elif (
+                n_white_pix == 231
+                or n_white_pix == 228
+                or n_white_pix == 230
+                or n_white_pix == 233
+            ):
+                text = f"{text}3"
+            elif n_white_pix == 169:
+                text = f"{text}1"
+            elif 194 - 5 <= n_white_pix <= 194 + 5:
+                text = f"{text}7"
+
         return text
 
     @staticmethod
     def get_time_ms_digit_1080(thresholded_image):
         n_white_pix = np.sum(thresholded_image == 255)
+        if n_white_pix == 176:
+            return "2", n_white_pix
         if 113 <= n_white_pix <= 118 + 5:
             return "7", n_white_pix
         if 165 <= n_white_pix <= 175:
