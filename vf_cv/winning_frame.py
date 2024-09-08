@@ -71,7 +71,7 @@ class WinningFrame:
             cv2.waitKey()
         return green_count + light_green > 300 or red_tekken_count > 2000
 
-    def is_ko(self):
+    def is_ko(self, debug_ko=False):
         region_name = "ko"
         (x, y, w, h) = self.get_roi(region_name)
 
@@ -95,28 +95,31 @@ class WinningFrame:
             or self.frame_height == 720
             or self.frame_height == 1080
         ):
+            if debug_ko:
+                cv2.imshow(
+                    f"ko roi gold {gold_count} purple{purple_count} blue {blue} white {white_count} black{black_count}",
+                    roi,
+                )
+                cv2.waitKey()
+
             if blue > 1800:
                 return False
 
-            if purple_count > 140 and black_count > 200:
+            if self.frame_height == 480 and purple_count > 140 and black_count > 200:
                 return False
             if gold_count > 10 and white_count > 7000:
-                # print("true 01", flush=True)
                 return True
             if white_count > 15000:
-                # print("true 02", flush=True)
                 return True
             if gold_count > 42 and purple_count > 10:
-                # print("true 03", flush=True)
                 return True
 
             if red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000:
-                # print("true 04", flush=True)
                 return True
 
         return False
 
-    def is_excellent(self):
+    def is_excellent(self, debug_excellent=False):
         (p1green, p1black, p1grey) = self.get_player_health(1)
         (p2green, p2black, p2grey) = self.get_player_health(2)
 
@@ -138,13 +141,13 @@ class WinningFrame:
             "#422fc9", roi, override_tolerance=25
         )
         black_count = vf_cv.CvHelper.count_pixels("#000000", roi, override_tolerance=25)
-        # tekken_gold_count = vf_cv.CvHelper.count_pixels("#d9b409", roi, override_tolerance=15)
 
-        # infoString = f"excellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
-
-        # logger.debug(
-        # f"\nexcellent white count {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} tekgold {tekken_gold_count}"
-        # )
+        if debug_excellent is True:
+            cv2.imshow(
+                f"excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count}",
+                roi,
+            )
+            cv2.waitKey()
 
         if (
             black_count > 2300
@@ -190,6 +193,10 @@ class WinningFrame:
 
         if 476 - 50 <= white_count <= 476 + 50 and 28 <= gold_count <= 48:
             return True
+
+        if self.frame_height == 1080:
+            if white_count > 7901 - 10 and gold_count > 400 and black_count < 100:
+                return True
 
         return (
             black_count > 900
