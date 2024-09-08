@@ -50,7 +50,7 @@ class WinningRound:
             h = (int)(h * 2.25)
         return (x, y, w, h)
 
-    def is_winning_round(self, debug=False):
+    def is_winning_round(self, debug_winning_round=False):
         region_name = "all_rounds"
         (x, y, w, h) = self.get_roi(region_name)
 
@@ -65,15 +65,14 @@ class WinningRound:
         h = int(h * factor)
 
         roi = self.frame[y : y + h, x : x + w]
-        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 5)
+        dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 25)
         if self.frame_height == 480 and dark_blue > 70:
             return 0
 
-        if self.frame_height == 1080 and dark_blue > 375:
+        if self.frame_height == 1080 and dark_blue > 100:
             return 0
 
-        # print(f"got winning rounds white count adb {all_dark_blue} red {all_dark_red} maroon {all_dark_maroon} other {other_maroon} odb {other_db} ob {other_blue} anotherblue {another_blue}   bar {bar_blue} bb2 {bar_blue_two}" )
-        if debug is True:
+        if debug_winning_round is True:
             cv2.imshow(f"roi {dark_blue}   {self.frame_height}", roi)
             cv2.waitKey()
 
