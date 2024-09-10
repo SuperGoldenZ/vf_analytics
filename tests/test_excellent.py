@@ -5,6 +5,9 @@ import vf_cv
 
 
 test_data = [
+    ["assets/test_images/1080p/excellent/excellent_for_player_1_07.png", True],
+    ["assets/test_images/1080p/excellent/excellent_for_player_1_06.png", True],
+    ["assets/test_images/1080p/excellent/excellent_for_player_1_05.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_04.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_03.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_02.png", True],
