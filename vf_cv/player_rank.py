@@ -49,7 +49,7 @@ class PlayerRank:
         return (x, y, w, h)
 
     # min width 25
-    def get_player_rank(self, player_num):
+    def get_player_rank(self, player_num, debug_player_rank):
         FULL_REGION = region_name = f"player{player_num}rank_full"
         FULL_REGION_ROI = self.get_roi(FULL_REGION)
 
@@ -87,6 +87,22 @@ class PlayerRank:
             and black_count < 50
         ):
             return 39
+
+        if debug_player_rank and self.frame_height == 1080:
+            cv2.imshow(
+                f"{self.frame_height}  - grellow {grellow_count} ry {ry} wc {white_count} grey {grey}",
+                full_roi,
+            )
+            cv2.waitKey()
+
+        if (
+            self.frame_height == 1080
+            and grellow_count > 220
+            and ry > 630
+            and white_count < 1100
+            and grey < 250
+        ):
+            return 43
 
         if grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50:
             return 43
