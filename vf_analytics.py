@@ -288,37 +288,60 @@ VS_BLACK_COORDINATES = {
 def is_vs(frame, debug=False):
     height = frame.shape[0]  # Get the dimensions of the frame
 
+    result = True
+
+    debug_message = "is_vs roi"
+    r1 = frame[IS_VS_RED_COORDINATES[height][0], IS_VS_RED_COORDINATES[height][1]][2]
+    r2 = frame[
+        IS_VS_RED_COORDINATES[height][0] + 25, IS_VS_RED_COORDINATES[height][1] + 75
+    ][2]
+
+    if r1 < 80 and r2 < 80:
+        debug_message = f"{debug_message} false 1"
+        result = False
+    else:
+        b1 = frame[
+            IS_VS_BLUE_COORDINATES[height][0], IS_VS_BLUE_COORDINATES[height][1]
+        ][0]
+        b2 = frame[
+            IS_VS_BLUE_COORDINATES[height][0] + 25,
+            IS_VS_BLUE_COORDINATES[height][1] - 125,
+        ][0]
+        frame[
+            IS_VS_BLUE_COORDINATES[height][0] + 25,
+            IS_VS_BLUE_COORDINATES[height][1] - 125,
+        ] = (0, 255, 0)
+
+        if b1 < 80 and b2 < 80:
+            debug_message = f"{debug_message} false 2"
+            result = False
+        else:
+            (b, g, r) = frame[
+                IS_P2_BLUE_COORDINATES[height][0], IS_P2_BLUE_COORDINATES[height][1]
+            ]
+            if b < 80:
+                debug_message = f"{debug_message} false 3"
+                result = False
+            else:
+                (b, g, r) = frame[
+                    VS_GRAY_COORDINATES[height][0], VS_GRAY_COORDINATES[height][1]
+                ]
+                if b < 90 or g < 90 or r < 90:
+                    debug_message = f"{debug_message} false 4"
+                    result = False
+                else:
+                    (b, g, r) = frame[
+                        VS_BLACK_COORDINATES[height][0], VS_BLACK_COORDINATES[height][1]
+                    ]
+                    if b > 40 or g > 40 or r > 40:
+                        debug_message = f"{debug_message} false 5"
+                        result = False
+
     if debug:
-        cv2.imshow(f"frame height {height}", frame)
+        cv2.imshow(debug_message, frame)
         cv2.waitKey()
 
-    (b, g, r) = frame[
-        IS_VS_RED_COORDINATES[height][0], IS_VS_RED_COORDINATES[height][1]
-    ]
-    if r < 80:
-        return False
-
-    (b, g, r) = frame[
-        IS_VS_BLUE_COORDINATES[height][0], IS_VS_BLUE_COORDINATES[height][1]
-    ]
-    if b < 80:
-        return False
-
-    (b, g, r) = frame[
-        IS_P2_BLUE_COORDINATES[height][0], IS_P2_BLUE_COORDINATES[height][1]
-    ]
-    if b < 80:
-        return False
-
-    (b, g, r) = frame[VS_GRAY_COORDINATES[height][0], VS_GRAY_COORDINATES[height][1]]
-    if b < 90 or g < 90 or r < 90:
-        return False
-
-    (b, g, r) = frame[VS_BLACK_COORDINATES[height][0], VS_BLACK_COORDINATES[height][1]]
-    if b > 40 or g > 40 or r > 40:
-        return False
-
-    return True
+    return result
 
 
 # Min width of frame is 85
