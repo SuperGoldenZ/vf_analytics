@@ -2,35 +2,38 @@ import pytest
 import cv2
 import vf_analytics
 
-test_data= [
-    ['assets/test_images/720p/stage/ruins_01.png', "Ruins"],
-    ['assets/test_images/480p/main_menu.png', None],
-    ['assets/test_images/480p/stage/deep_mountain.png', "Deep Mountain"],
-    ['assets/test_images/480p/stage/genesis.png', "Genesis"],
-    ['assets/test_images/480p/stage/city.jpg', "City"],
-    ['assets/test_images/480p/stage/terrace.png', "Terrace"],
-    ['assets/test_images/480p/stage/sumo_ring.png', "Sumo Ring"],
-    ['assets/test_images/480p/stage/training_room.png', "Training Room"],
-    ['assets/test_images/480p/stage/island_01.jpg', "Island"],
-    ['assets/test_images/480p/stage/island_02.jpg', "Island"],
-    ['assets/test_images/480p/stage/island_03.jpg', "Island"],
-    ['assets/test_images/480p/stage/genesis.png', "Genesis"],
-    ['assets/test_images/480p/stage/aurora.png', "Aurora"],
-    ['assets/test_images/480p/stage/terrace.png', "Terrace"],
-    ['assets/test_images/480p/stage/shrine.png', "Shrine"],
-    ['assets/test_images/480p/stage/sumo_ring.png', "Sumo Ring"],
-    ['assets/test_images/480p/stage/training_room.png', "Training Room"],
-    ['assets/test_images/480p/stage/waterfalls.png', "Waterfalls"],
-    ['assets/test_images/480p/stage/aurora.png', "Aurora"],
-    ['assets/test_images/480p/stage/shrine.png', "Shrine"],
-    ['assets/test_images/480p/stage/waterfalls.png', "Waterfalls"],
-    ['assets/test_images/480p/stage/city.jpg', "City"],
-
+test_data = [
+    ["assets/test_images/1080p/vs/vs_02.png", "Ruins"],
+    ["assets/test_images/1080p/vs/vs_01.jpg", "Ruins"],
+    ["assets/test_images/1080p/vs/vs_03.png", "Ruins"],
+    ["assets/test_images/1080p/vs/vs_04.png", "Ruins"],
+    ["assets/test_images/720p/stage/ruins_01.png", "Ruins"],
+    ["assets/test_images/480p/main_menu.png", None],
+    ["assets/test_images/480p/stage/deep_mountain.png", "Deep Mountain"],
+    ["assets/test_images/480p/stage/genesis.png", "Genesis"],
+    ["assets/test_images/480p/stage/city.jpg", "City"],
+    ["assets/test_images/480p/stage/terrace.png", "Terrace"],
+    ["assets/test_images/480p/stage/sumo_ring.png", "Sumo Ring"],
+    ["assets/test_images/480p/stage/training_room.png", "Training Room"],
+    ["assets/test_images/480p/stage/island_01.jpg", "Island"],
+    ["assets/test_images/480p/stage/island_02.jpg", "Island"],
+    ["assets/test_images/480p/stage/island_03.jpg", "Island"],
+    ["assets/test_images/480p/stage/genesis.png", "Genesis"],
+    ["assets/test_images/480p/stage/aurora.png", "Aurora"],
+    ["assets/test_images/480p/stage/terrace.png", "Terrace"],
+    ["assets/test_images/480p/stage/shrine.png", "Shrine"],
+    ["assets/test_images/480p/stage/sumo_ring.png", "Sumo Ring"],
+    ["assets/test_images/480p/stage/training_room.png", "Training Room"],
+    ["assets/test_images/480p/stage/waterfalls.png", "Waterfalls"],
+    ["assets/test_images/480p/stage/aurora.png", "Aurora"],
+    ["assets/test_images/480p/stage/shrine.png", "Shrine"],
+    ["assets/test_images/480p/stage/waterfalls.png", "Waterfalls"],
+    ["assets/test_images/480p/stage/city.jpg", "City"],
     ["assets/test_images/480p/time/08_00_01.png", None],
     ["assets/test_images/720p/time/08_00_01.png", None],
-    ["assets/test_images/720p/time/09_96_01.png", None],    
+    ["assets/test_images/720p/time/09_96_01.png", None],
     ["assets/test_images/720p/time/10_08_01.png", None],
-    ["assets/test_images/480p/time/45_00_02.png", None],        
+    ["assets/test_images/480p/time/45_00_02.png", None],
     ["assets/test_images/480p/time/18_00_01.png", None],
     ["assets/test_images/720p/time/42_75.png", None],
     ["assets/test_images/480p/time/43_45.png", None],
@@ -63,12 +66,16 @@ test_data= [
     ["assets/test_images/480p/time/43_96.png", None],
 ]
 
+
 @pytest.mark.parametrize("image_filename, expected_stage_name", test_data)
 def test_is_vs(image_filename, expected_stage_name):
     vs_image = cv2.imread(image_filename)
 
     assert vs_image is not None
 
-    actual_is_vs=vf_analytics.is_vs(vs_image)
+    DEBUG = False
+    actual_is_vs = vf_analytics.is_vs(vs_image, DEBUG)
     expected_actual_vs = expected_stage_name is not None
-    assert expected_actual_vs == actual_is_vs, f"{image_filename} is_vs unexpectedly {actual_is_vs}"
+    assert (
+        expected_actual_vs == actual_is_vs
+    ), f"{image_filename} is_vs unexpectedly {actual_is_vs}"
