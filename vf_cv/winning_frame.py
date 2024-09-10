@@ -141,13 +141,26 @@ class WinningFrame:
             "#422fc9", roi, override_tolerance=25
         )
         black_count = vf_cv.CvHelper.count_pixels("#000000", roi, override_tolerance=25)
+        light_yellow = vf_cv.CvHelper.count_pixels("#f8ff7b", roi, override_tolerance=5)
 
         if debug_excellent is True:
             cv2.imshow(
-                f"excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count}",
+                f"excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} light yelllow {light_yellow}",
                 roi,
             )
             cv2.waitKey()
+
+        if self.frame_height == 1080 and white_count > 5000 and light_yellow > 1200:
+            return True
+
+        if (
+            self.frame_height == 1080
+            and white_count > 1500
+            and gold_count > 775
+            # and red_count > 500
+            # and black_count < 1300
+        ):
+            return True
 
         if (
             self.frame_height == 1080
@@ -165,7 +178,6 @@ class WinningFrame:
             and black_count < 75
         ):
             return True
-
 
         if (
             self.frame_height == 1080
