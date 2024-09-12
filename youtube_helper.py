@@ -28,19 +28,19 @@ def get_stream(url, youtube_auth=True):
     yt = YouTube(url, use_oauth=youtube_auth)
 
     logger.debug(f"made youtube for {url}")
-    for stream in yt.streams:
-        logger.debug(stream)
 
     try:
         for stream_params in STREAM_SEARCH:
             for stream in yt.streams:
                 logger.debug(f"got stream {stream}")
 
-        ys = yt.streams.filter(
-            res=stream_params["resolution"], fps=stream_params["fps"]
-        ).first()
-        if ys is not None:
-            return ys
+            ys = yt.streams.filter(
+                res=stream_params["resolution"], fps=stream_params["fps"]
+            )
+
+            ys = ys.first()
+            if ys is not None:
+                return ys
     except Exception as error:
         logger.error(f"error occured getting stream {error}")
         logger.error(traceback.format_exc())
