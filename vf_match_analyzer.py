@@ -421,12 +421,15 @@ def extract_frames(
             if is_ro:
                 round[f"player{player_num}_ringout"] = 1
                 print(f"{count} got RO for player {player_num}")
+                save_cam_frame(jpg_folder, original_frame, frame, count, "ro")
             elif is_excellent:
                 round[f"player{player_num}_excellent"] = 1
                 print(f"{count} got EX for player {player_num}")
+                save_cam_frame(jpg_folder, original_frame, frame, count, "ex")
             elif is_ko:
                 round[f"player{player_num}_ko"] = 1
                 print(f"{count} got KO for player {player_num}")
+                save_cam_frame(jpg_folder, original_frame, frame, count, "ko")
             else:
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count += int(frame_rate * interval)
@@ -520,10 +523,13 @@ def extract_frames(
                 rounds_won = [0, 0]
                 round_num = 1
                 match = vf_data.match.Match()
-                match["id"] = uuid.uuid4()
+
+                matches_processed += 1
+                formatted_match_id = "%02d" % (matches_processed + 1,)
+                match.id = f"{video_id}-{formatted_match_id}"
+
                 logger.debug(f"{video_id} {count:13d} - match finished")
                 skipFrames = 2
-                matches_processed += 1
 
                 # elapsed_time = timer() - fight_time # in seconds
                 # print(f"time in fight state: {elapsed_time}")
@@ -568,7 +574,15 @@ def all_but_black(roi):
     return cleaned_text
 
 
-def print_csv(match, round, round_num, video_id, frame_count, time_remaining, fps):
+def print_csv(
+    match: vf_data.match.Match,
+    round,
+    round_num,
+    video_id,
+    frame_count,
+    time_remaining,
+    fps,
+):
     with open(f"match_data_{video_id}.csv", "a") as f:
         if video_id is None:
             f.write("cam")
@@ -576,32 +590,23 @@ def print_csv(match, round, round_num, video_id, frame_count, time_remaining, fp
             f.write(video_id)
 
         f.write(",")
-        f.write(str(match["id"]))
+        f.write(match.id)
         f.write(",")
         f.write(str(frame_count))
         f.write(",")
-        if not "stage" in match or match["stage"] is None:
-            f.write("n/a")
-        else:
-            f.write(match["stage"])
+        f.write(match.stage)
         f.write(",")
-        f.write(match["player1ringname"])
+        f.write(match.player1ringname)
         f.write(",")
-        try:
-            f.write(str(match["player1rank"]))
-        except:
-            f.write("0")
+        f.write(str(match.player1rank))
         f.write(",")
-        f.write(match["player1character"])
+        f.write(match.player2character)
         f.write(",")
-        f.write(match["player2ringname"])
+        f.write(match.player2ringname)
         f.write(",")
-        try:
-            f.write(str(match["player2rank"]))
-        except:
-            f.write("0")
+        f.write(str(match.player2rank))
         f.write(",")
-        f.write(match["player2character"])
+        f.write(match.player2character)
         f.write(",")
         f.write(str(round_num))
         f.write(",")
