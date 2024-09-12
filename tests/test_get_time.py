@@ -3,6 +3,8 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/1080p/time/05_31_02.png", "5", "31", 1080, False],
+    ["assets/test_images/1080p/time/05_31_01.png", "5", "31", 1080, False],
     ["assets/test_images/480p/time/41_78.png", "41", "78", 720, False],
     ["assets/test_images/1080p/time/29_85_01.png", "29", "85", 1080, True],
     ["assets/test_images/1080p/time/29_05_01.png", "29", "05", 1080, True],

@@ -5,8 +5,10 @@ import vf_cv
 
 
 test_data = [
-    ["assets/test_images/1080p/excellent/excellent_for_player_1_07.png", True],
+    ["assets/test_images/1080p/excellent/excellent_for_player_2_01.png", True],
+    ["assets/test_images/1080p/excellent/not_excellent_01.png", False],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_06.png", True],
+    ["assets/test_images/1080p/excellent/excellent_for_player_1_07.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_05.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_04.png", True],
     ["assets/test_images/1080p/excellent/excellent_for_player_1_03.png", True],
@@ -43,4 +45,4 @@ def test_is_excellent(image_filename, expected_result):
     DEBUG = False
     assert expected_result == winning_frame.is_excellent(
         DEBUG
-    ), f"{image_filename} is excellent {expected_result} as expected"
+    ), f"{image_filename} result != {expected_result} as expected"
