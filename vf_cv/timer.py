@@ -117,14 +117,16 @@ class Timer:
                         cv2.imshow(f"roi", roi)
                         cv2.imshow(f"gray", gray_image)
                         cv2.imshow(
-                            f"threshold 1080 {n_white_pix}   height {height}  width {width}",
+                            f"threshold 1080 {n_white_pix}   height {self.frame_height}  width {width}",
                             thresholded_image,
                         )
                         cv2.waitKey()
 
             if self.frame_height == 720:
                 n_white_pix = np.sum(thresholded_image == 255)
-
+                height, width = (
+                    thresholded_image.shape
+                )
                 points = {}
                 points[1] = thresholded_image[height - 1, 0]
                 points[7] = thresholded_image[0, 0]
@@ -266,7 +268,7 @@ class Timer:
                     text = f"{text}0"
         return text
 
-    def is_time_running_out(self, debug=False):
+    def is_time_running_out(self, debug_time=False):
         """Returns true if last 10 seconds of a round"""
 
         region_name = "time_seconds_digit1"
@@ -276,7 +278,7 @@ class Timer:
         count = vf_cv.CvHelper.count_pixels("#FF0000", roi)
         dr = vf_cv.CvHelper.count_pixels("#840003", roi)
 
-        if debug:
+        if debug_time is True:
             cv2.imshow(f"roi {count}   dr {dr}", roi)
             cv2.waitKey()
 
