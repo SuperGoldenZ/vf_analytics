@@ -274,14 +274,18 @@ class Timer:
         roi = self.frame[y : y + h, x : x + w]
 
         count = vf_cv.CvHelper.count_pixels("#FF0000", roi)
+        dr = vf_cv.CvHelper.count_pixels("#840003", roi)
 
         if debug:
-            cv2.imshow(f"roi {count}", roi)
+            cv2.imshow(f"roi {count}   dr {dr}", roi)
             cv2.waitKey()
 
         threshold = 100
         if h == 480:
             threshold = 50
+
+        if dr > 2000:
+            return True
 
         return count > threshold
 
@@ -317,7 +321,8 @@ class Timer:
             cv2.waitKey()
 
         upper_right = thresholded_image[0, width - 2]
-
+        if 1410 <= n_white_pix_1080 <= 1430 and 40 <= width <= 50:
+            return 5
         if 1335 <= n_white_pix_1080 < 1355 and 45 <= width <= 50 and upper_right == 0:
             return 2
         elif 1245 <= n_white_pix_1080 < 1270 and 45 <= width <= 50 and upper_right == 0:
@@ -361,7 +366,7 @@ class Timer:
             w = int(w * factor)
             h = int(h * factor)
 
-            running_out = self.is_time_running_out()
+            running_out = self.is_time_running_out(debug_time)
             if running_out:
                 x = (int)(x + w / 2)
             roi = self.frame[y : y + h, x : x + w]
