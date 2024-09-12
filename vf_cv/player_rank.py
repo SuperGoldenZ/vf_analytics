@@ -49,7 +49,7 @@ class PlayerRank:
         return (x, y, w, h)
 
     # min width 25
-    def get_player_rank(self, player_num, debug_player_rank):
+    def get_player_rank(self, player_num, debug_player_rank=False):
         FULL_REGION = region_name = f"player{player_num}rank_full"
         FULL_REGION_ROI = self.get_roi(FULL_REGION)
 
