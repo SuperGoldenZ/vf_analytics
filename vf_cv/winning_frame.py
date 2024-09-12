@@ -150,6 +150,22 @@ class WinningFrame:
             )
             cv2.waitKey()
 
+        if (
+            self.frame_height == 1080
+            and black_count > 3500
+            and gold_count < 200
+            and white_count < 1000
+        ):
+            return False
+
+        if (
+            self.frame_height == 1080
+            and white_count > 3800
+            and gold_count > 250
+            and black_count < 100
+        ):
+            return True
+
         if self.frame_height == 1080 and white_count > 5000 and light_yellow > 1200:
             return True
 
