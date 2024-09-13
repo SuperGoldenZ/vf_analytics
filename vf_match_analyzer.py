@@ -89,6 +89,19 @@ def save_cam_frame(jpg_folder, original_frame, frame, count_int, suffix):
         original_thread.join()
 
 
+def print_csv(
+    match: vf_data.Match,
+    round,
+    round_num,
+    video_id,
+    frame_count,
+    time_remaining,
+    fps,
+):
+    with open(f"match_data_{video_id}.csv", "a") as f:
+        f.write(str(match))
+
+
 # Step 2: Extract frames from the video
 def extract_frames(
     cap,
@@ -107,11 +120,9 @@ def extract_frames(
     count = startFrame
 
     state = "before"
-    round = new_round()
-    rounds_won = [0, 0]
+    current_round = vf_data.Round()
     match = vf_data.match.Match()
-
-    round_num = 1
+    match.video_id = video_id
 
     skipFrames = 0
 
@@ -207,6 +218,8 @@ def extract_frames(
             if vf_analytics.is_vs(frame):
                 if height != 480:
                     frame_480p = cv2.resize(frame, (854, 480))
+                else:
+                    frame_480p = frame
 
                 stage = vf_analytics.get_stage(frame_480p)
                 if stage is None:
@@ -223,6 +236,8 @@ def extract_frames(
                 formatted_match_id = "%02d" % (matches_processed + 1,)
                 match.id = f"{video_id}-{formatted_match_id}"
                 match.stage = stage
+                match.vs_frame_seconds = int(count / frame_rate)
+
                 state = "vs"
                 logger.debug(
                     f"{video_id} {count:13d} - got stage {stage} and setting to vs"
@@ -395,20 +410,17 @@ def extract_frames(
                     match.player1rank = 0
 
             if match.player2rank == 0:
-                try:
-                    player2rank = player_rank.get_player_rank(2)
-                    match.player2rank = player2rank
-                    logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
-                    if player2rank == 0:
-                        save_cam_frame(
-                            jpg_folder,
-                            original_frame,
-                            frame,
-                            count,
-                            "_rank_0_for_player2",
-                        )
-                except:
-                    match.player2rank = 0
+                player2rank = player_rank.get_player_rank(2)
+                match.player2rank = player2rank
+                logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
+                if player2rank == 0:
+                    save_cam_frame(
+                        jpg_folder,
+                        original_frame,
+                        frame,
+                        count,
+                        "_rank_0_for_player2",
+                    )
 
             if timestr != old_time:
                 count += int(frame_rate * interval) * 3
@@ -418,19 +430,21 @@ def extract_frames(
 
             logger.debug(f"{video_id} {count:013d} - player {player_num} won the match")
 
+            current_round.winning_player_num = player_num
             if is_ro:
-                round[f"player{player_num}_ringout"] = 1
+                current_round.victory = vf_data.Round.RO
                 print(f"{count} got RO for player {player_num}")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "ro")
             elif is_excellent:
-                round[f"player{player_num}_excellent"] = 1
+                current_round.victory = vf_data.Round.EX
                 print(f"{count} got EX for player {player_num}")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "ex")
             elif is_ko:
-                round[f"player{player_num}_ko"] = 1
+                current_round.victory = vf_data.Round.KO
                 print(f"{count} got KO for player {player_num}")
                 save_cam_frame(jpg_folder, original_frame, frame, count, "ko")
             else:
+                current_round.winning_player_num = 0
                 print(f"{count} unknown way to victory for {player_num} skipping")
                 count += int(frame_rate * interval)
 
@@ -438,11 +452,6 @@ def extract_frames(
                 del frame
                 del original_frame
                 continue
-
-            rounds_won[player_num - 1] = rounds_won[player_num - 1] + 1
-            round[f"player{player_num}_rounds"] = (
-                round[f"player{player_num}_rounds"] + 1
-            )
 
             try:
                 timestr = None
@@ -456,19 +465,6 @@ def extract_frames(
                     )
                     logger.error(traceback.format_exc())
                     timestr = "na"
-
-                if round_num == 1:
-                    print_csv(
-                        match,
-                        round,
-                        "0",
-                        video_id,
-                        got_all_frame_count,
-                        "n/a",
-                        frame_rate,
-                    )
-
-                print_csv(match, round, round_num, video_id, count, timestr, frame_rate)
 
                 suffix = ""
                 p1r = match.player1rank
@@ -488,14 +484,14 @@ def extract_frames(
                     original_frame,
                     frame,
                     count,
-                    f"{rounds_won[0]}_{rounds_won[1]}_{suffix}_{timestr}",
+                    f"{0}_{1}_{suffix}_{timestr}",
                 )
             except:
                 logger.error(f"{video_id} {count:13d} ERROR write to csv")
                 logger.error(traceback.format_exc())
 
             logger.debug(
-                f"{video_id} {count:13d} - round {round_num} finished player {player_num} won"
+                f"{video_id} {count:13d} - round {match.get_round_num()} finished player {player_num} won"
             )
 
             if match.player1rank == 0:
@@ -507,23 +503,33 @@ def extract_frames(
                     f"{video_id} {count:13d} - round is over but player 2 rank is 0"
                 )
 
-            if round[f"player{player_num}_rounds"] < 3:
-                round = new_round()
-                round["player1_rounds"] = rounds_won[0]
-                round["player2_rounds"] = rounds_won[1]
-                round_num += 1
+            current_round.seconds = int(count / frame_rate)
+
+            match.add_finished_round(current_round)
+            if match.count_rounds_won(1) < 3 and match.count_rounds_won(2) < 3:
+
+                current_round = vf_data.Round()
 
                 if cam == -1:
                     skipFrames = 10 / interval
                 time_matches = 0
                 # print(f"{count} new round")
             else:
-                state = "before"
-                round = new_round()
-                rounds_won = [0, 0]
-                round_num = 1
-                match = vf_data.match.Match()
+                print("printing CSV")
+                print_csv(
+                    match,
+                    round,
+                    match.get_round_num(),
+                    video_id,
+                    count,
+                    timestr,
+                    frame_rate,
+                )
 
+                state = "before"
+                current_round = vf_data.Round()
+                match = vf_data.Match()
+                match.video_id = video_id
                 matches_processed += 1
                 formatted_match_id = "%02d" % (matches_processed + 1,)
                 match.id = f"{video_id}-{formatted_match_id}"
@@ -549,153 +555,6 @@ def extract_frames(
 
     # cap.release()
     return (count, matches_processed)
-
-
-def all_but_black(roi):
-    lower_black = np.array([0, 0, 0])  # Lower bound of white color
-    upper_black = np.array([35, 35, 35])  # Upper bound of white color
-    mask = cv2.inRange(roi, lower_black, upper_black)
-
-    white_background = np.ones_like(roi) * 255
-    masked_image = np.where(mask[:, :, None] == 255, roi, white_background)
-
-    # Convert to grayscale
-    gray = cv2.cvtColor(masked_image, cv2.COLOR_BGR2GRAY)
-
-    # Increase contrast and threshold the image to make text more distinct
-    _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
-
-    # Optional: Apply morphological operations to fill in the text
-    kernel = np.ones((5, 5), np.uint8)
-    filled_text = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-
-    # Optional: Remove small noise
-    cleaned_text = cv2.medianBlur(filled_text, 3)
-    return cleaned_text
-
-
-def print_csv(
-    match: vf_data.match.Match,
-    round,
-    round_num,
-    video_id,
-    frame_count,
-    time_remaining,
-    fps,
-):
-    with open(f"match_data_{video_id}.csv", "a") as f:
-        if video_id is None:
-            f.write("cam")
-        else:
-            f.write(video_id)
-
-        f.write(",")
-        f.write(match.id)
-        f.write(",")
-        f.write(str(frame_count))
-        f.write(",")
-        f.write(match.stage)
-        f.write(",")
-        f.write(match.player1ringname)
-        f.write(",")
-        f.write(str(match.player1rank))
-        f.write(",")
-        f.write(match.player2character)
-        f.write(",")
-        f.write(match.player2ringname)
-        f.write(",")
-        f.write(str(match.player2rank))
-        f.write(",")
-        f.write(match.player2character)
-        f.write(",")
-        f.write(str(round_num))
-        f.write(",")
-        try:
-            f.write(str(round["player1_rounds"]))
-        except:
-            f.write("0")
-        f.write(",")
-        try:
-            f.write(str(round["player1_ko"]))
-        except:
-            f.write("0")
-        f.write(",")
-
-        try:
-            f.write(str(round["player1_ringout"]))
-        except:
-            f.write("0")
-
-        f.write(",")
-        try:
-            f.write(str(round["player1_excellent"]))
-        except:
-            f.write("0")
-
-        f.write(",")
-        try:
-            f.write(str(round["player2_rounds"]))
-        except:
-            f.write("0")
-        f.write(",")
-        try:
-            f.write(str(round["player2_ko"]))
-        except:
-            f.write("0")
-        f.write(",")
-
-        try:
-            f.write(str(round["player2_ringout"]))
-        except:
-            f.write("0")
-        f.write(",")
-
-        try:
-            f.write(str(round["player2_excellent"]))
-        except:
-            f.write("0")
-
-        f.write(",")
-        try:
-            f.write(str(time_remaining))
-        except:
-            f.write("0")
-
-        f.write(",")
-        try:
-            seconds = int(frame_count / fps)
-            youtube_url = f"https://www.youtube.com/watch?v={video_id}&t={seconds}"
-            f.write(str(youtube_url))
-        except:
-            f.write("n/a")
-
-        f.write("\n")
-
-
-def new_round():
-    round = {}
-    round["player1_excellent"] = 0
-    round["player2_excellent"] = 0
-    round["player1_ko"] = 0
-    round["player2_ko"] = 0
-    round["player1_ringout"] = 0
-    round["player2_ringout"] = 0
-    round["player1_rounds"] = 0
-    round["player2_rounds"] = 0
-    return round
-
-
-# Step 3: Perform OCR on specific regions
-def perform_ocr_on_frames(frames, video_id="n/a"):
-    # height, width = list(frames.keys())[0].shape
-
-    # height, width, _ = frames[0].shape  # Get the dimensions of the frame
-    # print(f"{width} x {height}")
-
-    # originalWidth=640
-    # originalHeight=359
-
-    return
 
 
 def analyze_video(url, cam=-1):
