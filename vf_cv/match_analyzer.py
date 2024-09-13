@@ -3,7 +3,6 @@ import sys
 import os
 import time
 import cv2
-import psutil
 
 import vf_data.match
 import vf_analytics
@@ -473,10 +472,6 @@ class MatchAnalyzer:
             return
         if not os.path.exists(jpg_folder + "/original/"):
             os.makedirs(jpg_folder + "/original/")
-
-        hdd = psutil.disk_usage("/")
-        if hdd.free < 10567308288:
-            return
 
         original_out_filename = (
             jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
