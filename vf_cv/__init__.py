@@ -14,5 +14,5 @@ from vf_cv.winning_round import WinningRound
 from vf_cv.player_rank import PlayerRank
 from vf_cv.character import Character
 from vf_cv.winning_frame import WinningFrame
-from vf_cv.match_analyer import MatchAnalyzer
+from vf_cv.match_analyzer import MatchAnalyzer
 from vf_cv.version import __version__
