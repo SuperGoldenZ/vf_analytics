@@ -452,44 +452,20 @@ class MatchAnalyzer:
                     self.match.count_rounds_won(1) < 3
                     and self.match.count_rounds_won(2) < 3
                 ):
-
                     current_round = vf_data.Round()
 
                     if cam == -1:
                         skipFrames = 10 / interval
                     time_matches = 0
-                    # print(f"{count} new round")
                 else:
                     return count
 
-                    state = "before"
-                    current_round = vf_data.Round()
-                    match = vf_data.Match()
-                    match.video_id = video_id
-                    matches_processed += 1
-                    formatted_match_id = "%02d" % (matches_processed + 1,)
-                    match.id = f"{video_id}-{formatted_match_id}"
-
-                    logger.debug(f"{video_id} {count:13d} - match finished")
-                    skipFrames = 2
-
-                    # elapsed_time = timer() - fight_time # in seconds
-                    # print(f"time in fight state: {elapsed_time}")
-
-            # if (cam != -1):
-            # time.sleep(0.25)
             count += int(frame_rate * interval)
             del frame
             del original_frame
         if state != "before":
             self.logger.error(f"{video_id} {count:13d} - premature match aborted")
 
-        # hdd = psutil.disk_usage("/")
-
-        # if hdd.free < 10567308288:
-        # os.remove(video_path)
-
-        # cap.release()
         return 0
 
     def save_cam_frame(self, jpg_folder, original_frame, frame, count_int, suffix):
