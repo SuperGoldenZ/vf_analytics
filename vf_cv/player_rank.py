@@ -60,9 +60,6 @@ class PlayerRank:
 
         factor = 1.0
 
-        if self.frame_height == 720:
-            factor = 1.5
-
         full_x = int(full_x * factor)
         full_y = int(full_y * factor)
         full_w = int(full_w * factor)
