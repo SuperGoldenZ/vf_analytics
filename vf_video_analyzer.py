@@ -163,17 +163,25 @@ def analyze_video(url, cam=-1):
 
         print("Extracting frames")
         match_analyzer = match_analyer.MatchAnalyzer(cap, logger)
+        processed = 0
+        matches_processed = 0
+        frames_processed = -1
+        while frames_processed != 0:
+            print(f"\n========\nProcessing match {matches_processed+1}")
+            frames_processed = match_analyzer.analyze_next_match(
+                interval=fps,
+                video_id=video_id,
+                jpg_folder=jpg_folder,
+                cam=cam,
+                frame_rate=frame_rate,
+                frame_count=frame_count,
+                start_frame=processed,
+            )  # Extract a frame every 7 seconds
 
-        frames_processed = match_analyzer.analyze_next_match(
-            interval=fps,
-            video_id=video_id,
-            jpg_folder=jpg_folder,
-            cam=cam,
-            frame_rate=frame_rate,
-            frame_count=frame_count,
-        )  # Extract a frame every 7 seconds
-
-        print_csv(match_analyzer.match)
+            if frames_processed != 0:
+                print_csv(match_analyzer.match)
+                processed += frames_processed
+                matches_processed += 1
 
     except Exception as e:
         print("error occured")
