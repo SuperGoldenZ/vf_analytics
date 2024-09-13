@@ -11,6 +11,7 @@ import vf_cv.winning_frame
 import vf_cv.winning_round
 import vf_cv.character
 
+
 class MatchAnalyzer:
 
     DONT_SAVE = False
@@ -20,7 +21,7 @@ class MatchAnalyzer:
         self.match = vf_data.Match()
         self.cap = cap
         self.logger = logger
-        
+
         self.character = vf_cv.Character()
         self.time_cv = vf_cv.Timer()
         self.winning_round = vf_cv.WinningRound()
@@ -36,13 +37,13 @@ class MatchAnalyzer:
         cam=-1,
         frame_rate=None,
         frame_count=None,
+        start_frame=0,
     ):
         end_frame = None
         if end_frame is None or end_frame > frame_count:
             end_frame = frame_count
 
-        start_frame = 1
-        count = start_frame
+        count = start_frame + 1
 
         state = "before"
         current_round = vf_data.Round()
@@ -55,10 +56,8 @@ class MatchAnalyzer:
             if not os.path.exists(jpg_folder):
                 os.makedirs(jpg_folder)
 
-        # fight_time = None
-        # elapsed_time = timer() - start # in seconds
         vf_analytics.resolution = "480p"
-        actual_count = 0
+        actual_count = count - 1
 
         old_time = None
         timestr = None
@@ -251,7 +250,9 @@ class MatchAnalyzer:
                     # skipFrames for 1
                     # skipFrames=28
                     print(f"got all match info: {count:13d} - fight")
-                    self.save_cam_frame(jpg_folder, original_frame, frame, count, "start")
+                    self.save_cam_frame(
+                        jpg_folder, original_frame, frame, count, "start"
+                    )
 
                     del frame
                     del original_frame
@@ -346,7 +347,9 @@ class MatchAnalyzer:
                 if self.match.player2rank == 0:
                     player2rank = self.player_rank.get_player_rank(2)
                     self.match.player2rank = player2rank
-                    self.logger.debug(f"{video_id} {count:13d} - player2rank {player2rank}")
+                    self.logger.debug(
+                        f"{video_id} {count:13d} - player2rank {player2rank}"
+                    )
                     if player2rank == 0:
                         self.save_cam_frame(
                             jpg_folder,
@@ -445,7 +448,10 @@ class MatchAnalyzer:
                 current_round.seconds = int(count / frame_rate)
 
                 self.match.add_finished_round(current_round)
-                if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
+                if (
+                    self.match.count_rounds_won(1) < 3
+                    and self.match.count_rounds_won(2) < 3
+                ):
 
                     current_round = vf_data.Round()
 
@@ -484,8 +490,8 @@ class MatchAnalyzer:
         # os.remove(video_path)
 
         # cap.release()
-        return (count, matches_processed)
-    
+        return 0
+
     def save_cam_frame(self, jpg_folder, original_frame, frame, count_int, suffix):
         if self.DONT_SAVE:
             return
@@ -495,7 +501,7 @@ class MatchAnalyzer:
         hdd = psutil.disk_usage("/")
         if hdd.free < 10567308288:
             return
-        
+
         original_out_filename = (
             jpg_folder + "/original/" + str(f"{count_int}_{suffix}") + ".png"
         )
