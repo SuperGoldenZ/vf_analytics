@@ -37,6 +37,7 @@ class MatchAnalyzer:
         self.original_frame = None
         self.interval = interval
         self.frame_rate = frame_rate
+        self.skip_frames = 0
 
     def analyze_next_match(
         self,
@@ -56,7 +57,7 @@ class MatchAnalyzer:
         current_round = vf_data.Round()
         self.match.video_id = video_id
 
-        skip_frames = 0
+        self.skip_frames = 0
 
         if cam != -1:
             jpg_folder = "assets/jpg/cam"
@@ -81,18 +82,18 @@ class MatchAnalyzer:
                 self.count = count_int
 
             self.frame = None
-            if skip_frames > 0 and cam != -1:
-                skip_frames -= 1
+            if self.skip_frames > 0 and cam != -1:
+                self.skip_frames -= 1
                 if cam != -1:
                     self.cap.read()
                     time.sleep(self.interval)
 
                 continue
 
-            if skip_frames > 0 and cam == -1:
-                self.count += int((self.frame_rate * self.interval) * skip_frames)
+            if self.skip_frames > 0 and cam == -1:
+                self.count += int((self.frame_rate * self.interval) * self.skip_frames)
                 count_int = int(self.count)
-                skip_frames = 0
+                self.skip_frames = 0
 
             self.original_frame = None
 
@@ -147,72 +148,8 @@ class MatchAnalyzer:
                 self.process_before_vs()
                 continue
             if self.state == "vs":
-                if self.match.player1character is None:
-                    self.character.set_frame(self.frame)
-                    player1character = self.character.get_character_name(1)
-                    if player1character is not None:
-                        self.match.player1character = player1character
-                        self.logger.debug(
-                            f"{video_id} {self.count:13d} - player 1 character {player1character}"
-                        )
-                        self.save_cam_frame(
-                            f"player1_character-{player1character}",
-                        )
-
-                if self.match.player2character is None:
-                    self.character.set_frame(self.frame)
-                    player2character = self.character.get_character_name(2)
-                    if player2character is not None:
-                        self.match.player2character = player2character
-                        self.logger.debug(
-                            f"{video_id} {self.count:13d} - player 2 character {player2character}"
-                        )
-                        self.save_cam_frame(
-                            f"player2_character-{player2character}",
-                        )
-
-                if self.match.player1ringname is None:
-                    player1ringname = vf_analytics.get_ringname(1, self.frame)
-                    self.match.player1ringname = player1ringname
-                    self.logger.debug(
-                        f"{video_id} {self.count:13d} - player 1 is {player1ringname}"
-                    )
-
-                if self.match.player2ringname is None:
-                    player2ringname = vf_analytics.get_ringname(2, self.frame)
-                    self.match.player2ringname = player2ringname
-                    self.logger.debug(
-                        f"{video_id} {self.count:13d} - player 2 is {player2ringname}"
-                    )
-
-                if self.match.stage is None:
-                    self.logger.debug(
-                        f"{video_id} {self.count:13d} - looking for stage"
-                    )
-                    stage = vf_analytics.get_stage(self.frame)
-                    if stage is not None:
-                        self.match.stage = stage
-                        self.logger.debug(
-                            f"{video_id} {self.count:13d} - stage {stage}"
-                        )
-
-                if self.match.got_all_vs_info():
-                    self.state = "fight"
-                    self.logger.debug(f"{video_id} {self.count:13d} - fight")
-                    got_all_frame_count = self.count
-
-                    skip_frames = (int)(25 / self.interval)
-                    # skipFrames for 1
-                    # skipFrames=28
-                    print(f"got all match info: {self.count:13d} - fight")
-                    self.save_cam_frame("start")
-
-                    del self.frame
-                    del self.original_frame
-
-                    continue
-                # else:
-                # save_cam_frame(jpg_folder, original_frame, frame, count, "vs")
+                self.process_vs()
+                continue
 
             if self.state == "fight":
                 old_time_seconds = time_seconds
@@ -356,13 +293,13 @@ class MatchAnalyzer:
                     p2r = self.match.player2rank
 
                     if is_excellent:
-                        suffix = f"{p1r}_{player1character}_vs_{p2r}_{player2character}_excellent_for_player{player_num}"
+                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_excellent_for_player{player_num}"
                     elif is_ro:
-                        suffix = f"{p1r}_{player1character}_vs_{p2r}_{player2character}_ringout_for_player{player_num}"
+                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_ringout_for_player{player_num}"
                     elif is_ko:
-                        suffix = f"{p1r}_{player1character}_vs_{p2r}_{player2character}_knockout_for_player{player_num}"
+                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_knockout_for_player{player_num}"
                     else:
-                        suffix = f"{p1r}_{player1character}_vs_{p2r}_{player2character}_unknownwin_for_player{player_num}"
+                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_unknownwin_for_player{player_num}"
 
                     self.save_cam_frame(
                         f"{0}_{1}_{suffix}_{timestr}",
@@ -395,7 +332,7 @@ class MatchAnalyzer:
                     current_round = vf_data.Round()
 
                     if cam == -1:
-                        skip_frames = 10 / self.interval
+                        self.skip_frames = 10 / self.interval
                     time_matches = 0
                 else:
                     return self.count
@@ -457,3 +394,64 @@ class MatchAnalyzer:
             del self.original_frame
 
         self.count += 1
+
+    def process_vs(self):
+        if self.match.player1character is None:
+            self.character.set_frame(self.frame)
+            player1character = self.character.get_character_name(1)
+            if player1character is not None:
+                self.match.player1character = player1character
+                self.logger.debug(
+                    f"{self.match.video_id} {self.count:13d} - player 1 character {player1character}"
+                )
+                self.save_cam_frame(
+                    f"player1_character-{player1character}",
+                )
+
+        if self.match.player2character is None:
+            self.character.set_frame(self.frame)
+            player2character = self.character.get_character_name(2)
+            if player2character is not None:
+                self.match.player2character = player2character
+                self.logger.debug(
+                    f"{self.match.video_id} {self.count:13d} - player 2 character {player2character}"
+                )
+                self.save_cam_frame(
+                    f"player2_character-{player2character}",
+                )
+
+        if self.match.player1ringname is None:
+            player1ringname = vf_analytics.get_ringname(1, self.frame)
+            self.match.player1ringname = player1ringname
+            self.logger.debug(
+                f"{self.match.video_id} {self.count:13d} - player 1 is {player1ringname}"
+            )
+
+        if self.match.player2ringname is None:
+            player2ringname = vf_analytics.get_ringname(2, self.frame)
+            self.match.player2ringname = player2ringname
+            self.logger.debug(
+                f"{self.match.video_id} {self.count:13d} - player 2 is {player2ringname}"
+            )
+
+        if self.match.stage is None:
+            self.logger.debug(
+                f"{self.match.video_id} {self.count:13d} - looking for stage"
+            )
+            stage = vf_analytics.get_stage(self.frame)
+            if stage is not None:
+                self.match.stage = stage
+                self.logger.debug(
+                    f"{self.match.video_id} {self.count:13d} - stage {stage}"
+                )
+
+        if self.match.got_all_vs_info():
+            self.state = "fight"
+            self.logger.debug(f"{self.match.video_id} {self.count:13d} - fight")
+
+            self.skip_frames = (int)(25 / self.interval)
+            print(f"got all match info: {self.count:13d} - fight")
+            self.save_cam_frame("start")
+
+            del self.frame
+            del self.original_frame
