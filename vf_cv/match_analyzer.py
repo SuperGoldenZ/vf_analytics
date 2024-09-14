@@ -129,7 +129,7 @@ class MatchAnalyzer:
                     self.logger.warning(
                         f"Skipping frame {self.count:13d} because no return"
                     )
-                    print("skipping frame because no return")
+
                     continue
 
                 # if (cam == -1):
@@ -216,6 +216,8 @@ class MatchAnalyzer:
         )
 
     def process_vs(self):
+        print("procesing vs")
+
         if self.match.player1character is None:
             self.character.set_frame(self.frame)
             player1character = self.character.get_character_name(1)
@@ -270,11 +272,12 @@ class MatchAnalyzer:
             self.logger.debug(f"{self.match.video_id} {self.count:13d} - fight")
 
             self.skip_frames = (int)(25 / self.interval)
-            print(f"got all match info: {self.count:13d} - fight")
             self.save_cam_frame("start")
 
             del self.frame
             del self.original_frame
+        else:
+            self.count = self.count + 1
 
     def process_fight(self):
         self.old_time_seconds = self.time_seconds
