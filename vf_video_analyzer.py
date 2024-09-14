@@ -1,23 +1,16 @@
 import os
 from timeit import default_timer as timer
-import threading
-import uuid
-import sys
 import logging
 import argparse
 import pathlib
-import time
 import traceback
 import ffmpeg
 import cv2
-import psutil
-import numpy as np
 import VideoCaptureAsync
-import vf_cv.match_analyer as match_analyer
+import vf_cv.match_analyzer
 import vf_analytics
 import vf_data.match
 import youtube_helper
-import vf_cv
 import vf_data
 
 
@@ -29,7 +22,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     filename="vf_match_analyzer.log",
     encoding="utf-8",
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
 )
 
@@ -162,18 +155,17 @@ def analyze_video(url, cam=-1):
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         print("Extracting frames")
-        match_analyzer = match_analyer.MatchAnalyzer(cap, logger)
+        match_analyzer = vf_cv.match_analyzer.MatchAnalyzer(
+            cap, logger, jpg_folder=jpg_folder, interval=fps, frame_rate=frame_rate
+        )
         processed = 0
         matches_processed = 0
         frames_processed = -1
         while frames_processed != 0:
             print(f"\n========\nProcessing match {matches_processed+1}")
             frames_processed = match_analyzer.analyze_next_match(
-                interval=fps,
                 video_id=video_id,
-                jpg_folder=jpg_folder,
                 cam=cam,
-                frame_rate=frame_rate,
                 frame_count=frame_count,
                 start_frame=processed,
             )  # Extract a frame every 7 seconds
