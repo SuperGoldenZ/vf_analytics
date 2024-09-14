@@ -38,6 +38,12 @@ class MatchAnalyzer:
         self.interval = interval
         self.frame_rate = frame_rate
         self.skip_frames = 0
+        self.old_time = None
+        self.old_time_seconds = None
+        self.time_seconds = None
+        self.time_matches = 0
+        self.timestr = None
+        self.current_round = None
 
     def analyze_next_match(
         self,
@@ -54,7 +60,7 @@ class MatchAnalyzer:
         self.count = start_frame + 1
 
         self.state = "before"
-        current_round = vf_data.Round()
+        self.current_round = vf_data.Round()
         self.match.video_id = video_id
 
         self.skip_frames = 0
@@ -66,12 +72,6 @@ class MatchAnalyzer:
 
         vf_analytics.resolution = "480p"
         actual_count = self.count - 1
-
-        old_time = None
-        timestr = None
-        time_matches = 0
-
-        time_seconds = None
 
         while self.count < end_frame or cam != -1:
             count_int = int(self.count)
@@ -150,196 +150,9 @@ class MatchAnalyzer:
             if self.state == "vs":
                 self.process_vs()
                 continue
+            if self.state == "fight" and self.process_fight():
+                return self.count
 
-            if self.state == "fight":
-                old_time_seconds = time_seconds
-
-                self.time_cv.set_frame(self.frame)
-                time_seconds = self.time_cv.get_time_seconds()
-
-                if (
-                    (
-                        time_seconds == "43"
-                        or time_seconds == "44"
-                        or time_seconds == "45"
-                    )
-                    or (time_seconds != old_time_seconds)
-                    or old_time_seconds is None
-                ):
-                    self.count += int(self.frame_rate * self.interval)
-
-                    del self.frame
-                    del self.original_frame
-                    continue
-
-                time_ms = self.time_cv.get_time_ms()
-
-                old_time = timestr
-                timestr = f"{time_seconds}.{time_ms}"
-
-                if self.SAVE_PIC_ALL:
-                    self.save_cam_frame(f"fight_{timestr}_")
-
-                #            print(timestr)
-                #            cv2.imshow("image", frame)
-                # cv2.waitKey()
-
-                if old_time == timestr and timestr != "45.00" and time_seconds != "":
-                    time_matches = time_matches + 1
-                else:
-                    time_matches = 0
-
-                player_num = 0
-
-                if time_matches >= 4:
-                    self.winning_round.set_frame(self.frame)
-                    player_num = self.winning_round.is_winning_round(False)
-                else:
-                    self.count += 1
-                    del self.frame
-                    del self.original_frame
-                    continue
-
-                if player_num == 0:
-                    # logger.debug(f"{count_int} could not determine which player won so skipping")
-                    # save_cam_frame(jpg_folder, original_frame, frame, count, f"fight_{time_seconds}_{time_ms}")
-                    self.count += 1
-                    del self.frame
-                    del self.original_frame
-                    continue
-
-                self.winning_frame.set_frame(self.frame)
-                is_ro = self.winning_frame.is_ringout()
-                is_excellent = not is_ro and self.winning_frame.is_excellent()
-                is_ko = not is_excellent and not is_ro and self.winning_frame.is_ko()
-
-                self.player_rank.set_frame(self.frame)
-                if self.match.player1rank == 0:
-                    try:
-                        player1rank = self.player_rank.get_player_rank(1)
-                        self.match.player1rank = player1rank
-                        self.logger.debug(
-                            f"{video_id} {self.count:13d} - player1rank {player1rank}"
-                        )
-                        if player1rank == 0:
-                            self.save_cam_frame(
-                                "_rank_0_for_player1",
-                            )
-                    except:
-                        self.match.player1rank = 0
-
-                if self.match.player2rank == 0:
-                    player2rank = self.player_rank.get_player_rank(2)
-                    self.match.player2rank = player2rank
-                    self.logger.debug(
-                        f"{video_id} {self.count:13d} - player2rank {player2rank}"
-                    )
-                    if player2rank == 0:
-                        self.save_cam_frame(
-                            "_rank_0_for_player2",
-                        )
-
-                if timestr != old_time:
-                    self.count += int(self.frame_rate * self.interval) * 3
-                    del self.frame
-                    del self.original_frame
-                    continue
-
-                self.logger.debug(
-                    f"{video_id} {self.count:013d} - player {player_num} won the match"
-                )
-
-                current_round.winning_player_num = player_num
-                if is_ro:
-                    current_round.victory = vf_data.Round.RO
-                    print(f"{self.count} got RO for player {player_num}")
-                    self.save_cam_frame("ro")
-                elif is_excellent:
-                    current_round.victory = vf_data.Round.EX
-                    print(f"{self.count} got EX for player {player_num}")
-                    self.save_cam_frame("ex")
-                elif is_ko:
-                    current_round.victory = vf_data.Round.KO
-                    print(f"{self.count} got KO for player {player_num}")
-                    self.save_cam_frame("ko")
-                else:
-                    current_round.winning_player_num = 0
-                    print(
-                        f"{self.count} unknown way to victory for {player_num} skipping"
-                    )
-                    self.count += int(self.frame_rate * self.interval)
-
-                    self.save_cam_frame("unknown_skip")
-
-                    del self.frame
-                    del self.original_frame
-                    continue
-
-                try:
-                    timestr = None
-                    try:
-                        time_seconds = self.time_cv.get_time_seconds(self.frame)
-                        time_ms = self.time_cv.get_time_ms()
-                        timestr = f"{time_seconds}.{time_ms}"
-                    except Exception as a:
-                        self.logger.error(
-                            f"Exception occured getting time frame: {frame_count} error: {a}"
-                        )
-                        self.logger.error(traceback.format_exc())
-                        timestr = "na"
-
-                    suffix = ""
-                    p1r = self.match.player1rank
-                    p2r = self.match.player2rank
-
-                    if is_excellent:
-                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_excellent_for_player{player_num}"
-                    elif is_ro:
-                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_ringout_for_player{player_num}"
-                    elif is_ko:
-                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_knockout_for_player{player_num}"
-                    else:
-                        suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_unknownwin_for_player{player_num}"
-
-                    self.save_cam_frame(
-                        f"{0}_{1}_{suffix}_{timestr}",
-                    )
-                except:
-                    self.logger.error(f"{video_id} {self.count:13d} ERROR write to csv")
-                    self.logger.error(traceback.format_exc())
-
-                self.logger.debug(
-                    f"{video_id} {self.count:13d} - round {self.match.get_round_num()} finished player {player_num} won"
-                )
-
-                if self.match.player1rank == 0:
-                    self.logger.error(
-                        f"{video_id} {self.count:13d} - round is over but player 1 rank is 0"
-                    )
-
-                if self.match.player2rank == 0:
-                    self.logger.error(
-                        f"{video_id} {self.count:13d} - round is over but player 2 rank is 0"
-                    )
-
-                current_round.seconds = int(self.count / self.frame_rate)
-
-                self.match.add_finished_round(current_round)
-                if (
-                    self.match.count_rounds_won(1) < 3
-                    and self.match.count_rounds_won(2) < 3
-                ):
-                    current_round = vf_data.Round()
-
-                    if cam == -1:
-                        self.skip_frames = 10 / self.interval
-                    time_matches = 0
-                else:
-                    return self.count
-
-            self.count += int(self.frame_rate * self.interval)
-            del self.frame
-            del self.original_frame
         if self.state != "before":
             self.logger.error(f"{video_id} {self.count:13d} - premature match aborted")
 
@@ -394,6 +207,13 @@ class MatchAnalyzer:
             del self.original_frame
 
         self.count += 1
+
+    def skip_beginning_of_round(self):
+        return (
+            self.time_seconds == "43"
+            or self.time_seconds == "44"
+            or self.time_seconds == "45"
+        )
 
     def process_vs(self):
         if self.match.player1character is None:
@@ -455,3 +275,175 @@ class MatchAnalyzer:
 
             del self.frame
             del self.original_frame
+
+    def process_fight(self):
+        self.old_time_seconds = self.time_seconds
+
+        self.time_cv.set_frame(self.frame)
+        self.time_seconds = self.time_cv.get_time_seconds()
+
+        if (
+            self.skip_beginning_of_round()
+            or (self.time_seconds != self.old_time_seconds)
+            or self.old_time_seconds is None
+        ):
+            self.count += int(self.frame_rate * self.interval)
+
+            del self.frame
+            del self.original_frame
+            # print(f"\tskip {self.time_seconds} vs {self.old_time_seconds} skip: {self.skip_beginning_of_round()}")
+            return False
+
+        time_ms = self.time_cv.get_time_ms()
+
+        self.old_time = self.timestr
+        self.timestr = f"{self.time_seconds}.{time_ms}"
+
+        if self.SAVE_PIC_ALL:
+            self.save_cam_frame(f"fight_{self.timestr}_")
+
+        if (
+            self.old_time == self.timestr
+            and self.timestr != "45.00"
+            and self.time_seconds != ""
+        ):
+            self.time_matches = self.time_matches + 1
+        else:
+            self.time_matches = 0
+
+        player_num = 0
+
+        if self.time_matches >= 4:
+            self.winning_round.set_frame(self.frame)
+            player_num = self.winning_round.is_winning_round(False)
+        else:
+            self.count += 1
+            del self.frame
+            del self.original_frame
+            return False
+
+        if player_num == 0:
+            self.count += 1
+            del self.frame
+            del self.original_frame
+            return False
+
+        self.winning_frame.set_frame(self.frame)
+        is_ro = self.winning_frame.is_ringout()
+        is_excellent = not is_ro and self.winning_frame.is_excellent()
+        is_ko = not is_excellent and not is_ro and self.winning_frame.is_ko()
+
+        self.player_rank.set_frame(self.frame)
+        if self.match.player1rank == 0:
+            try:
+                player1rank = self.player_rank.get_player_rank(1)
+                self.match.player1rank = player1rank
+                if player1rank == 0:
+                    self.save_cam_frame(
+                        "_rank_0_for_player1",
+                    )
+            except:
+                self.match.player1rank = 0
+
+        if self.match.player2rank == 0:
+            player2rank = self.player_rank.get_player_rank(2)
+            self.match.player2rank = player2rank
+            if player2rank == 0:
+                self.save_cam_frame(
+                    "_rank_0_for_player2",
+                )
+
+        if self.timestr != self.old_time:
+            self.count += int(self.frame_rate * self.interval) * 3
+            del self.frame
+            del self.original_frame
+            return False
+
+        self.current_round.winning_player_num = player_num
+        if is_ro:
+            self.current_round.victory = vf_data.Round.RO
+            print(f"{self.count} got RO for player {player_num}")
+            self.save_cam_frame("ro")
+        elif is_excellent:
+            self.current_round.victory = vf_data.Round.EX
+            print(f"{self.count} got EX for player {player_num}")
+            self.save_cam_frame("ex")
+        elif is_ko:
+            self.current_round.victory = vf_data.Round.KO
+            print(f"{self.count} got KO for player {player_num}")
+            self.save_cam_frame("ko")
+        else:
+            self.current_round.winning_player_num = 0
+            print(f"{self.count} unknown way to victory for {player_num} skipping")
+            self.count += int(self.frame_rate * self.interval)
+
+            self.save_cam_frame("unknown_skip")
+
+            del self.frame
+            del self.original_frame
+            return False
+
+        try:
+            self.timestr = None
+            try:
+                self.time_seconds = self.time_cv.get_time_seconds(self.frame)
+                time_ms = self.time_cv.get_time_ms()
+                self.timestr = f"{self.time_seconds}.{time_ms}"
+            except Exception as a:
+                self.logger.error(
+                    f"Exception occured getting time frame: {self.count} error: {a}"
+                )
+                self.logger.error(traceback.format_exc())
+                self.timestr = "na"
+
+            suffix = ""
+            p1r = self.match.player1rank
+            p2r = self.match.player2rank
+
+            if is_excellent:
+                suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_excellent_for_player{player_num}"
+            elif is_ro:
+                suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_ringout_for_player{player_num}"
+            elif is_ko:
+                suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_knockout_for_player{player_num}"
+            else:
+                suffix = f"{p1r}_{self.match.player1character}_vs_{p2r}_{self.match.player2character}_unknownwin_for_player{player_num}"
+
+            self.save_cam_frame(
+                f"{0}_{1}_{suffix}_{self.timestr}",
+            )
+        except:
+            self.logger.error(
+                f"{self.match.video_id} {self.count:13d} ERROR write to csv"
+            )
+            self.logger.error(traceback.format_exc())
+
+        if self.match.player1rank == 0:
+            self.logger.error(
+                f"{self.match.video_id} {self.count:13d} - round is over but player 1 rank is 0"
+            )
+
+        if self.match.player2rank == 0:
+            self.logger.error(
+                f"{self.match.video_id} {self.count:13d} - round is over but player 2 rank is 0"
+            )
+
+        self.current_round.seconds = int(self.count / self.frame_rate)
+
+        self.match.add_finished_round(self.current_round)
+        print(
+            f"rounds won {self.match.count_rounds_won(1)} vs {self.match.count_rounds_won(2)}"
+        )
+        if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
+            self.current_round = vf_data.Round()
+
+            self.skip_frames = 10 / self.interval
+            self.time_matches = 0
+        else:
+            self.count += 1
+            return True
+
+        self.count += int(self.frame_rate * self.interval)
+        del self.frame
+        del self.original_frame
+        return False
