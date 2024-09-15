@@ -38,7 +38,7 @@ class PlayerRank:
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 1.5)
             y = (int)(y * 1.5)
-            w = (int)(w * 1.5)
+            w = (int)(w * 1.5) + 25
             h = (int)(h * 1.5)
         elif self.frame_height == 1080:
             (x, y, w, h) = self.REGIONS_480P[region_name]
@@ -77,20 +77,155 @@ class PlayerRank:
         ry = vf_cv.CvHelper.count_pixels("#cc5b31", full_roi)
         black_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 5)
 
-        if (
-            dark_purple_count > 100
-            and teal_count > 100
-            and grellow_count > 100
-            and black_count < 50
-        ):
-            return 39
-
-        if debug_player_rank and self.frame_height == 1080:
+        if debug_player_rank:
             cv2.imshow(
-                f"{self.frame_height}  - grellow {grellow_count} ry {ry} wc {white_count} grey {grey}",
+                f"{self.frame_height} gre{grellow_count} ry {ry} wc {white_count} grey {grey} dp {dark_purple_count}",
                 full_roi,
             )
             cv2.waitKey()
+
+        if (
+            self.frame_height == 1080
+            and 600 <= grellow_count <= 660
+            and ry <= 20
+            and 1200 <= white_count <= 1340
+            and 950 <= grey <= 1280
+        ):
+            return 41
+
+        if (
+            self.frame_height == 1080
+            and 178 <= grellow_count <= 198
+            and ry <= 5
+            and 1860 <= white_count <= 1890
+            and 1250 <= grey <= 1280
+        ):
+            return 40
+
+        if (
+            self.frame_height == 480
+            and 25 <= grellow_count <= 35
+            and ry == 0
+            and 350 <= white_count <= 370
+            and 240 <= grey <= 260
+        ):
+            return 40
+
+        if (
+            self.frame_height == 480
+            and 96 <= grellow_count <= 116
+            and ry == 0
+            and white_count <= 20
+            and 540 <= grey <= 560
+            and dark_purple_count > 170
+        ):
+            return 39
+
+        if (
+            self.frame_height == 720
+            and 215 <= grellow_count <= 225
+            and ry > 700
+            and white_count > 1000
+            and 178 <= grey <= 198
+        ):
+            return 43
+
+        if (
+            self.frame_height == 720
+            and 587 - 10 <= grellow_count <= 587 + 10
+            and 390 - 10 < ry < 390 + 10
+            and 238 - 10 <= white_count <= 238 + 10
+            and 87 - 10 <= grey <= 87 + 10
+            and dark_purple_count < 15
+        ):
+            return 43
+
+        if (
+            self.frame_height == 720
+            and 574 - 10 <= grellow_count <= 574 + 10
+            and 82 - 10 < ry < 82 + 10
+            and 360 - 10 <= white_count <= 360 + 10
+            and 136 <= grey <= 156
+            and dark_purple_count < 15
+        ):
+            return 44
+
+        if (
+            self.frame_height == 720
+            and 281 - 10 <= grellow_count <= 281 + 10
+            and 71 - 10 < ry < 71 + 10
+            and 1384 <= white_count <= 1394 + 10
+            and 93 <= grey <= 113
+            and dark_purple_count < 25
+        ):
+            return 44
+
+        if (
+            self.frame_height == 720
+            and 471 - 10 <= grellow_count <= 471 + 10
+            and 410 - 10 < ry < 410 + 10
+            and 228 - 10 <= white_count <= 228 + 10
+            and 121 <= grey <= 141
+            and dark_purple_count < 15
+        ):
+            return 43
+
+        if (
+            self.frame_height == 720
+            and 300 - 10 <= grellow_count <= 300 + 10
+            and 375 - 10 < ry < 375 + 10
+            and 228 - 10 <= white_count <= 228 + 10
+            and 190 <= grey <= 210
+            and dark_purple_count < 15
+        ):
+            return 43
+
+        if (
+            self.frame_height == 720
+            and 395 - 10 <= grellow_count <= 395 + 10
+            and ry < 10
+            and 654 - 10 < white_count < 654 + 10
+            and 495 <= grey <= 515
+            and 140 - 10 < dark_purple_count < 140 + 10
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 584 - 10 <= grellow_count <= 745
+            and ry < 5
+            and 430 - 10 < white_count < 440 + 10
+            and 960 <= grey <= 994 + 10
+            and 127 - 10 < dark_purple_count < 127 + 10
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 406 - 10 <= grellow_count <= 416
+            and ry < 5
+            and 1190 < white_count < 1210
+            and 418 <= grey <= 438
+            and 151 - 10 < dark_purple_count < 151 + 10
+        ):
+            return 41
+
+        # if (
+        # dark_purple_count > 100
+        # and teal_count > 100
+        # and grellow_count > 100
+        # and black_count < 50
+        # ):
+        # return 39
+
+        if (
+            self.frame_height == 720
+            and 582 <= grellow_count <= 612
+            and 67 <= ry <= 87
+            and 270 <= white_count <= 290
+            and 120 <= grey <= 140
+        ):
+            return 44
 
         if (
             self.frame_height == 1080
