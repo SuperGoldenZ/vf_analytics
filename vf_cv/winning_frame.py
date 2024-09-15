@@ -97,13 +97,16 @@ class WinningFrame:
         ):
             if debug_ko:
                 cv2.imshow(
-                    f"ko roi gold {gold_count} purple{purple_count} blue {blue} white {white_count} black{black_count}",
+                    f"{self.frame_height} ko roi gold {gold_count} purple{purple_count} blue {blue} white {white_count} black{black_count}",
                     roi,
                 )
                 cv2.waitKey()
 
             if blue > 1800:
                 return False
+
+            if self.frame_height == 480 and gold_count > 130 and blue < 20:
+                return True
 
             if self.frame_height == 480 and purple_count > 140 and black_count > 200:
                 return False
