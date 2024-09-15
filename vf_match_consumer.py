@@ -3,13 +3,13 @@ import logging
 import gc
 import confluent_kafka
 from confluent_kafka import Consumer
-import vf_match_analyzer
+import vf_video_analyzer
 import traceback
 
 logger = None
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    filename="vf_match_consumer.log", encoding="utf-8", level=logging.INFO
+    filename="vf_match_consumer.log", encoding="utf-8", level=logging.DEBUG
 )
 
 # Kafka configuration
@@ -53,7 +53,7 @@ try:
         print(f"Received URL: {url}", end=" ", flush=True)
 
         try:
-            vf_match_analyzer.analyze_video(url)
+            vf_video_analyzer.analyze_video(url)
             gc.collect()
         except Exception as e:
             print(f"\terror occured processing {url}, skipping video")
