@@ -51,9 +51,6 @@ class Timer:
 
         factor = 1.0
 
-        if self.frame_height == 720:
-            factor = 1.5
-
         for digit_num in range(1, 3):
             region_name = f"time_ms_digit{digit_num}"
             (x, y, w, h) = self.get_roi(region_name)
@@ -77,6 +74,8 @@ class Timer:
                 thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
 
+            n_white_pix = 0
+
             if contours:
                 x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
                 thresholded_image = thresholded_image[y : y + h, x : x + w]
@@ -84,49 +83,45 @@ class Timer:
                 height, width = (
                     thresholded_image.shape
                 )  # Get the dimensions of the frame
-                n_white_pix = 0
 
-                if self.frame_height == 1080:
-                    # Apply a threshold to keep only the bright white colors
-                    threshold_value = 203
+            n_white_pix = np.sum(thresholded_image == 255)
 
-                    _, thresholded_image = cv2.threshold(
-                        gray_image, threshold_value, 255, cv2.THRESH_BINARY
-                    )
+            if debug is True:
+                cv2.imshow(f"roi", roi)
+                cv2.imshow(f"gray", gray_image)
+                cv2.imshow(
+                    f"thrsh h {self.frame_height}  width {width} {n_white_pix}",
+                    thresholded_image,
+                )
+                cv2.waitKey()
 
-                    contours, _ = cv2.findContours(
-                        thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-                    )
+            if self.frame_height == 1080:
+                # Apply a threshold to keep only the bright white colors
+                threshold_value = 203
 
-                    if contours:
-                        x, y, w, h = cv2.boundingRect(
-                            max(contours, key=cv2.contourArea)
-                        )
-                        thresholded_image = thresholded_image[y : y + h, x : x + w]
+                _, thresholded_image = cv2.threshold(
+                    gray_image, threshold_value, 255, cv2.THRESH_BINARY
+                )
 
-                    height, width = (
-                        thresholded_image.shape
-                    )  # Get the dimensions of the frame
+                contours, _ = cv2.findContours(
+                    thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                )
 
-                    digit, n_white_pix = Timer.get_time_ms_digit_1080(
-                        thresholded_image, width, height
-                    )
-                    text = f"{text}{digit}"
+                if contours:
+                    x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+                    thresholded_image = thresholded_image[y : y + h, x : x + w]
 
-                    if debug:
-                        cv2.imshow(f"roi", roi)
-                        cv2.imshow(f"gray", gray_image)
-                        cv2.imshow(
-                            f"threshold 1080 {n_white_pix}   height {self.frame_height}  width {width}",
-                            thresholded_image,
-                        )
-                        cv2.waitKey()
-
-            if self.frame_height == 720:
-                n_white_pix = np.sum(thresholded_image == 255)
                 height, width = (
                     thresholded_image.shape
+                )  # Get the dimensions of the frame
+
+                digit, n_white_pix = Timer.get_time_ms_digit_1080(
+                    thresholded_image, width, height
                 )
+                text = f"{text}{digit}"
+
+            if self.frame_height == 720:
+                height, width = thresholded_image.shape
                 points = {}
                 points[1] = thresholded_image[height - 1, 0]
                 points[7] = thresholded_image[0, 0]
@@ -147,6 +142,26 @@ class Timer:
 
                 if n_white_pix == 80:
                     text = f"{text}3"
+                    continue
+
+                if (
+                    width == 12
+                    and n_white_pix == 86
+                    and points[8] != 0
+                    and points[5] != 0
+                    and points[2] != 0
+                ):
+                    text = f"{text}9"
+                    continue
+
+                if (
+                    width == 11
+                    and n_white_pix == 83
+                    and points[8] != 0
+                    and points[5] != 0
+                    and points[2] != 0
+                ):
+                    text = f"{text}9"
                     continue
 
                 if 86 <= n_white_pix <= 89 and points[8] != 0 and points[2] != 0:
@@ -279,13 +294,14 @@ class Timer:
         dr = vf_cv.CvHelper.count_pixels("#840003", roi)
 
         if debug_time is True:
-            cv2.imshow(f"roi {count}   dr {dr}", roi)
+            cv2.imshow(f"running_out {self.frame_height} roi {count}   dr {dr}", roi)
             cv2.waitKey()
 
         threshold = 100
         if h == 480:
             threshold = 50
-
+        if h == 720:
+            threshold = 200
         if dr > 2000:
             return True
 
@@ -391,7 +407,7 @@ class Timer:
 
                 if self.frame_height == 720:
                     digit = self.get_time_digit(
-                        thresholded_image, width, height, digit_num
+                        thresholded_image, width, height, digit_num, debug_time
                     )
                     text = f"{text}{digit}"
                     if running_out:
@@ -699,11 +715,17 @@ class Timer:
         return "0", n_white_pix
 
     @staticmethod
-    def get_time_digit(thresholded_image, width, height, digit_num, debug=False):
+    def get_time_digit(
+        thresholded_image, width, height, digit_num, debug_time_digit=False
+    ):
         """Returns one digit of the time remaining in a match"""
 
-        if debug:
-            cv2.imshow("thresholded_image", thresholded_image)
+        n_white_pix = np.sum(thresholded_image == 255)
+
+        if debug_time_digit is True:
+            cv2.imshow(
+                f"g_t_s {height} {n_white_pix} thresholded_image", thresholded_image
+            )
             cv2.waitKey()
 
         points = {}
@@ -829,5 +851,11 @@ class Timer:
                 return 3
             else:
                 return 9
-
+        elif (
+            height == 35
+            and 520 <= n_white_pix <= 540
+            and points[2] != 0
+            and points[8] != 0
+        ):
+            return 2
         return -1
