@@ -5,16 +5,18 @@ import vf_analytics
 
 test_data = [
     # ['assets/test_images/480p/rank/01_42_001.jpg', 1, 42]
+    ["assets/test_images/720p/rank/41_43_02.png", 41, 43],
+    ["assets/test_images/720p/rank/42_44_01.png", 42, 44],
+    ["assets/test_images/720p/rank/42_41_02.png", 42, 41],
+    ["assets/test_images/720p/rank/42_41_01.png", 42, 41],
     ["assets/test_images/720p/rank/44_43_01.png", 44, 43],
     ["assets/test_images/720p/rank/41_43_01.png", 41, 43],
     ["assets/test_images/720p/rank/41_44_01.png", 41, 44],
     ["assets/test_images/720p/rank/41_41_01.png", 41, 41],
     ["assets/test_images/480p/rank/42_39_001.jpg", 42, 39],
-    ["assets/test_images/720p/rank/41_43_02.png", 41, 43],
     ["assets/test_images/720p/rank/41_43_01.png", 41, 43],
     ["assets/test_images/1080p/rank/40_41_01.png", 40, 41],
     ["assets/test_images/720p/rank/41_40_01.png", 41, 40],
-    ["assets/test_images/720p/rank/42_44_01.png", 42, 44],
     ["assets/test_images/1080p/rank/42_43_01.png", 42, 43],
     ["assets/test_images/1080p/rank/43_41_01.png", 43, 41],
     ["assets/test_images/1080p/rank/43_42_01.png", 43, 42],
