@@ -56,9 +56,6 @@ class WinningRound:
 
         factor = 1.0
 
-        if self.frame_height == 720:
-            factor = 1.5
-
         x = int(x * factor)
         y = int(y * factor)
         w = int(w * factor)
@@ -83,6 +80,9 @@ class WinningRound:
             return 0
 
         if self.frame_height == 480 and dark_blue > 70:
+            return 0
+
+        if self.frame_height == 720 and dark_blue > 250:
             return 0
 
         if self.frame_height == 1080 and dark_blue > 200:
