@@ -432,6 +432,7 @@ class MatchAnalyzer:
             )
 
         self.current_round.seconds = int(self.count / self.frame_rate)
+        self.current_round.remaining_time = self.timestr
 
         self.match.add_finished_round(self.current_round)
         print(
