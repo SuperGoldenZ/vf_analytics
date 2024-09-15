@@ -3,6 +3,7 @@ import cv2
 import vf_cv
 
 test_data = [
+    "assets/test_images/720p/winning_frame/not_winning_frame_01.png",
     "assets/test_images/1080p/winning_frame/not_winning_frame_06.png",
     "assets/test_images/1080p/winning_frame/not_winning_frame_04.png",
     "assets/test_images/1080p/winning_frame/not_winning_frame_03.png",
