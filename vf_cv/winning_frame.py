@@ -105,6 +105,14 @@ class WinningFrame:
             if blue > 1800:
                 return False
 
+            if (
+                self.frame_height == 480
+                and gold_count > 55
+                and purple_count < 10
+                and 15 <= blue <= 45
+            ):
+                return True
+
             if self.frame_height == 480 and gold_count > 130 and blue < 20:
                 return True
 

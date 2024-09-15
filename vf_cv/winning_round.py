@@ -54,13 +54,6 @@ class WinningRound:
         region_name = "all_rounds"
         (x, y, w, h) = self.get_roi(region_name)
 
-        factor = 1.0
-
-        x = int(x * factor)
-        y = int(y * factor)
-        w = int(w * factor)
-        h = int(h * factor)
-
         roi = self.frame[y : y + h, x : x + w]
         dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
@@ -95,7 +88,7 @@ class WinningRound:
             return 0
 
         bar_blue_two = vf_cv.CvHelper.count_pixels("#0636a5", roi, 5)
-        if bar_blue_two >= 60 * factor:
+        if bar_blue_two >= 60:
             return 0
 
         teal = vf_cv.CvHelper.count_pixels("#68fffe", roi, 5)
@@ -115,7 +108,7 @@ class WinningRound:
         if self.frame_height == 480 and (
             all_dark_blue >= 5
             or all_dark_red >= 5
-            or all_dark_maroon >= 10
+            or all_dark_maroon >= 20
             or other_maroon > 80
             or other_db > 80
             or other_blue > 25
@@ -123,11 +116,8 @@ class WinningRound:
             or bar_blue >= 10
             or more_blue > 7
         ):
-            # print ("arbot a")
+            # print(f"return 480 {all_dark_blue} {all_dark_maroon} {other_maroon} {other_db} {all_dark_red} bb{bar_blue} mb {more_blue}")
             return 0
-
-        # if (all_dark_blue >= 5*factor or all_dark_red >= 5 or all_dark_maroon >= 10 or other_maroon > 80 or other_db > 80 or other_blue > 25 or another_blue >= 10 or bar_blue >= 10 or more_blue > 7):
-        # return 0
 
         for player_num in range(1, 3):
             region_name = f"player{player_num}_rounds"

@@ -13,6 +13,30 @@ class PlayerRank:
         "player2rank_full": (765, 82, 67, 21),
     }
 
+    REGIONS_720P = {
+        "player1rank": (108, 137, 21, 18),
+        "player1rank_full": (
+            int(23 * 1.5) - 10,
+            int(82 * 1.5) - 6,
+            int(67 * 1.5) + 10,
+            int(21 * 1.5) + 6,
+        ),
+        "player2rank": (1230, 137, 21, 18),
+        "player2rank_full": (
+            int(765 * 1.5) - 3,
+            int(82 * 1.5) - 6,
+            int(67 * 1.5) + 10,
+            int(21 * 1.5) + 6,
+        ),
+    }
+
+    # REGIONS_720P = {
+    # "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
+    # "player1rank_full": (23*1.5, 82*1.5, 165, 55),
+    # "player2rank": (820*1.5, 91*1.5, 14*1.5, 12*1.5),
+    # "player2rank_full": (1718, 80, 165, 55),
+    # }
+
     frame = None
     frame_height = None
 
@@ -35,11 +59,7 @@ class PlayerRank:
         if self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 1.5)
-            y = (int)(y * 1.5)
-            w = (int)(w * 1.5) + 25
-            h = (int)(h * 1.5)
+            (x, y, w, h) = self.REGIONS_720P[region_name]
         elif self.frame_height == 1080:
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 2.25)
@@ -50,20 +70,13 @@ class PlayerRank:
 
     # min width 25
     def get_player_rank(self, player_num, debug_player_rank=False):
-        FULL_REGION = region_name = f"player{player_num}rank_full"
+        FULL_REGION = f"player{player_num}rank_full"
         FULL_REGION_ROI = self.get_roi(FULL_REGION)
 
         REGULAR_REGION = f"player{player_num}rank"
         REGULAR_REGION_ROI = self.get_roi(REGULAR_REGION)
 
         (full_x, full_y, full_w, full_h) = FULL_REGION_ROI
-
-        factor = 1.0
-
-        full_x = int(full_x * factor)
-        full_y = int(full_y * factor)
-        full_w = int(full_w * factor)
-        full_h = int(full_h * factor)
 
         full_roi = self.frame[full_y : full_y + full_h, full_x : full_x + full_w]
 
@@ -123,6 +136,26 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
+            and 500 <= grellow_count <= 760
+            and ry < 20
+            and 430 <= white_count <= 660
+            and 500 <= grey <= 980
+            and 130 <= dark_purple_count <= 190
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 507 - 10 <= grellow_count <= 507 + 10
+            and ry < 15
+            and 648 - 10 <= white_count <= 648 + 10
+            and 570 - 10 <= grey <= 570 + 10
+            and dark_purple_count > 25
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
             and 215 <= grellow_count <= 225
             and ry > 700
             and white_count > 1000
@@ -132,21 +165,41 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
-            and 587 - 10 <= grellow_count <= 587 + 10
-            and 390 - 10 < ry < 390 + 10
-            and 238 - 10 <= white_count <= 238 + 10
-            and 87 - 10 <= grey <= 87 + 10
+            and 435 <= grellow_count <= 435
+            and 420 <= ry <= 460
+            and 220 <= white_count <= 260
+            and 160 <= grey <= 180
+            and dark_purple_count < 20
+        ):
+            return 43
+
+        if (
+            self.frame_height == 720
+            and 401 - 10 <= grellow_count <= 401 + 10
+            and 435 - 10 < ry < 435 + 10
+            and 262 - 10 <= white_count <= 262 + 10
+            and 116 - 10 <= grey <= 116 + 10
             and dark_purple_count < 15
         ):
             return 43
 
         if (
             self.frame_height == 720
-            and 574 - 10 <= grellow_count <= 574 + 10
-            and 82 - 10 < ry < 82 + 10
-            and 360 - 10 <= white_count <= 360 + 10
-            and 136 <= grey <= 156
-            and dark_purple_count < 15
+            and 427 - 10 <= grellow_count <= 427 + 10
+            and 91 - 10 < ry < 91 + 10
+            and 896 - 10 <= white_count <= 896 + 10
+            and 156 - 10 <= grey <= 156 + 10
+            and dark_purple_count < 30
+        ):
+            return 44
+
+        if (
+            self.frame_height == 720
+            and 577 - 10 <= grellow_count <= 637 + 10
+            and 88 - 10 < ry < 97 + 10
+            and 353 - 10 <= white_count <= 447 + 10
+            and 223 - 10 <= grey <= 223 + 10
+            and dark_purple_count < 30
         ):
             return 44
 
@@ -162,10 +215,10 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
-            and 471 - 10 <= grellow_count <= 471 + 10
-            and 410 - 10 < ry < 410 + 10
-            and 228 - 10 <= white_count <= 228 + 10
-            and 121 <= grey <= 141
+            and 300 - 10 <= grellow_count <= 471 + 10
+            and 400 - 10 < ry < 410 + 10
+            and 228 - 10 <= white_count <= 228 + 50
+            and 121 <= grey <= 315
             and dark_purple_count < 15
         ):
             return 43
