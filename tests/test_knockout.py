@@ -3,6 +3,7 @@ import cv2
 import vf_cv
 
 test_data = [
+    "assets/test_images/720p/knockout/knockout_player_1_01.png",
     "assets/test_images/1080p/ko/knockout_for_player_2_01.png",
 ]
 
