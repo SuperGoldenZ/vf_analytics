@@ -32,6 +32,8 @@ def test_is_not_winning_round(image_filename):
 
 
 test_data = [
+    ["assets/test_images/480p/knockout/knockout_3_1_03.png", 1],
+    ["assets/test_images/480p/knockout/knockout_3_1_02.png", 1],
     ["assets/test_images/1080p/ko/knockout_for_player_2_02.png", 2],
     ["assets/test_images/1080p/ko/knockout_for_player_1_01.png", 1],
     ["assets/test_images/1080p/ko/knockout_for_player_2_01.png", 2],
