@@ -13,8 +13,8 @@ import vf_cv.character
 
 class MatchAnalyzer:
 
-    DONT_SAVE = False
-    SAVE_PIC_ALL = True
+    DONT_SAVE = True
+    SAVE_PIC_ALL = False
 
     def __init__(self, cap, logger, jpg_folder, interval, frame_rate):
         self.match = vf_data.Match()
