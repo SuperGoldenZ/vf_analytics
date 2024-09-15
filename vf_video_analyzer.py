@@ -14,9 +14,7 @@ import youtube_helper
 import vf_data
 
 
-DONT_SAVE = False
-SAVE_PIC_ALL = False
-DELETE_VIDEO = True
+DELETE_VIDEO = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -53,6 +51,17 @@ def print_csv(
         f.write(str(match))
 
 
+def get_saved_video_resolution(video_id):
+    if os.path.isfile(f"assets/videos/{video_id}_480p/video.mp4"):
+        return 480
+    if os.path.isfile(f"assets/videos/{video_id}_1080p/video.mp4"):
+        return 1080
+    if os.path.isfile(f"assets/videos/{video_id}_750p/video.mp4"):
+        return 720
+
+    return 0
+
+
 def analyze_video(url, cam=-1):
     start = timer()
     p = pathlib.Path("match_data.csv")
@@ -76,9 +85,11 @@ def analyze_video(url, cam=-1):
         resolution = None
         jpg_folder = None
 
-        if not os.path.isfile(
-            f"assets/videos/{video_id}_480p/video.mp4"
-        ) and not os.path.isfile(f"assets/videos/{video_id}_720p/video.mp4"):
+        saved_video_resolution = get_saved_video_resolution(video_id)
+
+        if saved_video_resolution == 0:
+            #"""Video not saved locally, download"""
+
             ys = youtube_helper.get_stream(url)
             resolution = ys.resolution
             vf_analytics.resolution = resolution
@@ -107,6 +118,7 @@ def analyze_video(url, cam=-1):
                         os.remove(temp_path)
                     else:
                         os.rename(temp_path, video_path)
+
                 except Exception as e:
                     print(f'error downloading "{url}" ')
                     print(ys)
@@ -115,10 +127,7 @@ def analyze_video(url, cam=-1):
             else:
                 print(f"Not downloading because exists: {video_path}")
         else:
-            if os.path.isfile(f"assets/videos/{video_id}_480p/video.mp4"):
-                resolution = "480p"
-            else:
-                resolution = "720p"
+            resolution = f"{saved_video_resolution}p"
             video_path = f"assets/videos/{video_id}_{resolution}/video.mp4"
 
     jpg_folder = f"assets/jpg/{video_id}_{resolution}"
