@@ -654,13 +654,15 @@ class Timer:
         elif 194 - 5 <= n_white_pix <= 194 + 5:
             return 7
         elif (
-            thresholded_image[17, 2] != 0
+            height > 17
+            and thresholded_image[17, 2] != 0
             and digit_num == 2
             and thresholded_image[7, 17] != 0
         ):
             return 9
         elif (
-            thresholded_image[17, 2] != 0
+            height > 17
+            and thresholded_image[17, 2] != 0
             and digit_num == 2
             and thresholded_image[7, 17] == 0
             and thresholded_image[8, 16] == 0
