@@ -300,6 +300,10 @@ class Timer:
         threshold = 100
         if h == 480:
             threshold = 50
+
+        if self.frame_height == 480 and dr > 300:
+            return True
+
         if h == 720:
             threshold = 200
         if dr > 2000:
@@ -323,6 +327,347 @@ class Timer:
             thresholded_image = thresholded_image[y : y + h, x : x + w]
 
         return thresholded_image
+
+    def get_time_seconds_digit_480p(self, gray_image, digit_num, debug_time=False):
+        thresholded_image = Timer.get_thresholded_image(gray_image, 200)
+
+        height, width = thresholded_image.shape  # Get the dimensions of the frame
+
+        if width <= 5 and height <= 15 or height <= 5:
+            return "endround"
+
+        if width <= 13 and height <= 14:
+            return "endround"
+
+        factor = 1
+
+        n_white_pix = np.sum(thresholded_image == 255)
+
+        # endround is state when blue or red overlaps timer
+        if n_white_pix == 0:
+            return "endround"
+
+        if debug_time is True:
+            cv2.imshow("grey", gray_image)
+            cv2.imshow(
+                f"thrs {self.frame_height} {n_white_pix}  width {width}x{height}",
+                thresholded_image,
+            )
+            cv2.waitKey()
+
+        height, width = thresholded_image.shape  # Get the dimensions of the frame
+
+        points = {}
+        points[22] = thresholded_image[height - 2, int(width / 2)]
+        points[2] = thresholded_image[height - 1, int(width / 2)]
+        points[8] = thresholded_image[0, int(width / 2)]
+        points[6] = thresholded_image[int(height / 2), width - 1]
+        points[59] = thresholded_image[int(height / 2) - 2, int(width / 2)]
+        points[58] = thresholded_image[int(height / 2) - 1, int(width / 2)]
+        points[5] = thresholded_image[int(height / 2), int(width / 2)]
+        points[4.5] = thresholded_image[int(height / 2),]
+        points[1] = thresholded_image[height - 1, 0]
+        points[1.5] = 0
+        try:
+            points[1.5] = thresholded_image[15, 0]
+        except:
+            points[1.5] = 0
+
+        if width == 17 and points[2] == 0 and n_white_pix < 150:
+            return "endround"
+
+        if 212 <= n_white_pix <= 240 and (
+            points[1] != 0
+            or thresholded_image[height - 2, 0] != 0
+            or thresholded_image[height - 3, 1] != 0
+            and thresholded_image[14, 16] == 0
+            and thresholded_image[20, 13] != 0
+            and thresholded_image[16, 7] != 0
+        ):
+            return 2
+
+        if n_white_pix <= 175 * factor and n_white_pix > 10 * factor and width < 18:
+            return 1
+        elif (
+            219 * factor <= n_white_pix <= 253 * factor
+            or ((262 - 10) * factor <= n_white_pix <= 269 * factor)
+            or (n_white_pix == 237)
+        ) or (
+            n_white_pix == 246
+            or n_white_pix == 242
+            or n_white_pix == 241
+            or n_white_pix == 234
+            or n_white_pix >= 266 * factor
+            and n_white_pix <= 276 * factor
+        ):
+            color = thresholded_image[3, 3]
+
+            veryupperleft = thresholded_image[0, 0]
+            upperleft = thresholded_image[3, width - 1]
+            upper_right = thresholded_image[0, width - 1]
+            lower_right = thresholded_image[height - 1, width - 1]
+            lowerleft = thresholded_image[height - 1, 0]
+            lowerleft2 = thresholded_image[height - 2, 0]
+
+            top_middle = thresholded_image[0, int(width * 0.5)]
+
+            midleftquarter = thresholded_image[(int)(height / 2), int(width * 0.25)]
+            middle = thresholded_image[int(height / 2), int(width / 2)]
+            bottom_middle = thresholded_image[int(height * 0.75), int(width / 2)]
+            midleft = thresholded_image[int(height / 2), 0]
+
+            left_quarter = thresholded_image[int(height * 0.70), 0]
+            thresholded_image[int(height * 0.70), 0] = 100
+
+            if (
+                middle == 0
+                and upper_right == 0
+                and lowerleft == 0
+                and veryupperleft == 0
+                and lower_right == 0
+                and midleftquarter != 0
+                and top_middle != 0
+                and thresholded_image[7, 17] != 0
+                and thresholded_image[15, 3] != 0
+            ):
+                return 0
+            elif (
+                points[2] != 0
+                and (points[8] != 0 or thresholded_image[0, int(width / 2) + 1] != 0)
+                and 18 <= width <= 20
+                and 250 <= n_white_pix <= 280
+                and points[1.5] != 0
+                and thresholded_image[8, 16] == 0
+                and (points[5] != 0 or points[58] != 0 or points[59] != 0)
+                and thresholded_image[5, 17] == 0
+            ):
+                return 6
+            elif (
+                bottom_middle == 0
+                and left_quarter != 0
+                and midleft != 0
+                and thresholded_image[8, 16] == 0
+                and (points[58] != 0 or points[5] != 0 or points[59] != 0)
+                and thresholded_image[5, 17] == 0
+            ):
+                return 6
+            elif (
+                lower_right == 0
+                and lowerleft == 0
+                and lowerleft2 == 0
+                and upper_right == 0
+                and veryupperleft == 0
+                and midleft == 0
+                and midleftquarter == 0
+                and thresholded_image[11, 3] == 0
+                and thresholded_image[7, 2] == 0
+            ):
+                return 3
+            elif (
+                lower_right == 0
+                and lowerleft == 0
+                and upper_right == 0
+                and points[2] != 0
+                and top_middle != 0
+                and points[6] == 0
+                and 220 <= n_white_pix <= 223
+            ):
+                return 2
+            elif (
+                points[8] != 0
+                and points[2] != 0
+                and thresholded_image[17, 2] != 0
+                and thresholded_image[10, 3] != 0
+                and digit_num == 2
+                and thresholded_image[6, 16] == 0
+            ) and thresholded_image[14, 2] == 0:
+                return 5
+            elif (
+                points[8] != 0
+                and points[2] != 0
+                and thresholded_image[17, 2] != 0
+                and thresholded_image[10, 3] != 0
+                and digit_num == 2
+                and thresholded_image[6, 16] == 0
+            ) and thresholded_image[14, 2] != 0:
+                return 6
+            elif (
+                upper_right == 0
+                and color != 0
+                and digit_num == 2
+                and points[5] != 0
+                and digit_num == 2
+            ):
+                return 9
+            elif (
+                upperleft != 0
+                and lowerleft == 0
+                and upper_right != 0
+                and digit_num == 2
+                and thresholded_image[2, 4] == 0
+                and thresholded_image[1, 5] != 0
+            ):
+                return 5
+            elif (
+                upper_right != 0
+                and top_middle != 0
+                and digit_num == 2
+                and thresholded_image[1, 5] != 0
+            ):
+                return 5
+            elif (
+                (
+                    points[2] != 0
+                    or thresholded_image[height - 1, int(width / 2) - 1] != 0
+                    or thresholded_image[height - 1, int(width / 2) - 2] != 0
+                    or thresholded_image[height - 1, int(width / 2) - 3] != 0
+                )
+                and points[6] == 0
+                and points[8] != 0
+                and width == 21
+                and 268 <= n_white_pix <= 280
+                and digit_num == 2
+            ):
+                return 8
+            elif (
+                points[8] != 0
+                and thresholded_image[16, 2] != 0
+                and thresholded_image[16, 2] != 0
+                and thresholded_image[16, 16] != 0
+                and thresholded_image[16, 16] != 0
+                and thresholded_image[21, 8] != 0
+                and thresholded_image[5, 5] != 0
+                and thresholded_image[4, 18] != 0
+                and thresholded_image[11, 10] != 0
+                and thresholded_image[7, 17] != 0
+                and digit_num == 2
+            ):
+                return 8
+            elif (
+                thresholded_image[19, 3] != 0
+                and thresholded_image[14, 1] == 0
+                and digit_num == 2
+            ):
+                return 9
+            elif (
+                points[5] == 0
+                and points[2] != 0
+                and points[8] != 0
+                and thresholded_image[15, 3] != 0
+            ):
+                return 0
+            elif (
+                points[2] != 0
+                and points[8] != 0
+                and width == 20
+                and thresholded_image[14, 1] != 0
+                and points[5] == 0
+            ):
+                return 4
+            elif (
+                color == 0
+                and lowerleft2 == 0
+                and thresholded_image[18, 3] == 0
+                and points[5] == 0
+            ):
+                return 4
+            elif (
+                points[5] != 0
+                and thresholded_image[6, 4] == 0
+                and thresholded_image[13, 3] == 0
+            ):
+                return 2
+            elif (
+                points[5] != 0
+                and thresholded_image[6, 4] == 0
+                and thresholded_image[13, 3] != 0
+            ):
+                return 8
+            elif (
+                thresholded_image[9, 10] != 0
+                and thresholded_image[1, 10] != 0
+                and thresholded_image[8, 16] == 0
+            ):
+                return 6
+            elif (
+                points[5] != 0
+                and points[2] != 0
+                and points[8] != 0
+                and thresholded_image[16, 2] == 0
+            ):
+                return 9
+            elif (
+                points[5] != 0
+                and points[2] != 0
+                and points[8] != 0
+                and thresholded_image[16, 2] != 0
+            ):
+                return 8
+
+            else:
+                raise Exception("Undetectable time")
+
+        elif n_white_pix == 252:
+            color = thresholded_image[10, 5]
+            thresholded_image[10, 5] = 100
+
+            if color == 0:
+                return 2
+            else:
+                return 5
+        elif n_white_pix >= 278 - 5:
+            height, width = thresholded_image.shape  # Get the dimensions of the frame
+            middle = thresholded_image[int(height / 2), int(width / 2)]
+            middle2 = thresholded_image[int(height / 2) - 1, int(width / 2)]
+            midleft = thresholded_image[int(height / 2), 0]
+            upper_right = thresholded_image[int(height * 0.25), 0]
+
+            if middle == 0 and middle2 == 0 and upper_right == 0:
+                return 0
+
+            elif midleft != 0 and thresholded_image[8, 16] == 0:
+                return 6
+            else:
+                return 8
+        elif (
+            n_white_pix >= 213
+            and width >= 20
+            and thresholded_image[11, 3] == 0
+            and thresholded_image[7, 2] == 0
+        ):
+            return 3
+        elif (
+            n_white_pix == 231
+            or n_white_pix == 228
+            or n_white_pix == 230
+            or n_white_pix == 233
+            and thresholded_image[11, 3] == 0
+            and thresholded_image[7, 2] == 0
+        ):
+            return 3
+        elif 194 - 5 <= n_white_pix <= 210 and thresholded_image[20, 14] != 0:
+            return 2
+        elif n_white_pix >= 165 and width >= 18 and thresholded_image[17, 2] == 0:
+            return 7
+        elif n_white_pix == 169:
+            return 1
+        elif 194 - 5 <= n_white_pix <= 194 + 5:
+            return 7
+        elif (
+            thresholded_image[17, 2] != 0
+            and digit_num == 2
+            and thresholded_image[7, 17] != 0
+        ):
+            return 9
+        elif (
+            thresholded_image[17, 2] != 0
+            and digit_num == 2
+            and thresholded_image[7, 17] == 0
+            and thresholded_image[8, 16] == 0
+        ):
+            return 6
+
+        raise Exception("Unrecognized time")
 
     def get_time_seconds_digit_1080p(self, gray_image, digit_num, debug_time=False):
         thresholded_image = Timer.get_thresholded_image(gray_image, 200)
@@ -392,6 +737,8 @@ class Timer:
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
             n_white_pix = 0
+            thresholded_image = None
+
             if self.frame_height == 1080:
                 digit = self.get_time_seconds_digit_1080p(
                     gray_image, digit_num, debug_time=debug_time
@@ -399,6 +746,19 @@ class Timer:
                 text = f"{text}{digit}"
                 if running_out:
                     return text
+                continue
+            elif self.frame_height == 480:
+                digit = self.get_time_seconds_digit_480p(
+                    gray_image, digit_num, debug_time=debug_time
+                )
+                if digit == "endround":
+                    return "endround"
+                text = f"{text}{digit}"
+                if running_out and debug_time:
+                    print(f"returning {text}")
+                if running_out:
+                    return text
+                continue
             else:
                 thresholded_image = Timer.get_thresholded_image(gray_image, 200)
                 height, width = (
@@ -418,7 +778,7 @@ class Timer:
             if n_white_pix <= 175 * factor and n_white_pix > 10 * factor:
                 text = f"{text}1"
             elif (
-                226 * factor <= n_white_pix <= 253 * factor
+                221 * factor <= n_white_pix <= 253 * factor
                 or ((264 - 10) * factor <= n_white_pix <= 264 * factor)
                 or (n_white_pix == 237)
             ) or (
@@ -431,9 +791,6 @@ class Timer:
             ):
                 color = thresholded_image[3, 3]
 
-                height, width = (
-                    thresholded_image.shape
-                )  # Get the dimensions of the frame
                 veryupperleft = thresholded_image[0, 0]
                 upperleft = thresholded_image[3, width - 1]
                 upper_right = thresholded_image[0, width - 1]
@@ -532,9 +889,14 @@ class Timer:
             elif 194 - 5 <= n_white_pix <= 194 + 5:
                 text = f"{text}7"
 
-        # if float(text) < 0:
-        # raise Exception(f"Found incorrect time {text}")
+        if float(text) < 0:
+            raise Exception(f"Found incorrect time {text}")
 
+        if float(text) > 45:
+            raise Exception(f"Found incorrect time {text}")
+
+        if debug_time:
+            print(f"returning {text}")
         return text
 
     @staticmethod
