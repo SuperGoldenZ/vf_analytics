@@ -283,7 +283,27 @@ class MatchAnalyzer:
         self.old_time_seconds = self.time_seconds
 
         self.time_cv.set_frame(self.frame)
-        self.time_seconds = self.time_cv.get_time_seconds()
+        try:
+            self.time_seconds = self.time_cv.get_time_seconds()
+        except Exception as a:
+            self.save_cam_frame("invalid time")
+            raise a
+
+        if self.time_seconds == "endround":
+            self.count += 1
+            self.time_seconds = self.old_time_seconds
+            return False
+
+        if (
+            self.time_seconds is not None
+            and self.old_time_seconds is not None
+            and int(self.old_time_seconds) != int(self.time_seconds)
+            and int(self.old_time_seconds) != int(self.time_seconds) + 1
+        ):
+            self.save_cam_frame("invalid time")
+            raise Exception(
+                f"Unexpected time seconds old {self.old_time_seconds}   new {self.time_seconds}"
+            )
 
         if (
             self.skip_beginning_of_round()
@@ -389,10 +409,11 @@ class MatchAnalyzer:
         try:
             self.timestr = None
             try:
-                self.time_seconds = self.time_cv.get_time_seconds(self.frame)
-                time_ms = self.time_cv.get_time_ms()
+                # self.time_seconds = self.time_cv.get_time_seconds(self.frame)
+                # time_ms = self.time_cv.get_time_ms()
                 self.timestr = f"{self.time_seconds}.{time_ms}"
             except Exception as a:
+                self.save_cam_frame("invalid time")
                 self.logger.error(
                     f"Exception occured getting time frame: {self.count} error: {a}"
                 )
@@ -443,6 +464,8 @@ class MatchAnalyzer:
 
             self.skip_frames = 10 / self.interval
             self.time_matches = 0
+            self.time_seconds = None
+            self.old_time_seconds = None
         else:
             self.count += 1
             return True
