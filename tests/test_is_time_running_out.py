@@ -3,6 +3,8 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/480p/time/8_86_01.png", "8", "86", 480, True],
+    ["assets/test_images/480p/time/09_88_01.png", "9", "88", 480, True],
     ["assets/test_images/1080p/time/43_66_01.png", "43", "66", 1080, False],
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/720p/time/08_00_01.png", "8", "00", 720, True],
@@ -69,7 +71,8 @@ def test_time_running_out(
         height == resolution
     ), f"{image_filename} is {height}p instead of expected {resolution}p"
 
-    actual_is_time_running_out = timer.is_time_running_out()
+    DEBUG = False
+    actual_is_time_running_out = timer.is_time_running_out(DEBUG)
     assert (
         expected_is_time_running_out == actual_is_time_running_out
     ), f"{actual_is_time_running_out} not expected value of {expected_is_time_running_out} for {image_filename}"
