@@ -596,7 +596,10 @@ class Timer:
         if self.quads[7] > self.quads[9]:
             return False
 
-        if self.frame_height != 480 and self.thresholded_image[int(height / 2), int(width / 2)] == 0:
+        if (
+            self.frame_height != 480
+            and self.thresholded_image[int(height / 2), int(width / 2)] == 0
+        ):
             return False
 
         if self.frame_height == 720 and (width > 35 or self.n_white_pix > 430):
@@ -606,6 +609,9 @@ class Timer:
             return False
 
         if self.frame_height == 1080 and self.n_white_pix > 902 and width >= 35:
+            return False
+
+        if self.frame_height == 720 and self.n_white_pix > 400:
             return False
 
         return True
@@ -687,6 +693,15 @@ class Timer:
 
         if self.thresholded_image[int(height * 0.5), int(width * 0.35)] != 0:
             return False
+
+        if self.frame_height == 720:
+            if (
+                self.thresholded_image[0, width - 1] != 0
+                or self.thresholded_image[0, width - 2] != 0
+                or self.thresholded_image[0, width - 1] != 0
+                or self.thresholded_image[1, width - 2] != 0
+            ):
+                return False
 
         return True
 
@@ -777,6 +792,8 @@ class Timer:
             if (
                 self.thresholded_image[0, width - 1] == 0
                 and self.thresholded_image[0, width - 2] == 0
+                and self.thresholded_image[0, width - 1] == 0
+                and self.thresholded_image[1, width - 2] == 0
             ):
                 return False
 
@@ -818,13 +835,25 @@ class Timer:
                 return False
 
         if self.frame_height == 480:
-            if self.thresholded_image[10,17] != 0:
+            if self.thresholded_image[10, 17] != 0:
                 return False
-            
-        if self.thresholded_image[int(height * 0.314), int(width * 0.9)] != 0 and self.thresholded_image[int(height * 0.314), int(width * 0.9)-1] != 0 and self.thresholded_image[int(height * 0.314), int(width * 0.9)-2] != 0 and self.thresholded_image[int(height * 0.314), int(width * 0.9)-3] != 0:
+
+        if (
+            self.thresholded_image[int(height * 0.314), int(width * 0.9)] != 0
+            and self.thresholded_image[int(height * 0.314), int(width * 0.9) - 1] != 0
+            and self.thresholded_image[int(height * 0.314), int(width * 0.9) - 2] != 0
+            and self.thresholded_image[int(height * 0.314), int(width * 0.9) - 3] != 0
+        ):
             print("sixer false")
             return False
 
+        if (
+            self.thresholded_image[height - 1, int(width / 2)] == 0
+            and self.thresholded_image[height - 2, int(width / 2)] == 0
+            and self.thresholded_image[height - 3, int(width / 2)] == 0
+            and self.thresholded_image[height - 4, int(width / 2)] == 0
+        ):
+            return False
         return True
 
     def is_digit_seven(self, digit_num, running_out):
@@ -861,23 +890,19 @@ class Timer:
             print("eight - upper left false")
             return False
 
-        if (
-            self.thresholded_image[int(height/2), int(width/2)] == 0
-        ):
+        if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
             print("middle false")
             return False
-        
-        if (
-            self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]
-        ):
+
+        if self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]:
             print("quads false")
             return False
-        
+
         if self.frame_height == 480:
-            if self.thresholded_image[15,4] == 0:                
+            if self.thresholded_image[15, 4] == 0:
                 print("15,4 false")
                 return False
-            
+
         if self.frame_height != 480 and self.quads[3] < self.quads[7]:
             print("false 480 -1")
             return False
@@ -894,21 +919,17 @@ class Timer:
         if digit_num == 1 and running_out is not True:
             return False
 
-        if (
-            self.quads[1] > self.quads[9] 
-        ):
+        if self.quads[1] > self.quads[9]:
             return False
 
         if (
-            self.thresholded_image[int(height/2), int(width/2)] == 0 and 
-            self.thresholded_image[int(height/2)+1, int(width/2)] == 0 and
-            self.thresholded_image[int(height/2)+2, int(width/2)] == 0
+            self.thresholded_image[int(height / 2), int(width / 2)] == 0
+            and self.thresholded_image[int(height / 2) + 1, int(width / 2)] == 0
+            and self.thresholded_image[int(height / 2) + 2, int(width / 2)] == 0
         ):
             return False
 
-        if (
-            self.thresholded_image[int(height*0.75), int(width*0.2)] == 0
-        ):
+        if self.thresholded_image[int(height * 0.75), int(width * 0.2)] == 0:
             return False
 
         return True
@@ -949,16 +970,16 @@ class Timer:
         return False
 
     def is_digit_zero(self, digit_num, running_out):
-        if (digit_num == 1 and running_out is False):
+        if digit_num == 1 and running_out is False:
             return False
-        
+
         height, width = self.thresholded_image.shape
 
-        if self.thresholded_image[int(height/2), int (width/2)] != 0:
+        if self.thresholded_image[int(height / 2), int(width / 2)] != 0:
             return False
-        
+
         return True
-    
+
     def get_time_seconds(self, debug_time=False):
         """Returns number of seconds remaining in a round"""
 
@@ -1034,12 +1055,12 @@ class Timer:
             elif self.is_digit_eight(digit_num, running_out):
                 text = f"{text}8"
             elif self.is_digit_nine(digit_num, running_out):
-                text = f"{text}9"                
+                text = f"{text}9"
             elif self.is_digit_zero(digit_num, running_out):
                 text = f"{text}0"
             else:
                 return "endround"
-            
+
             if running_out:
                 print(f"running out returning {text}")
                 return text
