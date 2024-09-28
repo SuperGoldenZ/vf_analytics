@@ -111,6 +111,8 @@ regions_360p = {
     "excellent": (167, 341, 1146, 155),
 }
 
+stage_roi = None
+
 
 def get_player_rank_black(player_num, frame):
 
@@ -344,14 +346,13 @@ def is_vs(frame, debug=False):
     return result
 
 
-# Min width of frame is 85
-def get_stage(frame, override_region=None):
+def get_stage_roi(frame):
     region_name = "stage"
-    (x, y, w, h) = get_dimensions(region_name, resolution, override_region)
-
-    factor = 1.0
 
     height = frame.shape[0]  # Get the dimensions of the frame
+    (x, y, w, h) = get_dimensions(region_name, f"{height}p")
+
+    factor = 1.0
 
     if height == 720:
         factor = 1.5
@@ -363,90 +364,35 @@ def get_stage(frame, override_region=None):
 
     roi = frame[y : y + h, x : x + w]
 
-    if False:
+    all_white_roi = all_but_grey(roi)
 
-        gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    imagem = cv2.bitwise_not(all_white_roi)
+    return imagem
 
-        threshold_value = 15
-        _, thresholded_frame = cv2.threshold(
-            gray_frame, threshold_value, 255, cv2.THRESH_BINARY
-        )
 
-        # gray_frame = frame
-        # (r,g,b) = gray_frame[25, 50]
+# Min width of frame is 85
+def get_stage(frame, debug_stage=False):
+    region_name = "stage"
 
-        # color = thresholded_frame[0, 50]
-        # thresholded_frame[25, 50] = 255
+    height = frame.shape[0]  # Get the dimensions of the frame
+    (x, y, w, h) = get_dimensions(region_name, f"{height}p")
 
-        threshold_value = 225
-        _, thresholded_image = cv2.threshold(
-            gray_image, threshold_value, 255, cv2.THRESH_BINARY
-        )
-
-        n_white_pix = np.sum(thresholded_image == 255)
-
-        frame[0, 100] = (255, 0, 0)
-        thresholded_frame[0:0, 100:100] = 200
-
-        # print(f"{r} {g} {b}")
-
-        # cv2.imshow("frame", frame)
-        # cv2.imshow("thres_frame", thresholded_frame)
-        # cv2.imshow("threshold", thresholded_image)
-        # print(f"for resolution {resolution} white count {n_white_pix}")
-        # cv2.waitKey()
-
-        # if (thresholded_frame[0, 0] == 0 and thresholded_frame[height-1, 0] == 0 and
-        # thresholded_frame[height-1, width-1] == 0 and thresholded_frame[0, width-1] == 0):
-        # return None
-        (b, g, r) = frame[202, 377]
-        if r < 45 and g < 45 and b < 45:
-            return None
-
-        (b, g, r) = frame[178, 365]
-        if r > 45 and g > 45 and b > 45:
-            return None
-
-        if height == 720 and 1439 - 10 <= n_white_pix <= 1439 + 10:
-            return "Deep Mountain"
-
-        if height == 480 and (587 - 10) * factor <= n_white_pix <= (587 + 10) * factor:
-            return "Deep Mountain"
-
-        # if (310 <= n_white_pix <= 365):
-        # return "Island"
-
-        if 510 <= n_white_pix <= 525:
-            return "Sumo Ring"
-
-        if 590 <= n_white_pix <= 600:
-            return "Training Room"
-
-        if 370 <= n_white_pix <= 390:
-            return "Genesis"
-
-        if 220 <= n_white_pix <= 245:
-            return "City"
-
-        if 490 <= n_white_pix <= 510:
-            return "Snow Mountain"
-
-        if 340 <= n_white_pix <= 350:
-            return "Terrace"
-
-        # if (560 <= n_white_pix <= 580):
-        # return "Waterfalls"
-    # raise Exception ("oh noes stage")
-    # return None
+    roi = frame[y : y + h, x : x + w]
 
     all_white_roi = all_but_grey(roi)
 
     imagem = cv2.bitwise_not(all_white_roi)
 
+    global stage_roi
+    stage_roi = imagem
+
     text = pytesseract.image_to_string(imagem, config="--psm 6")
     text = str.replace(text, "\n\x0c", "").upper()
+
+    if debug_stage:
+        cv2.imshow(f"{height} {text}", stage_roi)
+        cv2.imshow(f"{height} stage", frame)
+        cv2.waitKey()
 
     if text == "WATER FALLS":
         return "Waterfalls"
