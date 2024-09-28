@@ -36,8 +36,8 @@ def test_get_stage(image_filename, expected_stage_name):
     assert vs_image is not None, f"{image_filename} is unexpectedly none"
 
     try:
-        vf_analytics.resolution = "480p"
-        stage = vf_analytics.get_stage(vs_image)
+        DEBUG_STAGE = False
+        stage = vf_analytics.get_stage(vs_image, DEBUG_STAGE)
         assert expected_stage_name == stage
 
     except Exception as a:
