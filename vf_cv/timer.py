@@ -2,9 +2,6 @@
 
 import cv2
 import numpy as np
-
-# from tensorflow.keras.preprocessing.image import img_to_array
-# from tensorflow.keras.models import load_model
 import vf_cv.cv_helper
 
 
@@ -18,7 +15,10 @@ class Timer:
         "time_ms": (414, 48, 25, 14),
         "time_ms_digit1": (414, 48, 12, 14),
         "time_ms_digit2": (426, 48, 24, 14),
+        "is_endround": {482, 0, 90, 14},
     }
+
+    REGIONS_720P = {"is_endround": {725, 0, 135, 21}}
 
     frame = None
     frame_height = None
@@ -438,7 +438,6 @@ class Timer:
                 and thresholded_image[15, 3] != 0
                 and thresholded_image[3, int(width / 2)] != 0
             ):
-                print("zero one")
                 return 0
             elif (
                 points[5] == 0
@@ -447,7 +446,6 @@ class Timer:
                 and thresholded_image[15, 3] != 0
                 and thresholded_image[3, int(width / 2)] != 0
             ):
-                print("zero two")
                 return 0
             else:
                 raise Exception("Undetectable digit 480p 01")
@@ -468,7 +466,6 @@ class Timer:
                 and upper_right == 0
                 and thresholded_image[3, int(width / 2)] != 0
             ):
-                print("zero three")
                 return 0
 
             raise Exception("Unrecognized time")
@@ -506,18 +503,13 @@ class Timer:
 
         # 4 3 7 9 5 2
         if n_white_top > n_white_bottom and n_white_right > n_white_left:
-            print("considering short")
             if (
                 thresholded_image[36, 8] == 0
                 and width > 34
                 and thresholded_image[14, 37] != 0
                 and digit_num == 2
             ):
-                print("short nine")
                 return 9
-        print(
-            f"considering short 8 {n_white_top} {n_white_bottom} - {n_white_left} {n_white_right}"
-        )
 
         # 8 3 2 0
         if n_white_top < n_white_bottom and n_white_left < n_white_right:
@@ -624,9 +616,10 @@ class Timer:
             return False
 
         if self.quads[1] > self.quads[9]:
-            if self.frame_height == 480 and abs(self.quads[9] - self.quads[1]) <= 3:
-                print("skip")
-            else:
+            if (
+                not (self.frame_height == 480 or self.frame_height == 720)
+                and abs(self.quads[9] - self.quads[1]) <= 5
+            ):
                 return False
 
         if self.quads[7] > self.quads[9]:
@@ -669,9 +662,9 @@ class Timer:
             return False
 
         if self.quads[1] > self.quads[9]:
-            if self.frame_height == 480 and abs(self.quads[9] - self.quads[1]) <= 3:
-                print("skip")
-            else:
+            if not (
+                self.frame_height == 480 and abs(self.quads[9] - self.quads[1]) <= 3
+            ):
                 return False
 
         if self.quads[7] > self.quads[9]:
@@ -691,7 +684,11 @@ class Timer:
         if self.thresholded_image[int(height * 0.35), int(width / 4)] != 0:
             return False
 
-        if self.thresholded_image[int(height * 0.5), int(width * 0.35)] != 0:
+        if (
+            self.thresholded_image[int(height * 0.5), int(width * 0.35) - 3] != 0
+            or self.thresholded_image[int(height * 0.5), int(width * 0.35) - 1] != 0
+            or self.thresholded_image[int(height * 0.5), int(width * 0.35) - 2] != 0
+        ):
             return False
 
         if self.frame_height == 720:
@@ -713,9 +710,9 @@ class Timer:
             return False
 
         if self.quads[1] > self.quads[9]:
-            if self.frame_height == 480 and abs(self.quads[9] - self.quads[1]) <= 3:
-                print("skip")
-            else:
+            if not (
+                self.frame_height == 480 and abs(self.quads[9] - self.quads[1]) <= 3
+            ):
                 return False
 
         if self.quads[7] > self.quads[9]:
@@ -765,19 +762,15 @@ class Timer:
             # return False
 
             if self.thresholded_image[14, 3] != 0:
-                print("false 1")
                 return False
 
             if self.thresholded_image[6, 16] != 0:
-                print("false 2")
                 return False
 
             if self.thresholded_image[7, 15] != 0:
-                print("false 3")
                 return False
 
             if self.thresholded_image[5, 11] != 0:
-                print("false 4")
                 return False
 
             if (
@@ -785,7 +778,6 @@ class Timer:
                 or self.thresholded_image[14, 3] != 0
                 or self.thresholded_image[15, 2] != 0
             ):
-                print("false 5")
                 return False
 
         if self.frame_height == 720:
@@ -796,6 +788,18 @@ class Timer:
                 and self.thresholded_image[1, width - 2] == 0
             ):
                 return False
+
+            if (
+                self.thresholded_image[22, 4] != 0
+                and self.thresholded_image[22, 3] != 0
+                and self.thresholded_image[23, 4] != 0
+                and self.thresholded_image[23, 3] != 0
+            ):
+                return False
+
+        if self.frame_height == 1080:
+            if self.quads[1] > self.quads[9]:
+                return
 
         # if (self.quads[3] > self.quads[7] and abs(self.quads)):
         # return False
@@ -819,19 +823,18 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         if digit_num == 1 and running_out is not True:
-            print("running out false")
             return False
 
         if self.thresholded_image[0, 0] != 0:
             return False
 
-        if self.frame_height != 480:
-            if self.quads[3] + self.quads[1] < self.quads[7] + self.quads[9]:
-                print("quads six false")
-                return False
+        # if self.frame_height == 1080:
+        # if self.quads[3] + self.quads[1] < self.quads[7] + self.quads[9]:
+        # print("quads six false")
+        # return False
 
+        if self.frame_height != 480:
             if self.thresholded_image[0, width - 1] != 0:
-                print("width false")
                 return False
 
         if self.frame_height == 480:
@@ -844,7 +847,6 @@ class Timer:
             and self.thresholded_image[int(height * 0.314), int(width * 0.9) - 2] != 0
             and self.thresholded_image[int(height * 0.314), int(width * 0.9) - 3] != 0
         ):
-            print("sixer false")
             return False
 
         if (
@@ -854,6 +856,15 @@ class Timer:
             and self.thresholded_image[height - 4, int(width / 2)] == 0
         ):
             return False
+
+        if (
+            self.thresholded_image[height - 1, int(width / 2) + 4] == 0
+            and self.thresholded_image[height - 2, int(width / 2) + 4] == 0
+            and self.thresholded_image[height - 3, int(width / 2) + 4] == 0
+            and self.thresholded_image[height - 4, int(width / 2) + 4] == 0
+        ):
+            return False
+
         return True
 
     def is_digit_seven(self, digit_num, running_out):
@@ -868,6 +879,11 @@ class Timer:
             and self.thresholded_image[0, 2] == 0
             and self.thresholded_image[0, 3] == 0
             and self.thresholded_image[0, 4] == 0
+            and self.thresholded_image[1, 0] == 0
+            and self.thresholded_image[1, 1] == 0
+            and self.thresholded_image[1, 2] == 0
+            and self.thresholded_image[1, 3] == 0
+            and self.thresholded_image[1, 4] == 0
         ):
             return False
 
@@ -877,7 +893,6 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         if digit_num == 1 and running_out is not True:
-            print("eight running out")
             return False
 
         if (
@@ -887,28 +902,22 @@ class Timer:
             and self.thresholded_image[0, 3] != 0
             and self.thresholded_image[0, 4] != 0
         ):
-            print("eight - upper left false")
             return False
 
         if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
-            print("middle false")
             return False
 
         if self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]:
-            print("quads false")
             return False
 
         if self.frame_height == 480:
             if self.thresholded_image[15, 4] == 0:
-                print("15,4 false")
                 return False
 
         if self.frame_height != 480 and self.quads[3] < self.quads[7]:
-            print("false 480 -1")
             return False
 
         if self.frame_height != 480 and self.quads[1] < self.quads[3]:
-            print("false 480 -2")
             return False
 
         return True
@@ -992,6 +1001,162 @@ class Timer:
         elif self.frame_height == 1080:
             factor = 2.25
 
+        if self.frame_height == 480:
+            is_endround_roi = self.frame[0:14, 402 : 402 + 90]
+
+            dark_blue_left = vf_cv.CvHelper.count_pixels(
+                "#1a2cd1", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                "#3f4d74", is_endround_roi, override_tolerance=5
+            )
+
+            light_blue = vf_cv.CvHelper.count_pixels(
+                "#999fe4", is_endround_roi, override_tolerance=10
+            )
+            light_blue_two = vf_cv.CvHelper.count_pixels(
+                "#aaa0e8", is_endround_roi, override_tolerance=10
+            )
+            light_blue_three = vf_cv.CvHelper.count_pixels(
+                "#92aaff", is_endround_roi, override_tolerance=10
+            )
+
+            if debug_time:
+                cv2.imshow(
+                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three}",
+                    is_endround_roi,
+                )
+                cv2.waitKey()
+
+            if dark_blue_right >= 10 and light_blue >= 5:
+                return "endround"
+
+        if self.frame_height == 1080:
+            is_endround_roi = self.frame[0:38, 1088 : 1088 + 203]
+
+            dark_blue_left = vf_cv.CvHelper.count_pixels(
+                "#1a2cd1", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                "#3f4d74", is_endround_roi, override_tolerance=5
+            )
+
+            light_blue = vf_cv.CvHelper.count_pixels(
+                "#999fe4", is_endround_roi, override_tolerance=10
+            )
+            light_blue_two = vf_cv.CvHelper.count_pixels(
+                "#aaa0e8", is_endround_roi, override_tolerance=10
+            )
+            light_blue_three = vf_cv.CvHelper.count_pixels(
+                "#92aaff", is_endround_roi, override_tolerance=10
+            )
+
+            if debug_time:
+                cv2.imshow(
+                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three}",
+                    is_endround_roi,
+                )
+                cv2.waitKey()
+
+            if (dark_blue_right > 110 or dark_blue_right_two > 40) and (
+                light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
+            ):
+                return "endround"
+
+        if self.frame_height == 720:
+            is_endround_roi = self.frame[0:25, 725 : 725 + 135]
+
+            dark_blue_left = vf_cv.CvHelper.count_pixels(
+                "#1a2cd1", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                "#3f4d74", is_endround_roi, override_tolerance=5
+            )
+
+            light_blue = vf_cv.CvHelper.count_pixels(
+                "#999fe4", is_endround_roi, override_tolerance=10
+            )
+            light_blue_two = vf_cv.CvHelper.count_pixels(
+                "#aaa0e8", is_endround_roi, override_tolerance=10
+            )
+            light_blue_three = vf_cv.CvHelper.count_pixels(
+                "#92aaff", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
+                "#44447b", is_endround_roi, override_tolerance=5
+            )
+
+            if debug_time:
+                cv2.imshow(
+                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}",
+                    is_endround_roi,
+                )
+                cv2.waitKey()
+
+            if light_blue > 5 and dark_blue_right_three > 60:
+                return "endround"
+
+            if dark_blue_right > 25 and light_blue > 25:
+                return "endround"
+
+            if dark_blue_right_two > 5 and light_blue > 40 and light_blue_two > 15:
+                return "endround"
+
+            if (dark_blue_right > 110 or dark_blue_right_two > 40) and (
+                light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
+            ):
+                return "endround"
+
+            if dark_blue_right > 1500:
+                return "endround"
+
+            is_endround_roi = self.frame[0:38, 195 : 195 + 356]
+
+            dark_blue_left = vf_cv.CvHelper.count_pixels(
+                "#1a2cd1", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                "#3f4d74", is_endround_roi, override_tolerance=5
+            )
+
+            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
+                "#44447b", is_endround_roi, override_tolerance=5
+            )
+
+            light_blue = vf_cv.CvHelper.count_pixels(
+                "#999fe4", is_endround_roi, override_tolerance=10
+            )
+            light_blue_two = vf_cv.CvHelper.count_pixels(
+                "#aaa0e8", is_endround_roi, override_tolerance=10
+            )
+            light_blue_three = vf_cv.CvHelper.count_pixels(
+                "#92aaff", is_endround_roi, override_tolerance=10
+            )
+
+            maroon = vf_cv.CvHelper.count_pixels(
+                "#693038", is_endround_roi, override_tolerance=5
+            )
+
+            if debug_time:
+                cv2.imshow(
+                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} mrn: {maroon} thr: {dark_blue_right_three}",
+                    is_endround_roi,
+                )
+                cv2.waitKey()
+
+            if maroon > 40 and light_blue > 10:
+                return "endround"
+
+            if maroon > 50 and light_blue_two > 40:
+                return "endround"
+
+            if maroon > 50 and dark_blue_right > 100:
+                return "endround"
+
         for digit_num in range(1, 3):
             region_name = f"time_seconds_digit{digit_num}"
             old = self.frame_height
@@ -1060,9 +1225,9 @@ class Timer:
                 text = f"{text}0"
             else:
                 return "endround"
+                # raise Exception("unrecognized digit")
 
             if running_out:
-                print(f"running out returning {text}")
                 return text
 
         if float(text) < 0:
