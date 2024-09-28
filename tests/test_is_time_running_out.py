@@ -3,13 +3,13 @@ import cv2
 import vf_cv
 
 test_data = [
+    ["assets/test_images/720p/time/10_08_01.png", "10", "08", 720, False],
     ["assets/test_images/480p/time/8_86_01.png", "8", "86", 480, True],
     ["assets/test_images/480p/time/09_88_01.png", "9", "88", 480, True],
     ["assets/test_images/1080p/time/43_66_01.png", "43", "66", 1080, False],
     ["assets/test_images/480p/time/08_00_01.png", "8", "00", 480, True],
     ["assets/test_images/720p/time/08_00_01.png", "8", "00", 720, True],
     ["assets/test_images/720p/time/09_96_01.png", "9", "96", 720, True],
-    ["assets/test_images/720p/time/10_08_01.png", "10", "08", 720, True],
     ["assets/test_images/480p/time/45_00_02.png", "45", "00", 480, False],
     ["assets/test_images/480p/time/45_00.png", "45", "00", 480, False],
     ["assets/test_images/480p/time/no_time_01.png", "", "00", 480, False],
