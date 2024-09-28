@@ -14,7 +14,7 @@ import youtube_helper
 import vf_data
 
 
-DELETE_VIDEO = False
+DELETE_VIDEO = True
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
