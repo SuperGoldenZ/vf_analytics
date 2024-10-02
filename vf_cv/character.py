@@ -38,8 +38,8 @@ class Character:
             w = (int)(w * 2.25)
             h = (int)(h * 2.25)
         return (x, y, w, h)
-    
-    def get_character_name(self, player_num):
+
+    def get_character_name(self, player_num, debug_character=False):
         """Returns the name of the character a certain player is using"""
         region_name = f"player{player_num}character"
         for retry in range(1, 3):
@@ -63,12 +63,19 @@ class Character:
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
 
-            n_white_pix = np.sum(thresholded_image == 255)
-            # print(n_white_pix)
+            (height, width) = thresholded_image.shape
 
-            # cv2.imshow("roi", roi)
-            # cv2.imshow("frame", gray_image)
-            # cv2.waitKey()
+            n_white_pix = np.sum(thresholded_image == 255)
+
+            if debug_character is True:
+                cv2.imshow(
+                    f"char {self.frame_height} {n_white_pix} {width} {height}", roi
+                )
+                cv2.imshow(
+                    f"char {self.frame_height} {n_white_pix} {width} {height}",
+                    thresholded_image,
+                )
+                cv2.waitKey()
 
             if self.frame_height == 720:
                 if n_white_pix == 1946:
@@ -82,53 +89,11 @@ class Character:
                 if n_white_pix == 2778:
                     return "Brad"
 
-#            if False:
-#                if height == 720 and 3814 - 10 <= n_white_pix <= 3814 + 10:
-#                    print("short circuit kage")
-#                    return "Kage"
-#
-#                if height == 720 and 3384 - 10 <= n_white_pix <= 3814 + 10:
-#                    print("short circuit Jean")
-#                    return "Jean"
-#
-#                if 1400 <= n_white_pix <= 1500:
-#
-#                    print("short circuit kage")
-#                    return "Kage Maru"
-#
-#                if 1200 <= n_white_pix <= 1300:
-#                    print("short circuit Jean")
-#                    return "Jean"
-#                if retry == 1 and player_num == 1:
-#                    w = w - 75
-#                    h = h - 15
-#                elif retry == 1 and player_num == 2:
-#                    x = x - 20
-#                    w = w + 20
-#
-#                if retry == 2 and player_num == 1:
-#                    x = x + 20
-#                    w = w - 100
-#                    h = h - 20
-#                elif retry == 2 and player_num == 2:
-#                    x = x + 50
-#                    w = w - 100
-#
-#                if retry == 3 and player_num == 1:
-#                    x = x + 20
-#                    w = w - 100
-#                    h = h - 20
-#                elif retry == 3 and player_num == 2:
-#                    x = x + 175
-#                    w = w - 175
-#                    y = y + 10
-#                    h = h - 10
-
             roi = self.frame[y : y + h, x : x + w]
 
             white_only_roi = vf_cv.CvHelper.all_but_white(roi)
             text = pytesseract.image_to_string(white_only_roi, config="--psm 7").strip()
-            # print(f"{text}")
+
             if "Tagan Kirin" in text:
                 return "Jean"
             if "Brad" in text:
