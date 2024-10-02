@@ -65,7 +65,7 @@ class PlayerRank:
             x = (int)(x * 2.25)
             y = (int)(y * 2.25)
             w = (int)(w * 2.25)
-            h = (int)(h * 2.25)
+            h = (int)(h * 2.25) - 10
         return (x, y, w, h)
 
     # min width 25
@@ -97,23 +97,48 @@ class PlayerRank:
             )
             cv2.waitKey()
 
-        if (
-            self.frame_height == 1080
-            and 600 <= grellow_count <= 660
-            and ry <= 20
-            and 1200 <= white_count <= 1340
-            and 950 <= grey <= 1280
-        ):
-            return 41
+        if self.frame_height == 1080:
+            if (
+                600 <= grellow_count <= 660
+                and ry <= 20
+                and 1200 <= white_count <= 1340
+                and 950 <= grey <= 1280
+            ):
+                return 41
 
-        if (
-            self.frame_height == 1080
-            and 178 <= grellow_count <= 198
-            and ry <= 5
-            and 1860 <= white_count <= 1890
-            and 1250 <= grey <= 1280
-        ):
-            return 40
+            if (
+                442 - 10 <= grellow_count <= 459 + 10
+                and ry <= 50
+                and 1252 - 10 <= white_count <= 1252 + 10
+                and 554 - 10 <= grey <= 667
+                and 312 <= dark_purple_count <= 332
+            ):
+                return 41
+
+            if (
+                178 <= grellow_count <= 198
+                and ry <= 5
+                and 1860 <= white_count <= 1890
+                and 1250 <= grey <= 1280
+            ):
+                return 40
+
+            if (
+                178 <= grellow_count <= 198
+                and ry <= 5
+                and 1860 <= white_count <= 1890
+                and 1250 <= grey <= 1280
+            ):
+                return 40
+
+            if (
+                82 <= grellow_count <= 82
+                and ry <= 135
+                and 1198 <= white_count <= 1198
+                and 204 - 10 <= grey <= 204 + 10
+                and 549 - 10 <= dark_purple_count <= 549 + 10
+            ):
+                return 42
 
         if (
             self.frame_height == 480
@@ -151,6 +176,36 @@ class PlayerRank:
             and 648 - 10 <= white_count <= 648 + 10
             and 570 - 10 <= grey <= 570 + 10
             and dark_purple_count > 25
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 444 - 10 <= grellow_count <= 444 + 10
+            and ry < 15
+            and 1011 - 10 <= white_count <= 1011 + 10
+            and 524 - 10 <= grey <= 524 + 10
+            and dark_purple_count > 125
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 444 - 10 <= grellow_count <= 1200 + 10
+            and ry < 15
+            and 600 - 10 <= white_count <= 1011 + 10
+            and 524 - 10 <= grey <= 650 + 10
+            and dark_purple_count > 125
+        ):
+            return 41
+
+        if (
+            self.frame_height == 720
+            and 400 - 10 <= grellow_count <= 457 + 10
+            and ry < 20
+            and 800 - 10 <= white_count <= 1100 + 10
+            and 500 - 10 <= grey <= 575 + 10
+            and dark_purple_count > 125
         ):
             return 41
 
@@ -195,11 +250,31 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
+            and 557 - 10 <= grellow_count <= 557 + 10
+            and 91 - 10 < ry < 91 + 10
+            and 245 - 10 <= white_count <= 245 + 10
+            and 273 - 10 <= grey <= 273 + 10
+            and dark_purple_count < 30
+        ):
+            return 44
+
+        if (
+            self.frame_height == 720
             and 577 - 10 <= grellow_count <= 637 + 10
             and 88 - 10 < ry < 97 + 10
             and 353 - 10 <= white_count <= 447 + 10
             and 223 - 10 <= grey <= 223 + 10
             and dark_purple_count < 30
+        ):
+            return 44
+
+        if (
+            self.frame_height == 720
+            and 486 - 10 <= grellow_count <= 486 + 10
+            and 119 - 10 < ry < 119 + 10
+            and 327 - 10 <= white_count <= 327 + 10
+            and 165 - 10 <= grey <= 165 + 10
+            and dark_purple_count < 15
         ):
             return 44
 
