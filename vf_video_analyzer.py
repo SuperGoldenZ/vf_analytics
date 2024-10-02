@@ -62,6 +62,17 @@ def get_saved_video_resolution(video_id):
     return 0
 
 
+def check_string_in_file(file_path, string_to_search):
+    if not os.path.exists(file_path):
+        return False
+
+    with open(file_path, "r") as file:
+        for line in file:
+            if string_to_search in line:
+                return True
+    return False
+
+
 def analyze_video(url, cam=-1):
     start = timer()
     p = pathlib.Path("match_data.csv")
@@ -80,6 +91,11 @@ def analyze_video(url, cam=-1):
         video_id = youtube_helper.get_youtube_video_id(url)
         if pathlib.Path(f"match_data_{video_id}.csv").is_file():
             print(f"Skipping {video_id} since it's already in match data")
+            return
+
+        error_string = f"processing video {video_id}"
+        if check_string_in_file("vf_analytics.log", error_string):
+            print(f"Skipping {video_id} since it's already in log as error")
             return
 
         resolution = None
