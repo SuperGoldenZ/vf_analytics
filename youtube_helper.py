@@ -15,8 +15,8 @@ RESOLUTION_720P = "720p"
 RESOLUTION_360P = "360p"
 
 STREAM_SEARCH = [
-    {"resolution": "480p", "fps": 30},
-    {"resolution": "480p", "fps": 60},
+    #{"resolution": "480p", "fps": 30},
+    #{"resolution": "480p", "fps": 60},
     {"resolution": "720p", "fps": 30},
     {"resolution": "720p", "fps": 60},
     {"resolution": "1080p", "fps": 30},
@@ -25,7 +25,7 @@ STREAM_SEARCH = [
 
 
 def get_stream(url, youtube_auth=True):
-    yt = YouTube(url, use_oauth=youtube_auth)
+    yt = YouTube(url, use_oauth=youtube_auth, client="IOS")
 
     logger.debug(f"made youtube for {url}")
 
@@ -44,14 +44,12 @@ def get_stream(url, youtube_auth=True):
     except Exception as error:
         logger.error(f"error occured getting stream {error}")
         logger.error(traceback.format_exc())
-
     raise Exception(f"Not suitable resolution and FPS found for {url}")
 
 
 # Step 1: Download the YouTube video
 def download_video(ys, vid, resolution="480p"):
     output_path = f"assets/videos/{vid}.mp4"
-    print(f"downloading video {output_path}")
     ys.download(filename=output_path)
     return output_path
 
