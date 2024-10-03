@@ -63,14 +63,25 @@ class Character:
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
 
+            first_letter = vf_cv.CvHelper.trim(thresholded_image)
+
             (height, width) = thresholded_image.shape
 
             n_white_pix = np.sum(thresholded_image == 255)
+            n_white_pix_first = np.sum(first_letter == 255)
+
+            if self.frame_height == 720 and 592 - 10 <= n_white_pix_first <= 592 + 10:
+                return "Lion"
 
             if debug_character is True:
                 cv2.imshow(
-                    f"char {self.frame_height} {n_white_pix} {width} {height}", roi
+                    f"char {self.frame_height} {n_white_pix_first} letter", first_letter
                 )
+
+                cv2.imshow(
+                    f"char {self.frame_height} {n_white_pix} {width} {height} roi", roi
+                )
+
                 cv2.imshow(
                     f"char {self.frame_height} {n_white_pix} {width} {height}",
                     thresholded_image,
