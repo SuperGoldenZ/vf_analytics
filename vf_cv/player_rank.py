@@ -99,10 +99,11 @@ class PlayerRank:
 
         if self.frame_height == 1080:
             if (
-                600 <= grellow_count <= 660
+                576-10 <= grellow_count <= 576+10
                 and ry <= 20
-                and 1200 <= white_count <= 1340
-                and 950 <= grey <= 1280
+                and 1073-10 <= white_count <= 1073+10
+                and 729-10 <= grey <= 729+10
+                and 315-10 <= dark_purple_count <= 315+10
             ):
                 return 41
 
@@ -116,6 +117,15 @@ class PlayerRank:
                 return 41
 
             if (
+                574 - 10 <= grellow_count <= 574 + 10
+                and ry <= 50
+                and 1108 - 10 <= white_count <= 1108 + 10
+                and 755 - 10 <= grey <= 755+10
+                and 304-10 <= dark_purple_count <= 304+10
+            ):
+                return 41
+
+            if (
                 178 <= grellow_count <= 198
                 and ry <= 5
                 and 1860 <= white_count <= 1890
@@ -126,8 +136,9 @@ class PlayerRank:
             if (
                 178 <= grellow_count <= 198
                 and ry <= 5
-                and 1860 <= white_count <= 1890
-                and 1250 <= grey <= 1280
+                and 790 <= white_count <= 810
+                and 1156-10 <= grey <= 1156+10
+                and 565-10 <= dark_purple_count <= 565+10
             ):
                 return 40
 
@@ -137,6 +148,15 @@ class PlayerRank:
                 and 1198 <= white_count <= 1198
                 and 204 - 10 <= grey <= 204 + 10
                 and 549 - 10 <= dark_purple_count <= 549 + 10
+            ):
+                return 42
+
+            if (
+                105-10 <= grellow_count <= 105-10
+                and 71-10 <= ry <= 71+10
+                and 281-10 <= white_count <= 281+10
+                and 214-10 <= grey <= 214 + 10
+                and 291 - 10 <= dark_purple_count <= 291 + 10
             ):
                 return 42
 
@@ -361,6 +381,16 @@ class PlayerRank:
             and ry > 630
             and white_count < 1100
             and grey < 250
+        ):
+            return 43
+
+        if (
+            self.frame_height == 1080
+            and grellow_count > 165
+            and ry > 620
+            and white_count < 350
+            and grey < 180
+            and dark_purple_count < 20
         ):
             return 43
 
