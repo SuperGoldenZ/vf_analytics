@@ -109,3 +109,14 @@ class CvHelper:
         # Apply the mask to keep only white areas in the ROI
         white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
         return white_only_roi
+
+    @staticmethod
+    def trim(roi):
+        contours = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+        if contours:
+            x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+            # Crop the image to the bounding box
+            return roi[y : y + h, x : x + w]
+
+        return roi
