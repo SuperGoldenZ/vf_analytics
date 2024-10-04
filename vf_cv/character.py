@@ -70,12 +70,10 @@ class Character:
             n_white_pix = np.sum(thresholded_image == 255)
             n_white_pix_first = np.sum(first_letter == 255)
 
-            if self.frame_height == 720 and 592 - 10 <= n_white_pix_first <= 592 + 10:
-                return "Lion"
-
             if debug_character is True:
                 cv2.imshow(
-                    f"char {self.frame_height} {n_white_pix_first} letter", first_letter
+                    f"char {self.frame_height} {n_white_pix_first} letter {first_letter.shape[1]} x {first_letter.shape[0]}",
+                    first_letter,
                 )
 
                 cv2.imshow(
@@ -88,6 +86,36 @@ class Character:
                 )
                 cv2.waitKey()
 
+            if self.frame_height == 720 and 592 - 10 <= n_white_pix_first <= 592 + 10:
+                return "Lion"
+
+            if (
+                self.frame_height == 720
+                and 484 - 10 <= n_white_pix_first <= 484 + 10
+                and first_letter.shape[0] < 30
+            ):
+                return "Vanessa"
+
+            if (
+                self.frame_height == 720
+                and 484 - 10 <= n_white_pix_first <= 484 + 10
+                and 492 - 10 <= first_letter.shape[0] < 492 + 10
+            ):
+                return "Lion"
+
+            if self.frame_height == 720 and 309 - 10 <= n_white_pix_first <= 309 + 10:
+                return "Jean"
+
+            if (
+                self.frame_height == 720
+                and 429 - 5 <= n_white_pix_first <= 429 + 5
+                and first_letter[2, 7] == 0
+            ):
+                return "Akira"
+
+            if self.frame_height == 720 and 641 - 10 <= n_white_pix_first <= 641 + 10:
+                return "Kage"
+
             if self.frame_height == 720:
                 if n_white_pix == 1946:
                     return "Shun Di"
@@ -97,8 +125,10 @@ class Character:
                     return "Lion"
                 if n_white_pix == 3833:
                     return "Aoi"
-                if n_white_pix == 2778:
+                if n_white_pix == 2778 or n_white_pix == 2761:
                     return "Brad"
+                if 2738 - 10 <= n_white_pix <= 2738 + 10:
+                    return "Taka"
 
             roi = self.frame[y : y + h, x : x + w]
 
