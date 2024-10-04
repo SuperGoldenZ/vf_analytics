@@ -226,6 +226,9 @@ class WinningFrame:
             # print ("2.5  false")
             return False
 
+        if self.frame_height == 720 and white_count < 10 and gold_count < 40:
+            return False
+
         if 150 <= white_count <= 175 and 100 <= gold_count <= 120:
             return True
 
