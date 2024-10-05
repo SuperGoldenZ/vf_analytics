@@ -7,21 +7,41 @@ import numpy as np
 class CvHelper:
     """Helper classes for commonly used opencv functionality"""
 
+    target_bgr_lookup = {}
+    lower_bound_lookup = {}
+    upper_bound_lookup = {}
+
     @staticmethod
     def count_pixels(target_color, image, override_tolerance=40):
         """Counts number of pixels around a certain color from an image"""
         tolerance = override_tolerance  # Adjust this value as needed
 
-        # Convert the target color from hex to BGR
-        target_color_bgr = tuple(int(target_color[i : i + 2], 16) for i in (5, 3, 1))
+        target_color_bgr = None
+        lower_bound = None
+        upper_bound = None
+        lookup_key = f"{target_color}.{override_tolerance}"
 
-        # Define the lower and upper bounds for the color
-        lower_bound = np.array(
-            [max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8
-        )
-        upper_bound = np.array(
-            [min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8
-        )
+        # Convert the target color from hex to BGR
+        if lookup_key in CvHelper.target_bgr_lookup:
+            target_color_bgr = CvHelper.target_bgr_lookup[lookup_key]
+            lower_bound = CvHelper.lower_bound_lookup[lookup_key]
+            upper_bound = CvHelper.upper_bound_lookup[lookup_key]
+        else:
+            target_color_bgr = tuple(
+                int(target_color[i : i + 2], 16) for i in (5, 3, 1)
+            )
+            CvHelper.target_bgr_lookup[lookup_key] = target_color_bgr
+
+            # Define the lower and upper bounds for the color
+            lower_bound = np.array(
+                [max(c - tolerance, 0) for c in target_color_bgr], dtype=np.uint8
+            )
+            upper_bound = np.array(
+                [min(c + tolerance, 255) for c in target_color_bgr], dtype=np.uint8
+            )
+
+            CvHelper.upper_bound_lookup[lookup_key] = upper_bound
+            CvHelper.lower_bound_lookup[lookup_key] = lower_bound
 
         # Create a mask that identifies all pixels within the color range
         mask = cv2.inRange(image, lower_bound, upper_bound)
