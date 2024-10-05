@@ -55,15 +55,49 @@ class WinningRound:
         (x, y, w, h) = self.get_roi(region_name)
 
         roi = self.frame[y : y + h, x : x + w]
+
+        maroon = vf_cv.CvHelper.count_pixels("#690003", roi, 10)
+        if self.frame_height == 720 and maroon > 300:
+            return 0
+
+        maroon_2 = vf_cv.CvHelper.count_pixels("#75000f", roi, 10)
+        if self.frame_height == 720 and maroon_2 > 300:
+            return 0
+
+        pink = vf_cv.CvHelper.count_pixels("#ed3c61", roi, 10)
+        if self.frame_height == 720 and pink > 200:
+            return 0
+
+        if self.frame_height == 720 and (pink > 35 and maroon > 150 and maroon_2 > 75):
+            return 0
+
+        if self.frame_height == 720 and (pink > 35 and maroon > 50 and maroon_2 > 150):
+            return 0
+
         dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
+        if self.frame_height == 720 and dark_blue > 250:
+            return 0
+
+        darker_blue = vf_cv.CvHelper.count_pixels("#101e5e", roi, 5)
+        if self.frame_height == 720 and darker_blue > 50:
+            return 0
+
+        if (
+            self.frame_height == 720
+            and darker_blue > 10
+            and dark_blue > 100
+            and pink > 50
+            and maroon > 40
+        ):
+            return 0
+
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
         third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
         light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
-        pink = vf_cv.CvHelper.count_pixels("#ed3c61", roi)
 
         if debug_winning_round is True:
             cv2.imshow(
-                f"roi dark blue {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink}",
+                f"r drb {darker_blue} db {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}",
                 roi,
             )
             cv2.waitKey()
@@ -74,12 +108,6 @@ class WinningRound:
             return 0
 
         if self.frame_height == 480 and dark_blue > 70:
-            return 0
-
-        if self.frame_height == 720 and dark_blue > 250:
-            return 0
-
-        if self.frame_height == 720 and pink > 2500:
             return 0
 
         if self.frame_height == 1080 and dark_blue > 200:
