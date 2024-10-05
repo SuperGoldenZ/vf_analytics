@@ -270,10 +270,10 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
-            and 557 - 10 <= grellow_count <= 557 + 10
-            and 91 - 10 < ry < 91 + 10
-            and 245 - 10 <= white_count <= 245 + 10
-            and 273 - 10 <= grey <= 273 + 10
+            and 449 - 10 <= grellow_count <= 557 + 10
+            and 91 - 10 < ry < 110 + 10
+            and 245 - 10 <= white_count <= 552 + 10
+            and 130 - 10 <= grey <= 273 + 10
             and dark_purple_count < 30
         ):
             return 44
