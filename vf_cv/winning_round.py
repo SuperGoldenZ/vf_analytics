@@ -68,10 +68,20 @@ class WinningRound:
         if self.frame_height == 720 and pink > 200:
             return 0
 
+        if self.frame_height == 720 and pink > 75 and maroon > 15:
+            return 0
+
         if self.frame_height == 720 and (pink > 35 and maroon > 150 and maroon_2 > 75):
             return 0
 
         if self.frame_height == 720 and (pink > 35 and maroon > 50 and maroon_2 > 150):
+            return 0
+
+        lr = vf_cv.CvHelper.count_pixels("#af0614", roi, 10)
+        if self.frame_height == 720 and (lr > 150):
+            return 0
+
+        if self.frame_height == 720 and (lr > 50 and pink > 30):
             return 0
 
         dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
@@ -91,13 +101,25 @@ class WinningRound:
         ):
             return 0
 
+        if (
+            self.frame_height == 720
+            and dark_blue > 10
+            and pink > 50
+            and maroon > 100
+            and maroon_2 > 80
+        ):
+            return 0
+
+        if self.frame_height == 720 and pink > 70 and maroon > 40 and maroon_2 > 40:
+            return 0
+
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
         third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
         light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
 
         if debug_winning_round is True:
             cv2.imshow(
-                f"r drb {darker_blue} db {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}",
+                f"lr {lr} drb {darker_blue} db {dark_blue} lr {lr} {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}",
                 roi,
             )
             cv2.waitKey()
