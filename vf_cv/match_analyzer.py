@@ -44,6 +44,7 @@ class MatchAnalyzer:
         self.time_matches = 0
         self.timestr = None
         self.current_round = None
+        self.endround = False
 
     def analyze_next_match(
         self,
@@ -72,6 +73,8 @@ class MatchAnalyzer:
 
         vf_analytics.resolution = "480p"
         actual_count = self.count - 1
+
+        self.endround = False
 
         while self.count < end_frame or cam != -1:
             count_int = int(self.count)
@@ -195,11 +198,11 @@ class MatchAnalyzer:
 
             self.state = "vs"
             self.logger.debug(
-                f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs"
+                f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
             )
 
             print(
-                f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs"
+                f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
             )
         else:
             self.count += int(self.frame_rate * self.interval * 40)
@@ -216,7 +219,7 @@ class MatchAnalyzer:
         )
 
     def process_vs(self):
-        print("procesing vs")
+        print(f"{self.count} processing vs")
 
         if self.match.player1character is None:
             self.character.set_frame(self.frame)
@@ -271,7 +274,7 @@ class MatchAnalyzer:
             self.state = "fight"
             self.logger.debug(f"{self.match.video_id} {self.count:13d} - fight")
 
-            self.skip_frames = (int)(25 / self.interval)
+            self.skip_frames = (int)(30 / self.interval)
             self.save_cam_frame("start")
 
             del self.frame
@@ -282,6 +285,7 @@ class MatchAnalyzer:
     def process_fight(self):
         self.old_time_seconds = self.time_seconds
 
+        # if matches twice know endround and no need to get time seconds
         self.time_cv.set_frame(self.frame)
         try:
             self.time_seconds = self.time_cv.get_time_seconds()
@@ -292,6 +296,12 @@ class MatchAnalyzer:
         if self.time_seconds == "endround":
             self.count += 1
             self.time_seconds = self.old_time_seconds
+            self.time_matches = 2
+
+            if self.SAVE_PIC_ALL:
+                self.save_cam_frame(f"fight_{self.timestr}_endround")
+
+            self.endround = True
             return False
 
         if (
@@ -317,13 +327,11 @@ class MatchAnalyzer:
             # print(f"\tskip {self.time_seconds} vs {self.old_time_seconds} skip: {self.skip_beginning_of_round()}")
             return False
 
-        time_ms = self.time_cv.get_time_ms()
+        # time_ms = self.time_cv.get_time_ms()
 
         self.old_time = self.timestr
-        self.timestr = f"{self.time_seconds}.{time_ms}"
-
-        if self.SAVE_PIC_ALL:
-            self.save_cam_frame(f"fight_{self.timestr}_")
+        # self.timestr = f"{self.time_seconds}.{time_ms}"
+        self.timestr = f"{self.time_seconds}"
 
         if (
             self.old_time == self.timestr
@@ -336,11 +344,31 @@ class MatchAnalyzer:
 
         player_num = 0
 
-        if self.time_matches >= 4:
+        self.winning_frame.set_frame(self.frame)
+
+        if (
+            self.time_matches >= 2
+            or self.endround
+            or (
+                self.time_matches >= 1
+                and (
+                    self.winning_frame.is_ringout()
+                    or self.winning_frame.is_ko()
+                    or self.winning_frame.is_excellent()
+                )
+            )
+        ):
+            if self.SAVE_PIC_ALL:
+                self.save_cam_frame(f"fight_{self.timestr}_matches_{self.time_matches}")
+
             self.winning_round.set_frame(self.frame)
             player_num = self.winning_round.is_winning_round(False)
         else:
-            self.count += 1
+            # print(f"advancing cause no match {int(self.frame_rate * 0.5)}")
+            if self.SAVE_PIC_ALL:
+                self.save_cam_frame(f"fight_{self.timestr}_no_match_advance")
+
+            self.count += int(self.frame_rate * 0.5)
             del self.frame
             del self.original_frame
             return False
@@ -377,7 +405,9 @@ class MatchAnalyzer:
                 )
 
         if self.timestr != self.old_time:
-            self.count += int(self.frame_rate * self.interval) * 3
+            # try advance half a second
+            self.count += int(self.frame_rate * 0.5)
+            print(f"advancing {int(self.frame_rate * 0.5)} frames")
             del self.frame
             del self.original_frame
             return False
@@ -396,6 +426,7 @@ class MatchAnalyzer:
             print(f"{self.count} got KO for player {player_num}")
             self.save_cam_frame("ko")
         else:
+            self.count = self.count + 1
             self.current_round.winning_player_num = 0
             print(f"{self.count} unknown way to victory for {player_num} skipping")
             self.count += int(self.frame_rate * self.interval)
@@ -409,6 +440,7 @@ class MatchAnalyzer:
         try:
             self.timestr = None
             try:
+                time_ms = "00"
                 # self.time_seconds = self.time_cv.get_time_seconds(self.frame)
                 # time_ms = self.time_cv.get_time_ms()
                 self.timestr = f"{self.time_seconds}.{time_ms}"
@@ -461,16 +493,18 @@ class MatchAnalyzer:
         )
         if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
             self.current_round = vf_data.Round()
-
+            self.endround = False
             self.skip_frames = 10 / self.interval
             self.time_matches = 0
             self.time_seconds = None
             self.old_time_seconds = None
         else:
+            print("advancing one frame")
             self.count += 1
             return True
 
-        self.count += int(self.frame_rate * self.interval)
+        # print(f"advancing {int(self.frame_rate * 0.5)} frames at end")
+        self.count += int(self.frame_rate * 0.5)
         del self.frame
         del self.original_frame
         return False
