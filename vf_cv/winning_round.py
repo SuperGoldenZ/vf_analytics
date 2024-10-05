@@ -59,10 +59,11 @@ class WinningRound:
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
         third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
         light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
+        pink = vf_cv.CvHelper.count_pixels("#ed3c61", roi)
 
         if debug_winning_round is True:
             cv2.imshow(
-                f"roi dark blue {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue}",
+                f"roi dark blue {dark_blue}   {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink}",
                 roi,
             )
             cv2.waitKey()
@@ -76,6 +77,9 @@ class WinningRound:
             return 0
 
         if self.frame_height == 720 and dark_blue > 250:
+            return 0
+
+        if self.frame_height == 720 and pink > 2500:
             return 0
 
         if self.frame_height == 1080 and dark_blue > 200:
