@@ -134,8 +134,8 @@ class WinningFrame:
         (p1green, p1black, p1grey) = self.get_player_health(1)
         (p2green, p2black, p2grey) = self.get_player_health(2)
 
-        p1excellent = p1black == 0 and p1grey == 0
-        p2excellent = p2black == 0 and p2grey == 0
+        p1excellent = p1black <= 2 and p1grey <= 2
+        p2excellent = p2black <= 2 and p2grey <= 2
 
         if not p1excellent and not p2excellent:
             return False
