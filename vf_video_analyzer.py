@@ -13,7 +13,6 @@ import vf_data.match
 import youtube_helper
 import vf_data
 
-
 DELETE_VIDEO = True
 
 logger = logging.getLogger(__name__)
@@ -96,6 +95,11 @@ def analyze_video(url, cam=-1):
         error_string = f"processing video {video_id}"
         if check_string_in_file("vf_analytics.log", error_string):
             print(f"Skipping {video_id} since it's already in log as error")
+            return
+
+        error_string = f"{video_id}_720p/video.mp4 since didn't process matches"
+        if check_string_in_file("vf_analytics.log", error_string):
+            print(f"Skipping {video_id} since didn't process fully")
             return
 
         resolution = None
@@ -209,6 +213,8 @@ def analyze_video(url, cam=-1):
         if video_path is not None and os.path.isfile(video_path):
             os.remove(video_path)
     finally:
+        cap.release()
+
         if (
             matches_processed == 0
             and video_path is not None
@@ -216,22 +222,26 @@ def analyze_video(url, cam=-1):
         ):
             logger.error(f"removing {video_path} since didn't process matches")
             os.remove(video_path)
-        cap.release()
+
         if DELETE_VIDEO and os.path.isfile(video_path):
             os.remove(video_path)
 
-    elapsed_time = timer() - start  # in seconds
-    fps = processed / elapsed_time
-    mps = 0
-    if matches_processed != 0:
-        mps = elapsed_time / matches_processed
+    try:
+        elapsed_time = timer() - start  # in seconds
+        fps = processed / elapsed_time
+        mps = 0
+        if matches_processed != 0:
+            mps = elapsed_time / matches_processed
 
-    logger.info(
-        f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished"
-    )
-    print(
-        f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished"
-    )
+        logger.info(
+            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resoution: {resolution}"
+        )
+        print(
+            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resolution: {resolution}"
+        )
+    except Exception as e:
+        print("Another exception")
+        print(e)
 
 
 def process_playlist(playlist):
