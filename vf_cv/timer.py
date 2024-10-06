@@ -1044,6 +1044,9 @@ class Timer:
             if dark_blue_right >= 10 and light_blue >= 5:
                 return "endround"
 
+            if dark_blue_left >= 30 and dark_blue_right >= 2:
+                return "endround"
+
         if self.frame_height == 1080:
             is_endround_roi = self.frame[0:38, 1088 : 1088 + 203]
 
