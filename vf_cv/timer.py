@@ -1071,7 +1071,9 @@ class Timer:
             dark_blue_left = vf_cv.CvHelper.count_pixels(
                 "#1a2cd1", is_endround_roi, override_tolerance=10
             )
-            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right = vf_cv.CvHelper.count_pixels(
+                "#0e3e97", is_endround_roi, 30
+            )
             dark_blue_right_two = vf_cv.CvHelper.count_pixels(
                 "#3f4d74", is_endround_roi, override_tolerance=5
             )
@@ -1089,29 +1091,62 @@ class Timer:
                 "#44447b", is_endround_roi, override_tolerance=5
             )
 
+            white = vf_cv.CvHelper.count_pixels(
+                "#dbe9f3", is_endround_roi, override_tolerance=5
+            )
+
+            pb = vf_cv.CvHelper.count_pixels(
+                "#3032bb", is_endround_roi, override_tolerance=15
+            )
+
+            purp = vf_cv.CvHelper.count_pixels(
+                "#6f137b", is_endround_roi, override_tolerance=5
+            )
+            purp2 = vf_cv.CvHelper.count_pixels(
+                "#682a64", is_endround_roi, override_tolerance=5
+            )
+
+            roi_bw = cv2.cvtColor(is_endround_roi, cv2.COLOR_BGR2GRAY)
+
             if debug_time:
+                cv2.imshow("bw", roi_bw)
                 cv2.imshow(
-                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}",
+                    f"purp {purp} pb {pb} wh {white} {dark_blue_left} dbr: {dark_blue_right} dbr2: {dark_blue_right_two} lb: {light_blue} lb2: {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}",
                     is_endround_roi,
                 )
+
+                cv2.imshow("frame", self.frame)
                 cv2.waitKey()
 
-            if light_blue > 5 and dark_blue_right_three > 60:
-                return "endround"
+            if (
+                pb > 0
+                or light_blue > 100
+                or (light_blue > 30 and light_blue_two > 30)
+                or dark_blue_right > 900
+            ) and (purp == 0 and purp2 == 0):
+                if dark_blue_right >= 3 and light_blue >= 5 and light_blue_three >= 1:
+                    return "endround"
 
-            if dark_blue_right > 25 and light_blue > 25:
-                return "endround"
+                if dark_blue_right > 15 and light_blue_two > 5 and light_blue > 5:
+                    return "endround"
 
-            if dark_blue_right_two > 5 and light_blue > 40 and light_blue_two > 15:
-                return "endround"
+                if light_blue > 5 and dark_blue_right_three > 60:
+                    return "endround"
 
-            if (dark_blue_right > 110 or dark_blue_right_two > 40) and (
-                light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
-            ):
-                return "endround"
+                if dark_blue_right >= 2 and light_blue > 25:
+                    return "endround"
 
-            if dark_blue_right > 1500:
-                return "endround"
+                if dark_blue_right_two > 5 and light_blue > 40 and light_blue_two > 15:
+                    return "endround"
+
+                if white < 34:
+                    if (dark_blue_right > 10 or dark_blue_right_two > 40) and (
+                        light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
+                    ):
+                        return "endround"
+
+                if dark_blue_right > 1500:
+                    return "endround"
 
             is_endround_roi = self.frame[0:38, 195 : 195 + 356]
 
