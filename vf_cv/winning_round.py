@@ -229,9 +229,11 @@ class WinningRound:
             if player_num == 1:
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, 5)
                 other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, 5)
+                opp = vf_cv.CvHelper.count_pixels("#ffa8a9", roi, 5)
+
                 if debug_winning_round:
                     cv2.imshow(
-                        f"{other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc",
+                        f"{opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc",
                         roi,
                     )
                     cv2.waitKey()
@@ -248,6 +250,9 @@ class WinningRound:
                 return player_num
 
             if self.frame_height == 720 and 15 <= other_pink <= 25:
+                return player_num
+
+            if self.frame_height == 720 and 15 <= opp <= 25:
                 return player_num
 
             if (
