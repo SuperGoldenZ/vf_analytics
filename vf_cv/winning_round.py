@@ -124,6 +124,9 @@ class WinningRound:
             )
             cv2.waitKey()
 
+        if self.frame_height == 480 and lr > 85:
+            return 0
+
         if self.frame_height == 1080 and (
             dark_blue + third_dark_blue + other_dark_blue + light_blue
         ) >= (15 + 16 + 10 + 85):
@@ -184,13 +187,17 @@ class WinningRound:
             if player_num == 2:
                 whiter_blue = vf_cv.CvHelper.count_pixels("#f1ffff", roi, 5)
                 white = vf_cv.CvHelper.count_pixels("#fFffff", roi, 5)
+                ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, 5)
 
                 if debug_winning_round:
                     cv2.imshow(
-                        f"whiter_bluer {whiter_blue}  white {white}",
+                        f"whiter_bluer {whiter_blue}  white {white} {ob}",
                         roi,
                     )
                     cv2.waitKey()
+
+                if self.frame_height == 480 and 20 <= ob <= 40:
+                    return player_num
 
                 if 45 <= whiter_blue <= 85:
                     return player_num
