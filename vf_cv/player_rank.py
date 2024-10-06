@@ -83,7 +83,7 @@ class PlayerRank:
         white_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 50)
         purple_count = vf_cv.CvHelper.count_pixels("#7600b9", full_roi)
         grey = vf_cv.CvHelper.count_pixels("#908f95", full_roi)
-        dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", full_roi)
+        dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", full_roi, 15)
         teal_count = vf_cv.CvHelper.count_pixels("#558784", full_roi)
         grellow_count = vf_cv.CvHelper.count_pixels("#8e9a52", full_roi)
         gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", full_roi)
@@ -103,7 +103,7 @@ class PlayerRank:
                 and ry <= 20
                 and 1073-10 <= white_count <= 1073+10
                 and 729-10 <= grey <= 729+10
-                and 315-10 <= dark_purple_count <= 315+10
+                and 10 <= dark_purple_count <= 50
             ):
                 return 41
 
@@ -112,7 +112,7 @@ class PlayerRank:
                 and ry <= 50
                 and 1252 - 10 <= white_count <= 1252 + 10
                 and 554 - 10 <= grey <= 667
-                and 312 <= dark_purple_count <= 332
+                and 10 <= dark_purple_count <= 50
             ):
                 return 41
 
@@ -121,15 +121,15 @@ class PlayerRank:
                 and ry <= 50
                 and 1108 - 10 <= white_count <= 1108 + 10
                 and 755 - 10 <= grey <= 755+10
-                and 304-10 <= dark_purple_count <= 304+10
+                and 10 <= dark_purple_count <= 50
             ):
                 return 41
 
             if (
                 178 <= grellow_count <= 198
                 and ry <= 5
-                and 1860 <= white_count <= 1890
-                and 1250 <= grey <= 1280
+                and 750 <= white_count <= 1890
+                and 1000 <= grey <= 1280
             ):
                 return 40
 
@@ -175,7 +175,7 @@ class PlayerRank:
             and ry == 0
             and white_count <= 20
             and 540 <= grey <= 560
-            and dark_purple_count > 170
+            and dark_purple_count > 15
         ):
             return 39
 
@@ -205,7 +205,7 @@ class PlayerRank:
             and ry < 15
             and 1011 - 10 <= white_count <= 1011 + 10
             and 524 - 10 <= grey <= 524 + 10
-            and dark_purple_count > 125
+            and dark_purple_count > 5
         ):
             return 41
 
@@ -270,9 +270,9 @@ class PlayerRank:
 
         if (
             self.frame_height == 720
-            and 449 - 10 <= grellow_count <= 557 + 10
+            and 300 - 10 <= grellow_count <= 557 + 10
             and 91 - 10 < ry < 110 + 10
-            and 245 - 10 <= white_count <= 552 + 10
+            and 245 - 10 <= white_count <= 667 + 10
             and 130 - 10 <= grey <= 273 + 10
             and dark_purple_count < 30
         ):
