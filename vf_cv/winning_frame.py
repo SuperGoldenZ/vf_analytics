@@ -156,7 +156,7 @@ class WinningFrame:
 
         if debug_excellent is True:
             cv2.imshow(
-                f"excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} light yelllow {light_yellow}",
+                f"{self.frame_height} excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} light yelllow {light_yellow}",
                 roi,
             )
             cv2.waitKey()
@@ -229,51 +229,52 @@ class WinningFrame:
         if self.frame_height == 720 and white_count < 10 and gold_count < 40:
             return False
 
-        if 150 <= white_count <= 175 and 100 <= gold_count <= 120:
-            return True
+        if self.frame_height == 480:
+            if 150 <= white_count <= 175 and 100 <= gold_count <= 120:
+                return True
 
-        if 1000 <= white_count <= 1250 and 65 <= gold_count <= 100:
-            return True
+            if 1000 <= white_count <= 1250 and 65 <= gold_count <= 100:
+                return True
 
-        if 700 <= white_count <= 850 and 20 <= gold_count <= 30:
-            return True
+            if 700 <= white_count <= 850 and 20 <= gold_count <= 30:
+                return True
 
-        if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
-            return True
+            if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
+                return True
 
-        if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
-            return True
+            if 575 <= white_count <= 625 and 10 <= gold_count <= 20:
+                return True
 
-        if 175 <= white_count <= 200 and 100 <= gold_count <= 145:
-            return True
+            if 175 <= white_count <= 200 and 100 <= gold_count <= 145:
+                return True
 
-        if 250 <= white_count <= 300 and 50 <= gold_count <= 100:
-            return True
+            if 250 <= white_count <= 300 and 50 <= gold_count <= 100:
+                return True
 
-        if 140 < gold_count < 550 and red_count < 700 and 250 < black_count < 3500:
-            return True
+            if 140 < gold_count < 550 and red_count < 700 and 250 < black_count < 3500:
+                return True
 
-        if 215 - 10 <= white_count <= 215 + 10 and 50 <= gold_count <= 100:
-            return True
+            if 215 - 10 <= white_count <= 215 + 10 and 50 <= gold_count <= 100:
+                return True
 
-        if 215 - 50 <= white_count <= 215 - 50 and 75 <= gold_count <= 125:
-            return True
+            if 215 - 50 <= white_count <= 215 - 50 and 75 <= gold_count <= 125:
+                return True
 
-        if 476 - 50 <= white_count <= 476 + 50 and 28 <= gold_count <= 48:
-            return True
+            if 476 - 50 <= white_count <= 476 + 50 and 28 <= gold_count <= 48:
+                return True
 
         if self.frame_height == 1080:
             if white_count > 7901 - 10 and gold_count > 400 and black_count < 100:
                 return True
 
-        return (
-            black_count > 900
-            and white_count < 150
-            and red_count < 100
-            and purple_count < 120
-        )
+        #return (
+            #black_count > 900
+            #and white_count < 150
+            #and red_count < 100
+            #and purple_count < 120
+        #)
 
-        # return False
+        return False
 
     def get_player_health(self, player_num):
         region_name = f"player{player_num}_health"
