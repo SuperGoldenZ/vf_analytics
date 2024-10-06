@@ -246,13 +246,17 @@ class WinningRound:
                         return player_num
                 if white_red_count >= 15:
                     return player_num
+
+                if self.frame_height == 480 and other_pink >= 3 and op >= 1:
+                    return player_num
+
+                if self.frame_height == 720 and 15 <= other_pink <= 25:
+                    return player_num
+
+                if self.frame_height == 720 and 15 <= opp <= 25:
+                    return player_num
+
             if 20 <= white_count <= 30 and pink_count == 0:
-                return player_num
-
-            if self.frame_height == 720 and 15 <= other_pink <= 25:
-                return player_num
-
-            if self.frame_height == 720 and 15 <= opp <= 25:
                 return player_num
 
             if (
