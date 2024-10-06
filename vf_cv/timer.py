@@ -658,7 +658,7 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         # Most white pixels in upper right quad
-        if self.quads[3] > self.quads[9]:
+        if self.frame_height != 480 and self.quads[3] > self.quads[9]:
             return False
 
         if self.quads[1] > self.quads[9]:
@@ -887,6 +887,9 @@ class Timer:
         ):
             return False
 
+        if self.frame_height == 480 and self.thresholded_image[8, 3] != 0:
+            return False
+
         return True
 
     def is_digit_eight(self, digit_num, running_out):
@@ -907,7 +910,9 @@ class Timer:
         if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
             return False
 
-        if self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]:
+        if self.frame_height != 480 and (
+            self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]
+        ):
             return False
 
         if self.frame_height == 480:
