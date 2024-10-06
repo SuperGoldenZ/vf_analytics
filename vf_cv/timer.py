@@ -764,10 +764,16 @@ class Timer:
             if self.thresholded_image[14, 3] != 0:
                 return False
 
-            if self.thresholded_image[6, 16] != 0:
+            if (
+                self.thresholded_image.shape[1] > 16
+                and self.thresholded_image[6, 16] != 0
+            ):
                 return False
 
-            if self.thresholded_image[7, 15] != 0:
+            if (
+                self.thresholded_image.shape[1] > 15
+                and self.thresholded_image[7, 15] != 0
+            ):
                 return False
 
             if self.thresholded_image[5, 11] != 0:
@@ -862,6 +868,7 @@ class Timer:
             and self.thresholded_image[height - 2, int(width / 2) + 4] == 0
             and self.thresholded_image[height - 3, int(width / 2) + 4] == 0
             and self.thresholded_image[height - 4, int(width / 2) + 4] == 0
+            and self.thresholded_image[height - 5, int(width / 2) + 4] == 0
         ):
             return False
 
