@@ -73,13 +73,8 @@ def check_string_in_file(file_path, string_to_search):
 
 
 def analyze_video(url, cam=-1):
+    print(f"\n=========\nAnalyze video {url} - START")
     start = timer()
-    p = pathlib.Path("match_data.csv")
-    if not p.is_file():
-        with open("match_data.csv", "a") as the_file:
-            the_file.write(
-                "vid_id,match_id,frame,stage,player1ringname,player1rank,player1character,player2ringname,player2rank,player2character,round_num,player1_rounds_won,p1ko,p1ro,p1ex,player2_rounds_won,p2ko,p2ro,p2ex,time_remaining,youtube_url\n"
-            )
 
     video_id = None
     video_folder = None
@@ -89,17 +84,17 @@ def analyze_video(url, cam=-1):
     if url is not None:
         video_id = youtube_helper.get_youtube_video_id(url)
         if pathlib.Path(f"match_data_{video_id}.csv").is_file():
-            print(f"Skipping {video_id} since it's already in match data")
+            print(f"\tSkipping {video_id} since it's already in match data")
             return
 
         error_string = f"processing video {video_id}"
         if check_string_in_file("vf_analytics.log", error_string):
-            print(f"Skipping {video_id} since it's already in log as error")
+            print(f"\tSkipping {video_id} since it's already in log as error")
             return
 
         error_string = f"{video_id}_720p/video.mp4 since didn't process matches"
         if check_string_in_file("vf_analytics.log", error_string):
-            print(f"Skipping {video_id} since didn't process fully")
+            print(f"\tSkipping {video_id} since didn't process fully")
             return
 
         resolution = None
@@ -125,6 +120,7 @@ def analyze_video(url, cam=-1):
 
             if not os.path.isfile(video_path):
                 try:
+                    print(f"\tDownloading video {url} at {resolution}")
                     logger.debug(f"Downloading video {url} at {resolution}")
                     temp_path = youtube_helper.download_video(
                         ys, video_id, resolution=resolution
@@ -168,9 +164,8 @@ def analyze_video(url, cam=-1):
 
     try:
         if video_path is not None:
-            # cap = cv2.VideoCapture(video_path )
             cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
-            frame_rate = cap.get_frame_rate()
+            frame_rate = round(cap.get_frame_rate())
             frame_count = cap.get_frame_count()
         else:
             cap = cv2.VideoCapture(cam)
@@ -183,7 +178,7 @@ def analyze_video(url, cam=-1):
             frame_rate = cap.get(cv2.CAP_PROP_FPS)
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        print("Extracting frames")
+        print("\tCreating match ")
         match_analyzer = vf_cv.match_analyzer.MatchAnalyzer(
             cap, logger, jpg_folder=jpg_folder, interval=fps, frame_rate=frame_rate
         )
@@ -191,7 +186,7 @@ def analyze_video(url, cam=-1):
         matches_processed = 0
         frames_processed = -1
         while frames_processed != 0:
-            print(f"\n========\nProcessing match {matches_processed+1}")
+            print(f"\tProcessing match {matches_processed+1}")
             frames_processed = match_analyzer.analyze_next_match(
                 video_id=video_id,
                 cam=cam,
@@ -205,24 +200,15 @@ def analyze_video(url, cam=-1):
                 matches_processed += 1
 
     except Exception as e:
-        print("error occured")
+        print(f"\tAn exception occured {e} processing video {video_id}")
         logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
 
-        if video_path is not None and os.path.isfile(video_path):
-            os.remove(video_path)
     finally:
+        print("\tFinally - Releasing cap")
         cap.release()
-
-        if (
-            matches_processed == 0
-            and video_path is not None
-            and os.path.isfile(video_path)
-        ):
-            logger.error(f"removing {video_path} since didn't process matches")
-            os.remove(video_path)
-
+        print("\tFinally - Checking to delete")
         if DELETE_VIDEO and os.path.isfile(video_path):
             os.remove(video_path)
 
@@ -234,14 +220,16 @@ def analyze_video(url, cam=-1):
             mps = elapsed_time / matches_processed
 
         logger.info(
-            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resoution: {resolution}"
+            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resoution: {resolution} {round(frame_rate)}FPS"
         )
         print(
-            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resolution: {resolution}"
+            f"{elapsed_time} seconds to run  {fps} FPS ----- {mps} seconds per match   {matches_processed} matches finished resolution: {resolution} {round(frame_rate)} FPS"
         )
     except Exception as e:
         print("Another exception")
         print(e)
+    finally:
+        print("\tmoving on to next video")
 
 
 def process_playlist(playlist):
