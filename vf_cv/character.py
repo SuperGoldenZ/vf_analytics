@@ -23,7 +23,13 @@ class Character:
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.frame_height == 480:
+        if self.frame_height == 360:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 0.75)
+            y = (int)(y * 0.75)
+            w = (int)(w * 0.75)
+            h = (int)(h * 0.75)
+        elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_480P[region_name]
@@ -55,6 +61,13 @@ class Character:
             h = int(h)
 
             roi = self.frame[y : y + h, x : x + w]
+
+            if self.frame_height == 360:
+                b, g, r = roi[11, 117]
+                if player_num == 1 and r == 235 and g == 190 and b == 48:
+                    return "Lei Fei"
+                if player_num == 2 and r == 43 and g == 27 and b == 25:
+                    return "Akira"
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
