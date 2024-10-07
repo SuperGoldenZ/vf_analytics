@@ -34,7 +34,13 @@ class WinningFrame:
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.frame_height == 480:
+        if self.frame_height == 360:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 0.75)
+            y = (int)(y * 0.75)
+            w = (int)(w * 0.75)
+            h = (int)(h * 0.75)
+        elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_480P[region_name]
@@ -91,7 +97,8 @@ class WinningFrame:
 
         # ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
         if (
-            self.frame_height == 480
+            self.frame_height == 360
+            or self.frame_height == 480
             or self.frame_height == 720
             or self.frame_height == 1080
         ):
@@ -111,6 +118,9 @@ class WinningFrame:
                 and purple_count < 10
                 and 15 <= blue <= 45
             ):
+                return True
+
+            if self.frame_height == 360 and gold_count >= 24 and blue >= 10:
                 return True
 
             if self.frame_height == 480 and gold_count > 130 and blue < 20:
@@ -267,12 +277,12 @@ class WinningFrame:
             if white_count > 7901 - 10 and gold_count > 400 and black_count < 100:
                 return True
 
-        #return (
-            #black_count > 900
-            #and white_count < 150
-            #and red_count < 100
-            #and purple_count < 120
-        #)
+        # return (
+        # black_count > 900
+        # and white_count < 150
+        # and red_count < 100
+        # and purple_count < 120
+        # )
 
         return False
 
