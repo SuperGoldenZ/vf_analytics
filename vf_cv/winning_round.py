@@ -34,7 +34,13 @@ class WinningRound:
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.frame_height == 480:
+        if self.frame_height == 360:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 0.75)
+            y = (int)(y * 0.75)
+            w = (int)(w * 0.75)
+            h = (int)(h * 0.75)
+        elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_480P[region_name]
@@ -188,13 +194,20 @@ class WinningRound:
                 whiter_blue = vf_cv.CvHelper.count_pixels("#f1ffff", roi, 5)
                 white = vf_cv.CvHelper.count_pixels("#fFffff", roi, 5)
                 ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, 5)
+                tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, 5)
 
                 if debug_winning_round:
                     cv2.imshow(
-                        f"whiter_bluer {whiter_blue}  white {white} {ob}",
+                        f"whiter_bluer {whiter_blue}  white {white} {ob} tblue {tblue}",
                         roi,
                     )
                     cv2.waitKey()
+
+                if self.frame_height == 360 and whiter_blue >= 2:
+                    return player_num
+
+                if self.frame_height == 360 and tblue >= 5:
+                    return player_num
 
                 if self.frame_height == 480 and 20 <= ob <= 40:
                     return player_num
