@@ -2,6 +2,7 @@ import cv2
 import threading
 import queue
 
+
 class VideoCaptureAsync:
     def __init__(self, src, queue_size=2048):
         self.src = src
@@ -26,10 +27,10 @@ class VideoCaptureAsync:
                 self.queue.put(None)
                 break
 
-            self.queue.put(frame)
+            self.queue.put(frame, timeout=1)
 
     def read(self):
-        return self.queue.get()
+        return self.queue.get(timeout=1)
 
     def release(self):
         self.done = True
