@@ -15,11 +15,13 @@ RESOLUTION_720P = "720p"
 RESOLUTION_360P = "360p"
 
 STREAM_SEARCH = [
+    {"resolution": "360p", "fps": 30},
     {"resolution": "480p", "fps": 30},
-    {"resolution": "480p", "fps": 60},
     {"resolution": "720p", "fps": 30},
-    {"resolution": "720p", "fps": 60},
     {"resolution": "1080p", "fps": 30},
+    {"resolution": "360p", "fps": 60},
+    {"resolution": "480p", "fps": 60},
+    {"resolution": "720p", "fps": 60},
     {"resolution": "1080p", "fps": 60},
 ]
 
