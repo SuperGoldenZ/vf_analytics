@@ -56,7 +56,13 @@ class PlayerRank:
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.frame_height == 480:
+        if self.frame_height == 360:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 0.75)
+            y = (int)(y * 0.75)
+            w = (int)(w * 0.75)
+            h = (int)(h * 0.75)
+        elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_720P[region_name]
