@@ -40,7 +40,13 @@ class Timer:
         """Returns ROI based on resolution"""
         (x, y, w, h) = (0, 0, 0, 0)
 
-        if self.frame_height == 480:
+        if self.frame_height == 360:
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 0.75)
+            y = (int)(y * 0.75)
+            w = (int)(w * 0.75)
+            h = (int)(h * 0.75)
+        elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_480P[region_name]
@@ -579,10 +585,28 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         # Most white pixels in upper right quad
-        if self.quads[3] > self.quads[9]:
+        if self.frame_height != 360 and self.quads[3] > self.quads[9]:
             return False
 
-        if self.frame_height != 480 and self.quads[1] > self.quads[9]:
+        if self.frame_height == 360 and width > 15:
+            return False
+
+        if (
+            self.frame_height == 360
+            and self.thresholded_image[0, width - 1] != 0
+            and self.thresholded_image[4, 0] == 0
+            and self.thresholded_image[6, 7] == 0
+        ):
+            return False
+
+        if self.frame_height == 360 and self.thresholded_image[4, 1] == 0:
+            return False
+
+        if (
+            self.frame_height != 480
+            and self.frame_height != 360
+            and self.quads[1] > self.quads[9]
+        ):
             return False
 
         if self.quads[7] > self.quads[9]:
@@ -590,6 +614,7 @@ class Timer:
 
         if (
             self.frame_height != 480
+            and self.frame_height != 360
             and self.thresholded_image[int(height / 2), int(width / 2)] == 0
         ):
             return False
@@ -606,6 +631,9 @@ class Timer:
         if self.frame_height == 720 and self.n_white_pix > 400:
             return False
 
+        if self.frame_height == 360 and self.n_white_pix > 100:
+            return False
+
         return True
 
     def is_digit_two(self):
@@ -617,7 +645,11 @@ class Timer:
 
         if self.quads[1] > self.quads[9]:
             if (
-                not (self.frame_height == 480 or self.frame_height == 720)
+                not (
+                    self.frame_height == 480
+                    or self.frame_height == 720
+                    or self.frame_height == 360
+                )
                 and abs(self.quads[9] - self.quads[1]) <= 5
             ):
                 return False
@@ -626,7 +658,11 @@ class Timer:
             return False
 
         # Second most in lower left quad
-        if self.quads[3] > self.quads[1]:
+        if self.frame_height == 360:
+            if width > 11 and height > 12 and self.thresholded_image[12, 11] != 0:
+                return False
+
+        if self.frame_height != 360 and self.quads[3] > self.quads[1]:
             return False
 
         if self.quads[7] > self.quads[1]:
@@ -658,7 +694,14 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         # Most white pixels in upper right quad
-        if self.frame_height != 480 and self.quads[3] > self.quads[9]:
+        if (
+            self.frame_height != 360
+            and self.frame_height != 480
+            and self.quads[3] > self.quads[9]
+        ):
+            return False
+
+        if self.frame_height == 360 and self.thresholded_image[8, 4] != 0:
             return False
 
         if self.quads[1] > self.quads[9]:
@@ -681,10 +724,13 @@ class Timer:
         if self.quads[7] > self.quads[1]:
             return False
 
-        if self.thresholded_image[int(height * 0.35), int(width / 4)] != 0:
+        if (
+            self.frame_height != 360
+            and self.thresholded_image[int(height * 0.35), int(width / 4)] != 0
+        ):
             return False
 
-        if (
+        if self.frame_height != 360 and (
             self.thresholded_image[int(height * 0.5), int(width * 0.35) - 3] != 0
             or self.thresholded_image[int(height * 0.5), int(width * 0.35) - 1] != 0
             or self.thresholded_image[int(height * 0.5), int(width * 0.35) - 2] != 0
@@ -706,7 +752,7 @@ class Timer:
         height, width = self.thresholded_image.shape
 
         # Most white pixels in upper right quad
-        if self.quads[3] > self.quads[9]:
+        if self.quads[3] > self.quads[9] and self.frame_height != 360:
             return False
 
         if self.quads[1] > self.quads[9]:
@@ -756,6 +802,28 @@ class Timer:
 
         # if self.thresholded_image[int(height*0.22), int(width*0.75)] != 0:
         # return False
+
+        if self.frame_height == 360:
+            if self.thresholded_image[10, 2] != 0:
+                return False
+
+            if width > 13 and self.thresholded_image[5, 13] != 0:
+                return False
+
+            if self.thresholded_image[3, 9] != 0:
+                return False
+
+            if self.thresholded_image[2, 0] != 0:
+                return False
+
+            if self.thresholded_image[6, 1] != 0:
+                return False
+
+            if (
+                self.thresholded_image[width - 1, 0] == 0
+                and self.thresholded_image[width - 2, 0] == 0
+            ):
+                return False
 
         if self.frame_height == 480:
             # if self.quads[9] < self.quads[7] and self.quads[9] < self.quads[1] and self.quads[9] < self.quads[3]:
@@ -834,13 +902,12 @@ class Timer:
         if self.thresholded_image[0, 0] != 0:
             return False
 
-        # if self.frame_height == 1080:
-        # if self.quads[3] + self.quads[1] < self.quads[7] + self.quads[9]:
-        # print("quads six false")
-        # return False
-
         if self.frame_height != 480:
             if self.thresholded_image[0, width - 1] != 0:
+                return False
+
+        if self.frame_height == 360:
+            if width > 12 and self.thresholded_image[6, 12] != 0:
                 return False
 
         if self.frame_height == 480:
@@ -880,6 +947,9 @@ class Timer:
         if digit_num == 1 and running_out is not True:
             return False
 
+        if self.frame_height == 360 and self.n_white_pix < 50:
+            return True
+
         if (
             self.thresholded_image[0, 0] == 0
             and self.thresholded_image[0, 1] == 0
@@ -897,12 +967,21 @@ class Timer:
         if self.frame_height == 480 and self.thresholded_image[8, 3] != 0:
             return False
 
+        if self.frame_height == 360 and self.thresholded_image[3, 7] != 0:
+            return False
+
+        if self.frame_height == 360 and self.thresholded_image[13, 11] != 0:
+            return False
+
         return True
 
     def is_digit_eight(self, digit_num, running_out):
         height, width = self.thresholded_image.shape
 
         if digit_num == 1 and running_out is not True:
+            return False
+
+        if self.frame_height == 360 and self.n_white_pix < 50:
             return False
 
         if (
@@ -914,11 +993,16 @@ class Timer:
         ):
             return False
 
+        if self.frame_height == 360 and self.thresholded_image[11, 2] == 0:
+            return False
+
         if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
             return False
 
-        if self.frame_height != 480 and (
-            self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9]
+        if (
+            self.frame_height != 480
+            and self.frame_height != 360
+            and (self.quads[1] + self.quads[3] < self.quads[7] + self.quads[9])
         ):
             return False
 
@@ -926,10 +1010,18 @@ class Timer:
             if self.thresholded_image[15, 4] == 0:
                 return False
 
-        if self.frame_height != 480 and self.quads[3] < self.quads[7]:
+        if (
+            self.frame_height != 480
+            and self.frame_height != 360
+            and self.quads[3] < self.quads[7]
+        ):
             return False
 
-        if self.frame_height != 480 and self.quads[1] < self.quads[3]:
+        if (
+            self.frame_height != 480
+            and self.frame_height != 360
+            and self.quads[1] < self.quads[3]
+        ):
             return False
 
         return True
@@ -947,16 +1039,28 @@ class Timer:
             self.thresholded_image[int(height / 2), int(width / 2)] == 0
             and self.thresholded_image[int(height / 2) + 1, int(width / 2)] == 0
             and self.thresholded_image[int(height / 2) + 2, int(width / 2)] == 0
+            and self.thresholded_image[int(height / 2) + 1, int(width / 2) - 1] == 0
+            and self.thresholded_image[int(height / 2) + 2, int(width / 2) - 1] == 0
         ):
             return False
 
-        if self.thresholded_image[int(height * 0.75), int(width * 0.2)] == 0:
+        if (
+            self.frame_height != 360
+            and self.thresholded_image[int(height * 0.75), int(width * 0.2)] == 0
+        ):
             return False
 
         return True
 
     def is_endround(self):
         height, width = self.thresholded_image.shape
+
+        if self.frame_height == 360:
+            if height <= 7 or width <= 7:
+                return True
+
+            if self.n_white_pix < 80 and self.thresholded_image[height - 1, 2] == 0:
+                return True
 
         if self.frame_height == 720:
             if height <= 30:
@@ -1008,13 +1112,17 @@ class Timer:
 
         factor = 1.0
 
-        if self.frame_height == 720:
+        if self.frame_height == 360:
+            factor = 0.75
+        elif self.frame_height == 720:
             factor = 1.5
         elif self.frame_height == 1080:
             factor = 2.25
 
-        if self.frame_height == 480:
+        if self.frame_height == 480 or self.frame_height == 360:
             is_endround_roi = self.frame[0:14, 402 : 402 + 90]
+            if self.frame_height == 360:
+                is_endround_roi = self.frame[0:10, 301 : 301 + 67]
 
             dark_blue_left = vf_cv.CvHelper.count_pixels(
                 "#1a2cd1", is_endround_roi, override_tolerance=10
@@ -1040,6 +1148,9 @@ class Timer:
                     is_endround_roi,
                 )
                 cv2.waitKey()
+
+            if self.frame_height == 360 and dark_blue_right >= 5:
+                return "endround"
 
             if dark_blue_right >= 10 and light_blue >= 5:
                 return "endround"
@@ -1228,7 +1339,7 @@ class Timer:
 
             blue_count = vf_cv.CvHelper.count_pixels("#5b1dc7", roi)
 
-            if blue_count >= 5:
+            if self.frame_height != 360 and blue_count >= 5:
                 return "endround"
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
