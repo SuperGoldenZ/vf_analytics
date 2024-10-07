@@ -257,30 +257,35 @@ def get_dimensions(region_name, local_resolution, override_region=None):
 
 
 IS_VS_RED_COORDINATES = {
+    360: [int(91*0.75), int(21*0.75)],
     480: [91, 21],
     720: [int(91 * 1.5), int(21 * 1.5)],
     1080: [int(91 * 2.25), int(21 * 2.25)],
 }
 
 IS_VS_BLUE_COORDINATES = {
+    360: [int(91*0.75), int(847*0.75)],
     480: [91, 847],
     720: [int(91 * 1.5), int(847 * 1.5)],
     1080: [int(91 * 2.25), int(847 * 2.25)],
 }
 
 IS_P2_BLUE_COORDINATES = {
+    360: [int(296*0.75), int(587*0.75)],
     480: [296, 587],
     720: [int(296 * 1.5), int(587 * 1.5)],
     1080: [int(296 * 2.25), int(587 * 2.25)],
 }
 
 VS_GRAY_COORDINATES = {
+    360: [int(186*0.75), int(369*0.75)],
     480: [186, 369],
     720: [int(186 * 1.5), int(369 * 1.5)],
     1080: [int(186 * 2.25), int(369 * 2.25)],
 }
 
 VS_BLACK_COORDINATES = {
+    360: [int(178*0.75), int(363*0.75)],
     480: [178, 363],
     720: [int(178 * 1.5), int(363 * 1.5)],
     1080: [int(178 * 2.25), int(363 * 2.25)],
