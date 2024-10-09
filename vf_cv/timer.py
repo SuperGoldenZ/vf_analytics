@@ -599,7 +599,11 @@ class Timer:
         ):
             return False
 
-        if self.frame_height == 360 and self.thresholded_image[4, 1] == 0:
+        if (
+            self.frame_height == 360
+            and self.thresholded_image[4, 1] == 0
+            and self.thresholded_image[4, 0] == 0
+        ):
             return False
 
         if (
@@ -902,9 +906,9 @@ class Timer:
         if self.thresholded_image[0, 0] != 0:
             return False
 
-        if self.frame_height != 480:
-            if self.thresholded_image[0, width - 1] != 0:
-                return False
+        # if self.frame_height != 480:
+        # if self.thresholded_image[0, width - 1] != 0:
+        # return False
 
         if self.frame_height == 360:
             if width > 12 and self.thresholded_image[6, 12] != 0:
@@ -947,7 +951,7 @@ class Timer:
         if digit_num == 1 and running_out is not True:
             return False
 
-        if self.frame_height == 360 and self.n_white_pix < 50:
+        if self.frame_height == 360 and self.n_white_pix < 100:
             return True
 
         if (
@@ -996,8 +1000,16 @@ class Timer:
         if self.frame_height == 360 and self.thresholded_image[11, 2] == 0:
             return False
 
-        if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
-            return False
+        if self.frame_height == 360:
+            if (
+                self.thresholded_image[int(height / 2), int(width / 2)] == 0
+                and self.thresholded_image[int(height / 2), int(width / 2) - 1] == 0
+                and self.thresholded_image[int(height / 2) - 1, int(width / 2)] == 0
+            ):
+                return False
+        else:
+            if self.thresholded_image[int(height / 2), int(width / 2)] == 0:
+                return False
 
         if (
             self.frame_height != 480
