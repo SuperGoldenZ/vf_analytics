@@ -105,10 +105,10 @@ class PlayerRank:
 
         if self.frame_height == 1080:
             if (
-                576-10 <= grellow_count <= 576+10
+                576 - 10 <= grellow_count <= 576 + 10
                 and ry <= 20
-                and 1073-10 <= white_count <= 1073+10
-                and 729-10 <= grey <= 729+10
+                and 1073 - 10 <= white_count <= 1073 + 10
+                and 729 - 10 <= grey <= 729 + 10
                 and 10 <= dark_purple_count <= 50
             ):
                 return 41
@@ -126,7 +126,7 @@ class PlayerRank:
                 574 - 10 <= grellow_count <= 574 + 10
                 and ry <= 50
                 and 1108 - 10 <= white_count <= 1108 + 10
-                and 755 - 10 <= grey <= 755+10
+                and 755 - 10 <= grey <= 755 + 10
                 and 10 <= dark_purple_count <= 50
             ):
                 return 41
@@ -143,8 +143,8 @@ class PlayerRank:
                 178 <= grellow_count <= 198
                 and ry <= 5
                 and 790 <= white_count <= 810
-                and 1156-10 <= grey <= 1156+10
-                and 565-10 <= dark_purple_count <= 565+10
+                and 1156 - 10 <= grey <= 1156 + 10
+                and 565 - 10 <= dark_purple_count <= 565 + 10
             ):
                 return 40
 
@@ -158,10 +158,10 @@ class PlayerRank:
                 return 42
 
             if (
-                105-10 <= grellow_count <= 105-10
-                and 71-10 <= ry <= 71+10
-                and 281-10 <= white_count <= 281+10
-                and 214-10 <= grey <= 214 + 10
+                105 - 10 <= grellow_count <= 105 - 10
+                and 71 - 10 <= ry <= 71 + 10
+                and 281 - 10 <= white_count <= 281 + 10
+                and 214 - 10 <= grey <= 214 + 10
                 and 291 - 10 <= dark_purple_count <= 291 + 10
             ):
                 return 42
@@ -399,6 +399,16 @@ class PlayerRank:
             and dark_purple_count < 20
         ):
             return 43
+
+        if (
+            self.frame_height == 360
+            and 17 - 3 <= grellow_count <= 17 + 3
+            and 11 - 3 <= ry <= 11 + 3
+        ):
+            return 42
+
+        if self.frame_height == 360 and 115 - 3 <= grellow_count <= 115 + 3 and ry < 5:
+            return 41
 
         if grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50:
             return 43
