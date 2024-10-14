@@ -69,12 +69,15 @@ class WinningFrame:
         )
 
         if debug:
-            cv2.imshow("roi", roi)
-            print(
-                f"green {green_count}  red {red_tekken_count}  light_green {light_green}"
+            cv2.imshow(
+                f"ro g{green_count} red {red_tekken_count} light_green {light_green}",
+                roi,
             )
-            print(green_count > 300 or red_tekken_count > 2000)
             cv2.waitKey()
+
+        if self.frame_height == 360:
+            return green_count + light_green > 50
+
         return green_count + light_green > 300 or red_tekken_count > 2000
 
     def is_ko(self, debug_ko=False):
@@ -120,7 +123,7 @@ class WinningFrame:
             ):
                 return True
 
-            if self.frame_height == 360 and gold_count >= 24 and blue >= 10:
+            if self.frame_height == 360 and gold_count >= 17 and blue >= 10:
                 return True
 
             if self.frame_height == 480 and gold_count > 130 and blue < 20:
@@ -163,13 +166,22 @@ class WinningFrame:
         )
         black_count = vf_cv.CvHelper.count_pixels("#000000", roi, override_tolerance=25)
         light_yellow = vf_cv.CvHelper.count_pixels("#f8ff7b", roi, override_tolerance=5)
-
+        lg = vf_cv.CvHelper.count_pixels("#fbf2b6", roi, override_tolerance=5)
         if debug_excellent is True:
             cv2.imshow(
-                f"{self.frame_height} excellent roi white {white_count} gold {gold_count} red {red_count} purple {purple_count} black {black_count} light yelllow {light_yellow}",
+                f"{self.frame_height} ex  w{white_count}_g{gold_count}_r{red_count}p{purple_count}_b{black_count}_ly{light_yellow}_lg{lg}",
                 roi,
             )
             cv2.waitKey()
+
+        if self.frame_height == 360 and white_count > 375 and gold_count > 20:
+            return True
+
+        if self.frame_height == 360 and lg > 300 and gold_count > 5:
+            return True
+
+        if self.frame_height == 360 and lg > 120 and white_count > 50:
+            return True
 
         if (
             self.frame_height == 1080
