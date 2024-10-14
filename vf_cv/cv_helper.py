@@ -1,7 +1,9 @@
 """This module provide functions to extract information from a VFES/US game frame"""
 
+import math
 import cv2
 import numpy as np
+from skimage import color
 
 
 class CvHelper:
@@ -140,3 +142,47 @@ class CvHelper:
             return roi[y : y + h, x : x + w]
 
         return roi
+
+    @staticmethod
+    def rgb_similarity(rgb1, rgb2):
+        # Extract individual color components
+        r1, g1, b1 = rgb1
+        r2, g2, b2 = rgb2
+
+        # Calculate Euclidean distance
+        distance = math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
+
+        # Normalize distance to a scale of 0 to 1
+        similarity = 1 - (distance / math.sqrt(3 * (255**2)))
+
+        return similarity
+
+    @staticmethod
+    def rgb_to_lab(rgb):
+        # Convert the RGB to LAB color space using OpenCV
+        rgb_np = np.uint8([[list(rgb)]])  # Convert to a shape suitable for OpenCV
+        lab = cv2.cvtColor(rgb_np, cv2.COLOR_RGB2LAB)
+        return lab[0][0]
+
+    @staticmethod
+    def delta_e_ciede2000(lab1, lab2):
+        # Convert LAB to a format suitable for delta E calculation
+        lab1 = np.array(lab1).reshape(1, 1, 3)
+        lab2 = np.array(lab2).reshape(1, 1, 3)
+
+        # Use the skimage function to compute CIEDE2000
+        delta_e = color.deltaE_ciede2000(lab1, lab2)
+        return delta_e[0][0]
+
+    @staticmethod
+    def color_similarity(rgb1, rgb2):
+        # Convert RGB to LAB
+        lab1 = CvHelper.rgb_to_lab(rgb1)
+        lab2 = CvHelper.rgb_to_lab(rgb2)
+
+        # Calculate the color difference (lower means more similar)
+        delta_e = CvHelper.delta_e_ciede2000(lab1, lab2)
+
+        # Scale delta_e to a similarity score (smaller delta_e means more similar)
+        similarity = max(0, 1 - (delta_e / 100))
+        return similarity
