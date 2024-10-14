@@ -66,8 +66,44 @@ class Character:
                 b, g, r = roi[11, 117]
                 if player_num == 1 and r == 235 and g == 190 and b == 48:
                     return "Lei Fei"
-                if player_num == 2 and r == 43 and g == 27 and b == 25:
+
+                b, g, r = roi[5, 45]
+                if player_num == 2 and b > 230 and r > 230 and g > 230:
                     return "Akira"
+
+                b, g, r = roi[5, 5]
+                red = 140
+                green = 101
+                blue = 32
+                if (
+                    player_num == 2
+                    and vf_cv.CvHelper.color_similarity(roi[5, 5], (green, blue, red))
+                    >= 0.75
+                ):
+                    return "Lei Fei"
+
+                red = 67
+                green = 91
+                blue = 188
+                if (
+                    player_num == 1
+                    and vf_cv.CvHelper.color_similarity(
+                        roi[10, 165], (green, blue, red)
+                    )
+                    >= 0.66
+                ):
+                    return "Kage"
+
+                red = 240
+                green = 185
+                blue = 154
+
+                if (
+                    player_num == 2
+                    and vf_cv.CvHelper.color_similarity(roi[0, 0], (green, blue, red))
+                    > 0.8
+                ):
+                    return "Blaze"
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
@@ -160,6 +196,8 @@ class Character:
                 text = "Blaze"
             if "Wolf" in text:
                 text = "Wolf"
+            if "Fei" in text:
+                return "Lei Fei"
             if "Lei" in text:
                 return "Lei Fei"
             if "Aoi" in text:
