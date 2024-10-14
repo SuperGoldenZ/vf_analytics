@@ -9,11 +9,12 @@ import cv2
 import VideoCaptureAsync
 import vf_cv.match_analyzer
 import vf_analytics
+import vf_data
 import vf_data.match
 import youtube_helper
-import vf_data
 
-DELETE_VIDEO = True
+
+FORCE_DELETE_VIDEO = True
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -80,6 +81,7 @@ def analyze_video(url, cam=-1):
     video_folder = None
     video_path = None
     jpg_folder = None
+    error_message = None
 
     if url is not None:
         video_id = youtube_helper.get_youtube_video_id(url)
@@ -122,9 +124,7 @@ def analyze_video(url, cam=-1):
                 try:
                     print(f"\tDownloading video {url} at {resolution}")
                     logger.debug(f"Downloading video {url} at {resolution}")
-                    temp_path = youtube_helper.download_video(
-                        ys, video_id, resolution=resolution
-                    )
+                    temp_path = youtube_helper.download_video(ys, video_id)
 
                     print(f"Renaming video after download: {temp_path} to {video_path}")
                     if resolution != "480p" and resize_video:
@@ -143,7 +143,6 @@ def analyze_video(url, cam=-1):
             else:
                 print(f"Not downloading because exists: {video_path}")
         else:
-            resolution = f"{saved_video_resolution}p"
             video_path = f"assets/videos/{video_id}_{resolution}/video.mp4"
 
     jpg_folder = f"assets/jpg/{video_id}_{resolution}"
@@ -153,7 +152,6 @@ def analyze_video(url, cam=-1):
     start = timer()
 
     vf_analytics.resolution = "480p"
-    resolution = "480p"
 
     fps = 0.05
     frame_rate = None
@@ -198,20 +196,27 @@ def analyze_video(url, cam=-1):
                 print_csv(match_analyzer.match)
                 processed += frames_processed
                 matches_processed += 1
-
+    except vf_cv.PrematureMatchFinishException as e:
+        error_message = str(e)
+        print(f"An exception occured {e} processing video {video_id}")
+    except vf_cv.UnrecognizePlayerRankException as e:
+        error_message = str(e)
+        print(f"An exception occured {e} processing video {video_id}")
     except Exception as e:
+        error_message = str(e)
         print(f"\tAn exception occured {e} processing video {video_id}")
         logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
-
     finally:
         print("\tFinally - Releasing cap")
         cap.release()
         print("\tFinally - Checking to delete")
-        if DELETE_VIDEO and os.path.isfile(video_path):
+        if (FORCE_DELETE_VIDEO or error_message is None) and os.path.isfile(video_path):
             os.remove(video_path)
 
+        # if (error_message is not None):
+        # exit()
     try:
         elapsed_time = timer() - start  # in seconds
         fps = processed / elapsed_time
