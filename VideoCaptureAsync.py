@@ -4,7 +4,7 @@ import queue
 
 
 class VideoCaptureAsync:
-    def __init__(self, src, queue_size=2048):
+    def __init__(self, src, queue_size=2048*10):
         self.src = src
         self.cap = cv2.VideoCapture(self.src)
         self.queue = queue.Queue(maxsize=queue_size)
