@@ -95,13 +95,75 @@ class PlayerRank:
         gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", full_roi)
         ry = vf_cv.CvHelper.count_pixels("#cc5b31", full_roi)
         black_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 5)
+        yg = vf_cv.CvHelper.count_pixels("#6a8b8e", full_roi, 10)
+        green_gold = vf_cv.CvHelper.count_pixels("#8b752b", full_roi, 10)
+        orange = vf_cv.CvHelper.count_pixels("#c26e30", full_roi, 15)
+        mint = vf_cv.CvHelper.count_pixels("#8bcc98", full_roi, 10)
+
+        # full_roi_bw = self.frame[full_y-10 : full_y + full_h+10, full_x-10 : full_x + full_w+10]
+        # full_roi_bw = cv2.cvtColor(full_roi_bw, cv2.COLOR_BGR2GRAY)
+
+        debug_string = f"{self.frame_height}_mint{mint}_gg{green_gold}_{orange}_gre{grellow_count}_ry{ry}_wc{white_count}_g{grey}_dp{dark_purple_count}_yg{yg}"
 
         if debug_player_rank:
             cv2.imshow(
-                f"{self.frame_height} gre{grellow_count} ry {ry} wc {white_count} grey {grey} dp {dark_purple_count}",
+                debug_string,
                 full_roi,
             )
+            # cv2.imshow("bw", full_roi_bw)
             cv2.waitKey()
+
+        if self.frame_height == 360:
+            if self.frame_height == 360 and mint > 5:
+                return 45
+
+            if 10 <= grellow_count <= 40 and 100 <= white_count <= 140 and grey > 200:
+                return 40
+
+            if yg >= 15:
+                return 40
+
+            if green_gold >= 2 and dark_purple_count >= 2:
+                return 41
+
+            if orange >= 15:
+                return 43
+
+            if orange > 5 and grellow_count < 110 and 90 <= ry <= 130:
+                return 43
+
+            if orange > 1 and grellow_count < 64 and 60 <= ry <= 110:
+                return 43
+
+            if (
+                185 - 10 <= grellow_count <= 185 + 10
+                and 40 <= white_count <= 78
+                and grey > 50
+            ):
+                return 41
+
+            if 128 <= grellow_count <= 148 and 40 <= white_count <= 100 and grey > 50:
+                return 41
+
+            if (
+                108 - 10 <= grellow_count <= 125 + 10
+                and 46 <= white_count <= 145
+                and grey > 50
+            ):
+                return 41
+
+            if (
+                145 - 10 <= grellow_count <= 145 + 10
+                and 113 <= white_count <= 133
+                and grey > 130
+            ):
+                return 41
+
+            if 100 <= grellow_count <= 154 and grey < 40 and 27 <= white_count <= 82:
+                return 44
+
+            if 100 <= grellow_count <= 154 and grey < 130 and 13 <= white_count <= 23:
+                return 44
 
         if self.frame_height == 1080:
             if (
@@ -440,7 +502,8 @@ class PlayerRank:
                 if compares > 38:
                     return 44
 
-                return 0
+                raise UnrecognizePlayerRankException(debug_string)
+                # return 0
 
             ##########################
             ## second roi
@@ -524,5 +587,14 @@ class PlayerRank:
             ):
                 continue
 
+            if rank_int == 0:
+                raise UnrecognizePlayerRankException(debug_string)
+
             return rank_int
-        return 0
+
+        raise UnrecognizePlayerRankException(debug_string)
+        # return 0
+
+
+class UnrecognizePlayerRankException(Exception):
+    pass
