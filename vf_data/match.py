@@ -12,11 +12,11 @@ class Match:
 
         self.player1character = None
         self.player1ringname = None
-        self.player1rank = 0
+        self.player1rank = None
 
         self.player2character = None
         self.player2ringname = None
-        self.player2rank = 0
+        self.player2rank = None
         self.vs_frame = 0
         self.vs_frame_seconds = 0
         self.rounds = []
@@ -53,11 +53,11 @@ class Match:
         new_round.num = self.get_round_num()
         self.rounds.append(new_round)
 
-    def vs_frame_to_string(self, writer:csv.DictWriter):                
+    def vs_frame_to_string(self, writer: csv.DictWriter):
         writer.writerow(
             [
                 self.video_id,
-                self.id,                    
+                self.id,
                 self.stage,
                 self.player1ringname,
                 self.player1rank,
@@ -70,8 +70,8 @@ class Match:
                 "NA",
                 0,
                 f"https://www.youtube.com/watch?v={self.video_id}&t={self.vs_frame_seconds}",
-            ])
-        
+            ]
+        )
 
     def __str__(self):
         output = io.StringIO()
@@ -81,7 +81,7 @@ class Match:
             writer.writerow(
                 [
                     self.video_id,
-                    self.id,                    
+                    self.id,
                     self.stage,
                     self.player1ringname,
                     self.player1rank,
