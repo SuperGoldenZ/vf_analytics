@@ -321,6 +321,8 @@ class Timer:
         threshold = 100
         if h == 480:
             threshold = 50
+        if self.frame_height == 360:
+            threshold = 45
 
         if self.frame_height == 480 and dr > 275:
             return True
@@ -588,12 +590,15 @@ class Timer:
         if self.frame_height != 360 and self.quads[3] > self.quads[9]:
             return False
 
+        if self.frame_height == 360 and 70 <= self.n_white_pix <= 77:
+            return True
+
         if self.frame_height == 360 and width > 15:
             return False
 
         if (
             self.frame_height == 360
-            and self.thresholded_image[0, width - 1] != 0
+            # and self.thresholded_image[0, width - 1] != 0
             and self.thresholded_image[4, 0] == 0
             and self.thresholded_image[6, 7] == 0
         ):
@@ -666,6 +671,9 @@ class Timer:
             if width > 11 and height > 12 and self.thresholded_image[12, 11] != 0:
                 return False
 
+            if self.thresholded_image[9, 0] != 0:
+                return False
+
         if self.frame_height != 360 and self.quads[3] > self.quads[1]:
             return False
 
@@ -692,6 +700,13 @@ class Timer:
         if self.thresholded_image[int(height * 0.35), int(width / 4)] != 0:
             return False
 
+        if (
+            self.frame_height == 360
+            and height > 12
+            and width > 12
+            and self.thresholded_image[12, 12] != 0
+        ):
+            return False
         return True
 
     def is_digit_three(self):
@@ -705,7 +720,25 @@ class Timer:
         ):
             return False
 
-        if self.frame_height == 360 and self.thresholded_image[8, 4] != 0:
+        if (
+            self.frame_height == 360
+            and height > 8
+            and self.thresholded_image[8, 4] != 0
+        ):
+            return False
+
+        if (
+            self.frame_height == 360
+            and height > 5
+            and self.thresholded_image[5, 5] != 0
+        ):
+            return False
+
+        if (
+            self.frame_height == 360
+            and height > 8
+            and self.thresholded_image[8, 0] != 0
+        ):
             return False
 
         if self.quads[1] > self.quads[9]:
@@ -934,13 +967,16 @@ class Timer:
         ):
             return False
 
-        if (
-            self.thresholded_image[height - 1, int(width / 2) + 4] == 0
-            and self.thresholded_image[height - 2, int(width / 2) + 4] == 0
-            and self.thresholded_image[height - 3, int(width / 2) + 4] == 0
-            and self.thresholded_image[height - 4, int(width / 2) + 4] == 0
-            and self.thresholded_image[height - 5, int(width / 2) + 4] == 0
-        ):
+        try:
+            if (
+                self.thresholded_image[height - 1, int(width / 2) + 4] == 0
+                and self.thresholded_image[height - 2, int(width / 2) + 4] == 0
+                and self.thresholded_image[height - 3, int(width / 2) + 4] == 0
+                and self.thresholded_image[height - 4, int(width / 2) + 4] == 0
+                and self.thresholded_image[height - 5, int(width / 2) + 4] == 0
+            ):
+                return False
+        except:
             return False
 
         return True
@@ -951,8 +987,11 @@ class Timer:
         if digit_num == 1 and running_out is not True:
             return False
 
-        if self.frame_height == 360 and self.n_white_pix < 100:
+        if self.frame_height == 360 and self.n_white_pix < 103:
             return True
+
+        if self.frame_height == 360 and self.n_white_pix > 120:
+            return False
 
         if (
             self.thresholded_image[0, 0] == 0
@@ -997,7 +1036,11 @@ class Timer:
         ):
             return False
 
-        if self.frame_height == 360 and self.thresholded_image[11, 2] == 0:
+        if (
+            self.frame_height == 360
+            and self.thresholded_image[11, 2] == 0
+            and self.thresholded_image[12, 2] == 0
+        ):
             return False
 
         if self.frame_height == 360:
@@ -1044,7 +1087,9 @@ class Timer:
         if digit_num == 1 and running_out is not True:
             return False
 
-        if self.quads[1] > self.quads[9]:
+        if self.quads[1] > self.quads[9] and not (
+            self.frame_height == 360 and running_out
+        ):
             return False
 
         if (
@@ -1053,6 +1098,8 @@ class Timer:
             and self.thresholded_image[int(height / 2) + 2, int(width / 2)] == 0
             and self.thresholded_image[int(height / 2) + 1, int(width / 2) - 1] == 0
             and self.thresholded_image[int(height / 2) + 2, int(width / 2) - 1] == 0
+            and self.thresholded_image[int(height / 2) + 1, int(width / 2) + 1] == 0
+            and self.thresholded_image[int(height / 2) + 2, int(width / 2) + 1] == 0
         ):
             return False
 
@@ -1062,6 +1109,8 @@ class Timer:
         ):
             return False
 
+        if self.frame_height == 360 and self.thresholded_image[11, 1] != 0:
+            return False
         return True
 
     def is_endround(self):
@@ -1134,12 +1183,15 @@ class Timer:
         if self.frame_height == 480 or self.frame_height == 360:
             is_endround_roi = self.frame[0:14, 402 : 402 + 90]
             if self.frame_height == 360:
-                is_endround_roi = self.frame[0:10, 301 : 301 + 67]
+                is_endround_roi = self.frame[0:10, 301 : 301 + 100]
 
             dark_blue_left = vf_cv.CvHelper.count_pixels(
                 "#1a2cd1", is_endround_roi, override_tolerance=10
             )
-            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
+            dark_blue_right = vf_cv.CvHelper.count_pixels(
+                "#0e3e97", is_endround_roi, override_tolerance=5
+            )
+
             dark_blue_right_two = vf_cv.CvHelper.count_pixels(
                 "#3f4d74", is_endround_roi, override_tolerance=5
             )
@@ -1154,17 +1206,149 @@ class Timer:
                 "#92aaff", is_endround_roi, override_tolerance=10
             )
 
+            ldrb = vf_cv.CvHelper.count_pixels(
+                "#0a10d5", is_endround_roi, override_tolerance=10
+            )
+
+            rdb = vf_cv.CvHelper.count_pixels(
+                "#1a11b2", is_endround_roi, override_tolerance=10
+            )
+
+            other_endround = self.frame[0:35, 165:202]
+            another_endround = self.frame[35 + 15 : 35 + 35 + 15, 165 + 65 : 202 + 65]
+
+            bot_roi_w = 75
+            bot_roi_h = 80
+            bot_roi_x = 90
+            bot_roi_y = 380 - bot_roi_h - 1
+
+            bot_roi = self.frame[
+                bot_roi_y : bot_roi_y + bot_roi_h, bot_roi_x : bot_roi_x + bot_roi_w
+            ]
+            bred = vf_cv.CvHelper.count_pixels("#cf0b19", bot_roi, override_tolerance=5)
+            bmaroon = vf_cv.CvHelper.count_pixels(
+                "#641400", bot_roi, override_tolerance=5
+            )
+            bvoliet = vf_cv.CvHelper.count_pixels(
+                "#342bc3", bot_roi, override_tolerance=10
+            )
+
+            pink = vf_cv.CvHelper.count_pixels(
+                "#ff7c89", other_endround, override_tolerance=5
+            )
+            hotpink = vf_cv.CvHelper.count_pixels(
+                "#f4a2f3", other_endround, override_tolerance=5
+            )
+            br = vf_cv.CvHelper.count_pixels(
+                "#d85c39", other_endround, override_tolerance=5
+            )
+            wp = vf_cv.CvHelper.count_pixels(
+                "#ebbbc9", other_endround, override_tolerance=5
+            )
+
+            anred = vf_cv.CvHelper.count_pixels(
+                "#db0114", another_endround, override_tolerance=5
+            )
+            anmaroon = vf_cv.CvHelper.count_pixels(
+                "#900e11", another_endround, override_tolerance=5
+            )
+            # anhotpink = vf_cv.CvHelper.count_pixels("#f4a2f3", another_endround, override_tolerance=5)
+            # anbr = vf_cv.CvHelper.count_pixels("#d85c39", another_endround, override_tolerance=5)
+            # anwp = vf_cv.CvHelper.count_pixels("#ebbbc9", another_endround, override_tolerance=5)
+
+            ddb = vf_cv.CvHelper.count_pixels(
+                "#08148b", is_endround_roi, override_tolerance=5
+            )
+            b433 = vf_cv.CvHelper.count_pixels(
+                "#433be9", is_endround_roi, override_tolerance=5
+            )
+            aob = vf_cv.CvHelper.count_pixels(
+                "#264ecf", is_endround_roi, override_tolerance=5
+            )
+            redbrown = vf_cv.CvHelper.count_pixels(
+                "#4a0d14", other_endround, override_tolerance=10
+            )
+
             if debug_time:
                 cv2.imshow(
-                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three}",
+                    f"{aob} b4 {b433} {dark_blue_left} {dark_blue_right} ddb {ddb} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} rdb {rdb} ldrb {ldrb}",
                     is_endround_roi,
                 )
+
+                cv2.imshow(
+                    f"rb {redbrown} pink {pink} hp {hotpink} wp  {wp} br {br}",
+                    other_endround,
+                )
+                cv2.imshow(f"anred {anred} anm{anmaroon}", another_endround)
+                cv2.imshow(f"bred {bred} bmaron {bmaroon} bvoliet {bvoliet}", bot_roi)
                 cv2.waitKey()
 
-            if self.frame_height == 360 and dark_blue_right >= 5:
+            if self.frame_height == 360:
+                if 7 - 5 <= anmaroon <= 35 and 11 - 5 <= redbrown <= 11 + 5:
+                    return "endround"
+
+                if 68 <= anmaroon <= 94:
+                    return "endround"
+
+                if 20 <= anred <= 50:
+                    return "endround"
+
+                if 5 <= bred <= 15 and 7 <= bmaroon <= 17:
+                    return "endround"
+
+                if bred > 7 and bmaroon > 4:
+                    return "endround"
+
+                if br > 30:
+                    return "endround"
+
+                if hotpink > 30:
+                    return "endround"
+
+                if 34 <= bvoliet <= 54:
+                    return "endround"
+
+                if wp > 30:
+                    return "endround"
+
+                if (
+                    light_blue > 5
+                    and light_blue_two > 3
+                    and light_blue_three > 3
+                    and aob > 2
+                ):
+                    return "endround"
+
+                if b433 > 5:
+                    return "endround"
+
+                if ddb > 35:
+                    return "endround"
+
+                if ldrb >= 5:
+                    return "endround"
+
+                if pink >= 5:
+                    return "endround"
+
+                if rdb >= 25:
+                    return "endround"
+
+                if dark_blue_right >= 5 and dark_blue_right < 16:
+                    return "endround"
+
+                if dark_blue_right >= 20:
+                    return "endround"
+
+                if 5 <= rdb <= 10 and 1 <= light_blue <= 2 and 1 <= light_blue_two <= 2:
+                    return "endround"
+
+            if self.frame_height != 360 and (dark_blue_right >= 10 and light_blue >= 5):
                 return "endround"
 
-            if dark_blue_right >= 10 and light_blue >= 5:
+            if (
+                self.frame_height == 480 or self.frame_height == 360
+            ) and dark_blue_left > 10:
                 return "endround"
 
             if dark_blue_left >= 30 and dark_blue_right >= 2:
