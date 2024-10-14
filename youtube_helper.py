@@ -50,7 +50,7 @@ def get_stream(url, youtube_auth=True):
 
 
 # Step 1: Download the YouTube video
-def download_video(ys, vid, resolution="480p"):
+def download_video(ys, vid):
     output_path = f"assets/videos/{vid}.mp4"
     ys.download(filename=output_path)
     return output_path
