@@ -28,6 +28,7 @@ class MatchAnalyzer:
         self.player_rank = vf_cv.PlayerRank()
         self.character = vf_cv.Character()
         self.frame = None
+        self.frame_bw = None
         self.frame_height = 0
         self.frame_rate = 0
         self.count = 0
@@ -157,7 +158,7 @@ class MatchAnalyzer:
                 return self.count
 
         if self.state != "before":
-            self.logger.error(f"{video_id} {self.count:13d} - premature match aborted")
+            raise PrematureMatchFinishException()
 
         return 0
 
@@ -219,7 +220,9 @@ class MatchAnalyzer:
         )
 
     def process_vs(self):
-        print(f"{self.count} processing vs")
+        print(
+            f"{self.count} processing vs {self.match.player1character} vs {self.match.player2character} on {self.match.stage}"
+        )
 
         if self.match.player1character is None:
             self.character.set_frame(self.frame)
@@ -293,6 +296,27 @@ class MatchAnalyzer:
             self.save_cam_frame("invalid time")
             raise a
 
+        self.player_rank.set_frame(self.frame)
+        try:
+            if self.match.player1rank is None:
+                player1rank = self.player_rank.get_player_rank(1)
+                self.match.player1rank = player1rank
+                if player1rank == 0:
+                    self.save_cam_frame(
+                        "_rank_0_for_player1",
+                    )
+
+            if self.match.player2rank is None:
+                player2rank = self.player_rank.get_player_rank(2)
+                self.match.player2rank = player2rank
+                if player2rank == 0:
+                    self.save_cam_frame(
+                        "_rank_0_for_player2",
+                    )
+        except vf_cv.UnrecognizePlayerRankException as e:
+            self.save_cam_frame(f"_unrecognized_rank_{str(e)}")
+            raise e
+
         if self.time_seconds == "endround":
             self.count += 1
             self.time_seconds = self.old_time_seconds
@@ -359,7 +383,7 @@ class MatchAnalyzer:
             )
         ):
             if self.SAVE_PIC_ALL:
-                self.save_cam_frame(f"fight_{self.timestr}_matches_{self.time_matches}")
+                self.save_cam_frame(f"fight_{self.timestr}_winning")
 
             self.winning_round.set_frame(self.frame)
             player_num = self.winning_round.is_winning_round(False)
@@ -384,26 +408,6 @@ class MatchAnalyzer:
         is_excellent = not is_ro and self.winning_frame.is_excellent()
         is_ko = not is_excellent and not is_ro and self.winning_frame.is_ko()
 
-        self.player_rank.set_frame(self.frame)
-        if self.match.player1rank == 0:
-            try:
-                player1rank = self.player_rank.get_player_rank(1)
-                self.match.player1rank = player1rank
-                if player1rank == 0:
-                    self.save_cam_frame(
-                        "_rank_0_for_player1",
-                    )
-            except:
-                self.match.player1rank = 0
-
-        if self.match.player2rank == 0:
-            player2rank = self.player_rank.get_player_rank(2)
-            self.match.player2rank = player2rank
-            if player2rank == 0:
-                self.save_cam_frame(
-                    "_rank_0_for_player2",
-                )
-
         if self.timestr != self.old_time:
             # try advance half a second
             self.count += int(self.frame_rate * 0.5)
@@ -416,15 +420,15 @@ class MatchAnalyzer:
         if is_ro:
             self.current_round.victory = vf_data.Round.RO
             print(f"{self.count} got RO for player {player_num}")
-            self.save_cam_frame("ro")
+            # self.save_cam_frame("ro")
         elif is_excellent:
             self.current_round.victory = vf_data.Round.EX
             print(f"{self.count} got EX for player {player_num}")
-            self.save_cam_frame("ex")
+            # self.save_cam_frame("ex")
         elif is_ko:
             self.current_round.victory = vf_data.Round.KO
             print(f"{self.count} got KO for player {player_num}")
-            self.save_cam_frame("ko")
+            # self.save_cam_frame("ko")
         else:
             self.count = self.count + 1
             self.current_round.winning_player_num = 0
@@ -508,3 +512,7 @@ class MatchAnalyzer:
         del self.frame
         del self.original_frame
         return False
+
+
+class PrematureMatchFinishException(Exception):
+    pass
