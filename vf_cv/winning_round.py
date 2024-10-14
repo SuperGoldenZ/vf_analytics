@@ -189,31 +189,52 @@ class WinningRound:
 
             # cv2.imshow("roi", roi)
             # cv2.waitKey()
+            roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
             if player_num == 2:
-                whiter_blue = vf_cv.CvHelper.count_pixels("#f1ffff", roi, 5)
-                white = vf_cv.CvHelper.count_pixels("#fFffff", roi, 5)
-                ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, 5)
-                tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, 5)
+                threshold = 5
+
+                whiter_blue = vf_cv.CvHelper.count_pixels("#f1ffff", roi, threshold)
+                white = vf_cv.CvHelper.count_pixels("#fFffff", roi, threshold)
+                ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, threshold)
+                tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, threshold)
+                teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
+                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
 
                 if debug_winning_round:
                     cv2.imshow(
-                        f"whiter_bluer {whiter_blue}  white {white} {ob} tblue {tblue}",
+                        f"aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
                         roi,
                     )
+
+                    cv2.imshow("roi bw player 2", roi_bw)
+
                     cv2.waitKey()
 
-                if self.frame_height == 360 and whiter_blue >= 2:
-                    return player_num
+                if self.frame_height == 360:
+                    if whiter_blue >= 2:
+                        return player_num
 
-                if self.frame_height == 360 and tblue >= 5:
-                    return player_num
+                    if tblue + teal >= 5:
+                        return player_num
+
+                    if roi_bw[5, 21] > 150:
+                        return player_num
+
+                    if roi_bw[5, 35] > 150:
+                        return player_num
+
+                    if roi_bw[5, 48] > 150:
+                        return player_num
 
                 if self.frame_height == 480 and 20 <= ob <= 40:
                     return player_num
 
                 if 45 <= whiter_blue <= 85:
                     return player_num
+
+                if self.frame_height == 360 and aot > 5:
+                    return 2
 
                 another_teal = vf_cv.CvHelper.count_pixels("#a8ffff", roi, 5)
                 if 25 <= another_teal <= 28:
@@ -247,15 +268,25 @@ class WinningRound:
             grey_count = vf_cv.CvHelper.count_pixels("#aaaaac", roi, 5)
 
             if player_num == 1:
-                op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, 5)
-                other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, 5)
-                opp = vf_cv.CvHelper.count_pixels("#ffa8a9", roi, 5)
+                threshold = 5
+                # if self.frame_height == 360:
+                # threshold=15
+
+                op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, threshold)
+                other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, threshold)
+                opp = vf_cv.CvHelper.count_pixels("#ffa8a9", roi, threshold)
+                pr = vf_cv.CvHelper.count_pixels("#fd486c", roi, threshold)
+                anp = vf_cv.CvHelper.count_pixels("#ff7a89", roi, threshold)
+                # if self.frame_height == 360:
+                # anp = vf_cv.CvHelper.count_pixels("#ff7a89", roi, 15)
+                pf = vf_cv.CvHelper.count_pixels("#f0788a", roi, threshold)
 
                 if debug_winning_round:
                     cv2.imshow(
-                        f"{opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc",
+                        f"pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}",
                         roi,
                     )
+                    cv2.imshow("roi bw player 1", roi_bw)
                     cv2.waitKey()
 
                 if self.frame_height == 1080:
@@ -275,6 +306,45 @@ class WinningRound:
 
                 if self.frame_height == 720 and 15 <= opp <= 25:
                     return player_num
+
+                if (
+                    self.frame_height == 360
+                    and white_red_count >= 10
+                    and white_count >= 4
+                ):
+                    return player_num
+
+                # player1 B&W
+                if self.frame_height == 360:
+                    if 120 < roi_bw[6, 33] < 140:
+                        return player_num
+
+                    if 120 < roi_bw[6, 21] < 140:
+                        return player_num
+
+                    if roi_bw[6, 21] > 200:
+                        return player_num
+
+                    if roi_bw[6, 33] > 200:
+                        return player_num
+
+                    if roi_bw[6, 6] > 200:
+                        return player_num
+
+                    if pf >= 1 and anp >= 1 and opp >= 1:
+                        return player_num
+
+                    if anp > 5:
+                        return player_num
+
+                    if pf >= 5:
+                        return player_num
+
+                    if pr > 5:
+                        return player_num
+
+                    if opp > 5:
+                        return player_num
 
             if 20 <= white_count <= 30 and pink_count == 0:
                 return player_num
