@@ -14,10 +14,16 @@ class Character:
         "player2character": (584, 228, 245, 32),
     }
 
+    def __init__(self):
+        self.youtube_video_title = None
+
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
         self.frame_height = frame.shape[0]
+
+    def set_youtube_video_title(self, youtube_video_title):
+        self.youtube_video_title = youtube_video_title
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -47,6 +53,61 @@ class Character:
 
     def get_character_name(self, player_num, debug_character=False):
         """Returns the name of the character a certain player is using"""
+
+        parse_title = (
+            "【VFes高段位戦】" in self.youtube_video_title
+            or "【VFes  VF5us 高段位戦】" in self.youtube_video_title
+        ) and "VS" in self.youtube_video_title
+
+        if parse_title:
+            split = self.youtube_video_title.strip().split("V")
+            print(split)
+            offset = len(split)-3
+
+            if "影丸" in split[player_num + offset]:
+                return "Kage"
+            if "パイ" in split[player_num + offset]:
+                return "Pai"
+            if "鷹嵐" in split[player_num + offset]:
+                return "Taka"
+            if "梅小路葵" in split[player_num + offset]:
+                return "Aoi"
+            if "ブラッド" in split[player_num + offset]:
+                return "Brad"
+            if "ウルフ" in split[player_num + offset]:
+                return "Wolf"
+            if "ベネッサ" in split[player_num + offset]:
+                return "Vanessa"
+            if "ジャッキー" in split[player_num + offset]:
+                return "Jacky"
+            if "ラウ" in split[player_num + offset]:
+                return "Lau"
+            if "結城晶" in split[player_num + offset]:
+                return "Akira"
+            if "リオン" in split[player_num + offset]:
+                return "Lion"
+            if "ジャン" in split[player_num + offset]:
+                return "Jean"
+            if "日守剛" in split[player_num + offset]:
+                return "Goh"
+            if "ジェフリー" in split[player_num + offset]:
+                return "Jeffry"
+            # 14
+            if "雷飛" in split[player_num + offset]:
+                return "Lei Fei"
+
+            if "舜帝" in split[player_num + offset]:
+                return "Shun"
+
+            if "サラ" in split[player_num + offset]:
+                return "Sarah"
+
+            if "エル・ブレイズ" in split[player_num + offset]:
+                return "Blaze"
+
+            if "アイリーン" in split[player_num + offset]:
+                return "Eileen"
+
         region_name = f"player{player_num}character"
         for retry in range(1, 3):
             (x, y, w, h) = self.get_roi(region_name)
@@ -62,24 +123,59 @@ class Character:
 
             roi = self.frame[y : y + h, x : x + w]
 
+            gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+            threshold_value = 250
+            _, thresholded_image = cv2.threshold(
+                gray_image, threshold_value, 255, cv2.THRESH_BINARY
+            )
+
+            first_letter = vf_cv.CvHelper.trim(thresholded_image)
+
+            (height, width) = thresholded_image.shape
+
+            n_white_pix = np.sum(thresholded_image == 255)
+            n_white_pix_first = np.sum(first_letter == 255)
+
+            if debug_character is True:
+                cv2.imshow(
+                    f"p{player_num} char {self.frame_height} {n_white_pix_first} letter {first_letter.shape[1]} x {first_letter.shape[0]}",
+                    first_letter,
+                )
+
+                cv2.imshow(
+                    f"p{player_num} char {self.frame_height} {n_white_pix} {width} {height} roi",
+                    roi,
+                )
+
+                cv2.imshow(
+                    f"p{player_num} char {self.frame_height} {n_white_pix} {width} {height}",
+                    thresholded_image,
+                )
+                cv2.waitKey()
+
             if self.frame_height == 360:
-                b, g, r = roi[11, 117]
-                if player_num == 1 and r == 235 and g == 190 and b == 48:
+                # b, g, r = roi[0, 0]
+                # if player_num == 2 and r == 235 and g == 190 and b == 48:
+                # return "Lei Fei"
+
+                similarity = vf_cv.CvHelper.color_similarity(roi[0, 0], (32, 144, 194))
+                if player_num == 1 and similarity >= 0.95:
+                    print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 b, g, r = roi[5, 45]
                 if player_num == 2 and b > 230 and r > 230 and g > 230:
                     return "Akira"
 
-                b, g, r = roi[5, 5]
-                red = 140
-                green = 101
-                blue = 32
-                if (
-                    player_num == 2
-                    and vf_cv.CvHelper.color_similarity(roi[5, 5], (green, blue, red))
-                    >= 0.75
-                ):
+                red = 127
+                green = 89
+                blue = 23
+                similarity = vf_cv.CvHelper.color_similarity(
+                    roi[0, 0], (blue, green, red)
+                )
+                if player_num == 2 and similarity >= 0.95:
+                    print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 red = 67
@@ -100,40 +196,10 @@ class Character:
 
                 if (
                     player_num == 2
-                    and vf_cv.CvHelper.color_similarity(roi[0, 0], (green, blue, red))
-                    > 0.8
+                    and vf_cv.CvHelper.color_similarity(roi[0, 0], (blue, green, red))
+                    > 0.95
                 ):
                     return "Blaze"
-
-            gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-
-            threshold_value = 250
-            _, thresholded_image = cv2.threshold(
-                gray_image, threshold_value, 255, cv2.THRESH_BINARY
-            )
-
-            first_letter = vf_cv.CvHelper.trim(thresholded_image)
-
-            (height, width) = thresholded_image.shape
-
-            n_white_pix = np.sum(thresholded_image == 255)
-            n_white_pix_first = np.sum(first_letter == 255)
-
-            if debug_character is True:
-                cv2.imshow(
-                    f"char {self.frame_height} {n_white_pix_first} letter {first_letter.shape[1]} x {first_letter.shape[0]}",
-                    first_letter,
-                )
-
-                cv2.imshow(
-                    f"char {self.frame_height} {n_white_pix} {width} {height} roi", roi
-                )
-
-                cv2.imshow(
-                    f"char {self.frame_height} {n_white_pix} {width} {height}",
-                    thresholded_image,
-                )
-                cv2.waitKey()
 
             if self.frame_height == 720 and 592 - 10 <= n_white_pix_first <= 592 + 10:
                 return "Lion"
