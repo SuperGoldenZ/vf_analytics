@@ -16,11 +16,11 @@ win_percentages_per_character <- function(data, character_name) {
     )
 
     # Add Stage Type to data based on the lookup
-    data <- data %>%
+    stage_data <- data %>%
         left_join(stage_type_lookup, by = "Stage")
 
     # Filter for matches where Blaze is one of the players, but not both
-    blaze_data <- data %>%
+    blaze_data <- stage_data %>%
         filter((Player.1.Character == character_name & Player.2.Character != character_name) |
             (Player.2.Character == character_name & Player.1.Character != character_name))
 
@@ -53,28 +53,112 @@ win_percentages_per_character <- function(data, character_name) {
         ) %>%
         arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
 
+    blaze_win_percentage$p_value <- NA
+
     # Rename columns for clarity
     blaze_win_percentage <- blaze_win_percentage %>%
         rename(
             Stage.Category = Stage.Type,
             Matches.Won = Matches_Won,
-            Total.Matches= Total_Matches,
+            Total.Matches = Total_Matches,
             Win.Percentage = Win_Percentage
         )
-    
-    blaze_win_percentage$p_value <- NA
 
+    for (stage in unique(data$Stage)) {
+        rounds_won_specific <- rounds_won_per_stage_per_character(data, character_name, stage)
+        rounds_won_other <- rounds_won_per_other_stages_per_character(data, character_name, stage)
 
-    #for (stage in unique(blaze_win_percentage$Stage.Category)) {
-        #win_percent_specific <- blaze_data$Win.Percentage[blaze_win_percentage$Stage.Category == stage]
-        #win_percent_others <- blaze_win_percentage$Win.Percentage[blaze_win_percentage$Stage.Category != stage]
-    
-        #t_test_result <- t.test(win_percent_specific, win_percent_others)
-        # Store the p-value in the results data frame
-        #blaze_win_percentag$p_value[blaze_win_percentage$Stage.Category == stage] <- t_test_result$p.value
-    #}
+        t_test_result <- t.test(rounds_won_specific, rounds_won_other)
+
+        blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- t_test_result$p.value
+    }
 
     return(blaze_win_percentage)
+}
+
+get_stage_type <- function(stage_name, lookup_table) {
+    result <- lookup_table %>%
+        filter(Stage == stage_name) %>%
+        select(Stage.Type) %>%
+        pull() # Extract the value as a vector
+
+    return(result)
+}
+
+rounds_won_per_stage_per_character <- function(data, character_name, stage_name) {
+    stage_type_lookup <- data.frame(
+        Stage = c(
+            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
+            "Broken House", "Grassland", "Aurora", "Island", "Statues",
+            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
+            "River", "Sumo Ring", "Genesis", "Great Wall"
+        ),
+        Stage.Type = c(
+            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
+            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
+            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
+            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
+            "Single Wall", "Single Wall"
+        )
+    )
+
+    # Add Stage Type to data based on the lookup
+    stage_data <- data %>%
+        left_join(stage_type_lookup, by = "Stage") %>%
+        filter(Stage.Type == get_stage_type(stage_name, stage_type_lookup))
+
+    # Filter for matches where Blaze is one of the players, but not both
+    character_wins <- stage_data %>%
+        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
+            (Player.2.Character == character_name & Player.1.Character != character_name)) %>%
+        filter((Player.1.Character == character_name & Winning.Player.Number == 1) |
+            (Player.2.Character == character_name & Winning.Player.Number == 2))
+
+    rounds_won_summary <- character_wins %>%
+        group_by(Match.ID, Stage) %>%
+        summarise(Rounds.Won = n(), .groups = "drop") %>%
+        arrange(desc(Rounds.Won)) %>%
+        pull(Rounds.Won)
+
+    return(rounds_won_summary)
+}
+
+rounds_won_per_other_stages_per_character <- function(data, character_name, stage_name) {
+    stage_type_lookup <- data.frame(
+        Stage = c(
+            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
+            "Broken House", "Grassland", "Aurora", "Island", "Statues",
+            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
+            "River", "Sumo Ring", "Genesis", "Great Wall"
+        ),
+        Stage.Type = c(
+            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
+            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
+            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
+            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
+            "Single Wall", "Single Wall"
+        )
+    )
+
+    # Add Stage Type to data based on the lookup
+    stage_data <- data %>%
+        left_join(stage_type_lookup, by = "Stage") %>%
+        filter(Stage.Type != get_stage_type(stage_name, stage_type_lookup))
+
+    # Filter for matches where Blaze is one of the players, but not both
+    character_wins <- stage_data %>%
+        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
+            (Player.2.Character == character_name & Player.1.Character != character_name)) %>%
+        filter((Player.1.Character == character_name & Winning.Player.Number == 1) |
+            (Player.2.Character == character_name & Winning.Player.Number == 2))
+
+    rounds_won_summary <- character_wins %>%
+        group_by(Match.ID, Stage) %>%
+        summarise(Rounds.Won = n(), .groups = "drop") %>%
+        arrange(desc(Rounds.Won)) %>%
+        pull(Rounds.Won)
+
+    return(rounds_won_summary)
 }
 
 character_matchup_win_table <- function(data, character_name) {
@@ -238,7 +322,7 @@ character_matchup <- full_matchup_data %>%
     ) %>%
     arrange(desc(Total_Matches))
 
-count_character_matches <- function (data, character_name) {
-return(nrow(data %>% filter(round_number == 0) %>% filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))))
+count_character_matches <- function(data, character_name) {
+    return(nrow(data %>% filter(round_number == 0) %>% filter((Player.1.Character == character_name & Player.2.Character != character_name) |
+        (Player.2.Character == character_name & Player.1.Character != character_name))))
 }
