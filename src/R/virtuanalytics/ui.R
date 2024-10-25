@@ -103,6 +103,18 @@ ui <- fluidPage(
             )
         ),
         tabPanel(
+            "Akira",
+            fluidRow(
+                tags$p(paste(count_character_matches(data, "Akira"), " total matches")),
+            ),
+            fluidRow(                                
+                column(6, DT::dataTableOutput("akira_wins_per_stage_table"),
+                    DT::dataTableOutput("akira_wins_per_stage_lookup_table")
+                ),
+                column(6, DT::dataTableOutput("akira_wins_per_character_table")),
+            )
+        ),        
+        tabPanel(
             "Blaze",
             fluidRow(
                 tags$p(paste(count_character_matches(data, "Blaze"), " total matches")),
@@ -126,6 +138,18 @@ ui <- fluidPage(
                 column(6, DT::dataTableOutput("eileen_wins_per_character_table")),
             )
         ),
+        tabPanel(
+            "Jacky",
+            fluidRow(
+                tags$p(paste(count_character_matches(data, "Jacky"), " total matches")),
+            ),
+            fluidRow(
+                column(6, DT::dataTableOutput("jacky_wins_per_stage_table"),
+                DT::dataTableOutput("jacky_wins_per_stage_lookup_table")
+                ),
+                column(6, DT::dataTableOutput("jacky_wins_per_character_table")),
+            )
+        ),        
         tabPanel(
             "Taka",
             fluidRow(

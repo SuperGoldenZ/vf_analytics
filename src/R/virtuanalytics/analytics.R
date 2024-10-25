@@ -124,33 +124,35 @@ rounds_won_per_stage_per_character <- function(data, character_name, stage_name)
 }
 
 compare_stage_types <- function(data) {
-  # Get unique stage types
-  stage_types <- unique(data$Stage.Type)
-  
-  # Initialize a matrix to store p-values
-  p_value_matrix <- matrix(NA, nrow = length(stage_types), ncol = length(stage_types),
-                           dimnames = list(stage_types, stage_types))
-  
-  # Loop through each pair of stage types
-  for (i in seq_along(stage_types)) {
-    for (j in seq_along(stage_types)) {
-      if (i != j) {
-        # Filter Rounds.Won for each stage type
-        rounds_won_i <- data$Rounds.Won[data$Stage.Type == stage_types[i]]
-        rounds_won_j <- data$Rounds.Won[data$Stage.Type == stage_types[j]]
-        
-        # Perform t-test
-        t_test_result <- t.test(rounds_won_i, rounds_won_j)
-        
-        # Store p-value in the matrix
-        p_value_matrix[i, j] <- t_test_result$p.value
-      }
+    # Get unique stage types
+    stage_types <- unique(data$Stage.Type)
+
+    # Initialize a matrix to store p-values
+    p_value_matrix <- matrix(NA,
+        nrow = length(stage_types), ncol = length(stage_types),
+        dimnames = list(stage_types, stage_types)
+    )
+
+    # Loop through each pair of stage types
+    for (i in seq_along(stage_types)) {
+        for (j in seq_along(stage_types)) {
+            if (i != j) {
+                # Filter Rounds.Won for each stage type
+                rounds_won_i <- data$Rounds.Won[data$Stage.Type == stage_types[i]]
+                rounds_won_j <- data$Rounds.Won[data$Stage.Type == stage_types[j]]
+
+                # Perform t-test
+                t_test_result <- t.test(rounds_won_i, rounds_won_j)
+
+                # Store p-value in the matrix
+                p_value_matrix[i, j] <- t_test_result$p.value
+            }
+        }
     }
-  }
-  
-  # Convert matrix to data frame for easier viewing in a table
-  p_value_table <- as.data.frame(p_value_matrix)
-  return(p_value_table)
+
+    # Convert matrix to data frame for easier viewing in a table
+    p_value_table <- as.data.frame(p_value_matrix)
+    return(p_value_table)
 }
 
 rounds_won_per_other_stages_per_character <- function(data, character_name, stage_name) {
@@ -181,7 +183,7 @@ rounds_won_per_other_stages_per_character <- function(data, character_name, stag
             (Player.2.Character == character_name & Player.1.Character != character_name)) %>%
         filter((Player.1.Character == character_name & Winning.Player.Number == 1) |
             (Player.2.Character == character_name & Winning.Player.Number == 2))
-    
+
     rounds_won_summary <- character_wins %>%
         group_by(Match.ID, Stage.Type) %>%
         summarise(Rounds.Won = n(), .groups = "drop") %>%
@@ -191,7 +193,7 @@ rounds_won_per_other_stages_per_character <- function(data, character_name, stag
     temp_data <- character_wins %>%
         group_by(Match.ID, Stage.Type) %>%
         summarise(Rounds.Won = n(), .groups = "drop")
-    
+
     return(rounds_won_summary)
 }
 
@@ -214,7 +216,7 @@ rounds_won_per_stage_per_character_lookup <- function(data, character_name) {
 
     # Add Stage Type to data based on the lookup
     stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage")        
+        left_join(stage_type_lookup, by = "Stage")
 
     # Filter for matches where Blaze is one of the players, but not both
     character_wins <- stage_data %>%
@@ -222,13 +224,12 @@ rounds_won_per_stage_per_character_lookup <- function(data, character_name) {
             (Player.2.Character == character_name & Player.1.Character != character_name)) %>%
         filter((Player.1.Character == character_name & Winning.Player.Number == 1) |
             (Player.2.Character == character_name & Winning.Player.Number == 2))
-    
+
     temp_data <- character_wins %>%
         group_by(Match.ID, Stage.Type) %>%
         summarise(Rounds.Won = n(), .groups = "drop")
-    
-    return (compare_stage_types(temp_data))
 
+    return(compare_stage_types(temp_data))
 }
 
 character_matchup_win_table <- function(data, character_name) {
