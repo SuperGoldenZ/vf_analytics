@@ -110,14 +110,58 @@ server <- function(input, output, session) {
     })
 
     output$win_rate_table <- DT::renderDataTable({
-        datatable(win_percentage_table, options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
+        datatable(win_percentage_table, options = list(pageLength = 20, paging = FALSE, searching = FALSE, dom = "t")) %>% formatPercentage("Win_Percentage", digits = 0)
     })
     output$character_matchup_table <- DT::renderDataTable({
-        datatable(character_matchup) %>% formatPercentage("Win_Percentage", digits = 0)
+        datatable(character_matchup, options = list(paging = FALSE, searching = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
     })
 
+    output$blaze_wins_per_stage_lookup_table <- DT::renderDataTable({
+        blaze_data <- rounds_won_per_stage_per_character_lookup(data, "Blaze")
+
+        datatable(blaze_data, options = list(
+            dom = "t", # Only show the table body, no footer
+            paging = FALSE, # Disable pagination
+            searching = FALSE # Disable the search box
+        )) %>%
+            formatRound(columns = c(1:ncol(blaze_data)), digits = 3) %>%
+            formatStyle(
+                columns = names(blaze_data), # Specify the columns you want to style
+                backgroundColor = styleInterval(c(0.05), c("yellow", "")) # Highlight cells <= 0.05
+            )
+    })
+
+    output$eileen_wins_per_stage_lookup_table <- DT::renderDataTable({
+        eileen_data <- rounds_won_per_stage_per_character_lookup(data, "Eileen")
+
+        datatable(eileen_data, options = list(
+            dom = "t", # Only show the table body, no footer
+            paging = FALSE, # Disable pagination
+            searching = FALSE # Disable the search box
+        )) %>%
+            formatRound(columns = c(1:ncol(eileen_data)), digits = 3) %>%
+            formatStyle(
+                columns = names(eileen_data), # Specify the columns you want to style
+                backgroundColor = styleInterval(c(0.05), c("yellow", "")) # Highlight cells <= 0.05
+            )
+    })
+
+    output$taka_wins_per_stage_lookup_table <- DT::renderDataTable({
+        taka_data <- rounds_won_per_stage_per_character_lookup(data, "Taka")
+
+        datatable(taka_data, options = list(
+            dom = "t", # Only show the table body, no footer
+            paging = FALSE, # Disable pagination
+            searching = FALSE # Disable the search box
+        )) %>%
+            formatRound(columns = c(1:ncol(taka_data)), digits = 3) %>%
+            formatStyle(
+                columns = names(taka_data), # Specify the columns you want to style
+                backgroundColor = styleInterval(c(0.05), c("yellow", "")) # Highlight cells <= 0.05
+            )
+    })    
+
     output$blaze_wins_per_stage_table <- DT::renderDataTable({
-        # datatable(rounds_won_per_other_stages_per_character(data, "Blaze", "Arena"))
         datatable(win_percentages_per_character(data, "Blaze"), options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win.Percentage", digits = 0)
     })
 
