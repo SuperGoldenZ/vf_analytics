@@ -237,4 +237,30 @@ server <- function(input, output, session) {
                 backgroundColor = styleInterval(c(0.05), c("yellow", "")) # Highlight cells <= 0.05
             )
     })
+
+    ########
+    # Shun
+    ########
+    output$shun_wins_per_stage_table <- DT::renderDataTable({
+        datatable(win_percentages_per_character(data, "Shun"), options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win.Percentage", digits = 0)
+    })
+
+    output$shun_wins_per_character_table <- DT::renderDataTable({
+        datatable(character_matchup_win_table(data, "Shun"), options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win.Percentage", digits = 0)
+    })
+
+    output$shun_wins_per_stage_lookup_table <- DT::renderDataTable({
+        Shun_data <- rounds_won_per_stage_per_character_lookup(data, "Shun")
+
+        datatable(Shun_data, options = list(
+            dom = "t", # Only show the table body, no footer
+            paging = FALSE, # Disable pagination
+            searching = FALSE # Disable the search box
+        )) %>%
+            formatRound(columns = c(1:ncol(Shun_data)), digits = 3) %>%
+            formatStyle(
+                columns = names(Shun_data), # Specify the columns you want to style
+                backgroundColor = styleInterval(c(0.05), c("yellow", "")) # Highlight cells <= 0.05
+            )
+    })
 }

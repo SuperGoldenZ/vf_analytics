@@ -151,6 +151,18 @@ ui <- fluidPage(
             )
         ),        
         tabPanel(
+            "Shun",
+            fluidRow(
+                tags$p(paste(count_character_matches(data, "Shun"), " total matches")),
+            ),
+            fluidRow(
+                column(6, DT::dataTableOutput("shun_wins_per_stage_table"),
+                DT::dataTableOutput("shun_wins_per_stage_lookup_table")
+                ),
+                column(6, DT::dataTableOutput("shun_wins_per_character_table")),
+            )
+        ),                
+        tabPanel(
             "Taka",
             fluidRow(
                 tags$p(paste(count_character_matches(data, "Taka"), " total matches")),
