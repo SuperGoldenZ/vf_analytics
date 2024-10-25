@@ -44,16 +44,15 @@ server <- function(input, output, session) {
             filter(character %in% input$characters) %>%
             filter(stage %in% input$stages)
     })
-    
+
     youtube_video_data <- reactive({
         match_data %>%
             filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
-            filter(Player.1.Character %in% input$characters | Player.2.Character %in% input$characters) %>%            
+            filter(Player.1.Character %in% input$characters | Player.2.Character %in% input$characters) %>%
             filter(Stage %in% input$stages) %>%
-            mutate(Stage=Stage,Desc = paste("Lv",Player.1.Rank," ", Player.1.Character," vs Lv", Player.2.Rank, " ", Player.2.Character),Link=Youtube.Link) %>%
-            select(Stage,Desc,Link)
-        }
-    )
+            mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+            select(Stage, Desc, Link)
+    })
 
     # Calculate total number of samples
     total_samples <- reactive({
@@ -106,7 +105,9 @@ server <- function(input, output, session) {
     # output$win_rate_table <- renderTable(win_percentage_table)
 
     # output$character_matchup_table <- renderTable(character_matchup)
-    output$youtube_videos_table <- DT::renderDataTable({datatable(youtube_video_data(), escape=FALSE)})
+    output$youtube_videos_table <- DT::renderDataTable({
+        datatable(youtube_video_data(), escape = FALSE)
+    })
 
     output$win_rate_table <- DT::renderDataTable({
         datatable(win_percentage_table, options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
@@ -116,6 +117,7 @@ server <- function(input, output, session) {
     })
 
     output$blaze_wins_per_stage_table <- DT::renderDataTable({
+        # datatable(rounds_won_per_other_stages_per_character(data, "Blaze", "Arena"))
         datatable(win_percentages_per_character(data, "Blaze"), options = list(pageLength = 20, paging = FALSE)) %>% formatPercentage("Win.Percentage", digits = 0)
     })
 
