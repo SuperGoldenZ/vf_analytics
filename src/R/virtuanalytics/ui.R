@@ -7,6 +7,30 @@ library(scales)
 library(DT) # Load DT package for interactive tables
 
 source("analytics.R")
+source("analytics_character.R")
+
+characters <- unique(data$Player.1.Character)
+
+generate_character_tab <- function(character) {
+    tabPanel(
+        character,
+        fluidRow(
+            tags$p(paste(count_character_matches(data, character), " total matches"))
+        ),
+        fluidRow(
+            column(
+                6,
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table")),
+                DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
+            ),
+            column(
+                6,
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table"))
+            )
+        )
+    )
+}
 
 # Define UI
 ui <- fluidPage(
@@ -63,35 +87,44 @@ ui <- fluidPage(
                             # Select All / Clear All buttons for characters
                             actionButton("select_all_characters", "Select All"),
                             actionButton("clear_all_characters", "Clear All"),
-                            div(class = "two-columns",
-                            checkboxGroupInput("characters", "Characters",
-                                choices = characters,
-                                selected = characters,                                
-                            ))
+                            div(
+                                class = "two-columns",
+                                checkboxGroupInput("characters", "Characters",
+                                    choices = characters,
+                                    selected = characters,
+                                )
+                            )
                         ),
-                        column(4,
+                        column(
+                            4,
                             actionButton("select_all_stages", "Select All"),
                             actionButton("clear_all_stages", "Clear All"),
-                            div(class="two-columns",
-                            checkboxGroupInput("stages", "Stages",
-                                choices = stages,
-                                selected = stages
-                            ))
+                            div(
+                                class = "two-columns",
+                                checkboxGroupInput("stages", "Stages",
+                                    choices = stages,
+                                    selected = stages
+                                )
+                            )
                         )
                     ),
                 ),
 
                 # Main panel to display the bar charts
                 mainPanel(
-                    fluidRow(                        
-                        column(4,
+                    fluidRow(
+                        column(
+                            4,
                             h2("Youtube Videos (Source Data)"),
                             DT::dataTableOutput("youtube_videos_table")
                         ),
-                        column(8,
-                    plotOutput("rankDistPlot"),
-                    plotOutput("characterDistPlot"),
-                    plotOutput("stageDistPlot")))
+                        column(
+                            8,
+                            plotOutput("rankDistPlot"),
+                            plotOutput("characterDistPlot"),
+                            plotOutput("stageDistPlot")
+                        )
+                    )
                 )
             ),
             hr(style = "border-top: 3px solid #421301; margin-top: 30px; margin-bottom: 30px;"),
@@ -102,77 +135,25 @@ ui <- fluidPage(
                 column(6, DT::dataTableOutput("character_matchup_table")),
             )
         ),
-        tabPanel(
-            "Akira",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Akira"), " total matches")),
-            ),
-            fluidRow(                                
-                column(6, DT::dataTableOutput("akira_wins_per_stage_table"),
-                    DT::dataTableOutput("akira_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("akira_wins_per_character_table")),
-            )
-        ),        
-        tabPanel(
-            "Blaze",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Blaze"), " total matches")),
-            ),
-            fluidRow(                                
-                column(6, DT::dataTableOutput("blaze_wins_per_stage_table"),
-                    DT::dataTableOutput("blaze_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("blaze_wins_per_character_table")),
-            )
-        ),
-        tabPanel(
-            "Eileen",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Eileen"), " total matches")),
-            ),
-            fluidRow(
-                column(6, DT::dataTableOutput("eileen_wins_per_stage_table"),
-                DT::dataTableOutput("eileen_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("eileen_wins_per_character_table")),
-            )
-        ),
-        tabPanel(
-            "Jacky",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Jacky"), " total matches")),
-            ),
-            fluidRow(
-                column(6, DT::dataTableOutput("jacky_wins_per_stage_table"),
-                DT::dataTableOutput("jacky_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("jacky_wins_per_character_table")),
-            )
-        ),        
-        tabPanel(
-            "Shun",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Shun"), " total matches")),
-            ),
-            fluidRow(
-                column(6, DT::dataTableOutput("shun_wins_per_stage_table"),
-                DT::dataTableOutput("shun_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("shun_wins_per_character_table")),
-            )
-        ),                
-        tabPanel(
-            "Taka",
-            fluidRow(
-                tags$p(paste(count_character_matches(data, "Taka"), " total matches")),
-            ),
-            fluidRow(
-                column(6, DT::dataTableOutput("taka_wins_per_stage_table"),
-                DT::dataTableOutput("taka_wins_per_stage_lookup_table")
-                ),
-                column(6, DT::dataTableOutput("taka_wins_per_character_table")),
-            )
-        )
+        # lapply(characters, generate_character_tab),
+        generate_character_tab("Akira"),
+        generate_character_tab("Aoi"),
+        generate_character_tab("Brad"),
+        generate_character_tab("Eileen"),
+        generate_character_tab("Blaze"),
+        generate_character_tab("Goh"),
+        generate_character_tab("Jean"),
+        generate_character_tab("Jacky"),
+        generate_character_tab("Jeffry"),
+        generate_character_tab("Kage"),
+        generate_character_tab("Lau"),
+        generate_character_tab("Lei Fei"),
+        generate_character_tab("Lion"),
+        generate_character_tab("Pai"),
+        generate_character_tab("Sarah"),
+        generate_character_tab("Shun"),
+        generate_character_tab("Taka"),
+        generate_character_tab("Vanessa"),
+        generate_character_tab("Wolf")
     )
 )
