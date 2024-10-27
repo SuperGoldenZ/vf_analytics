@@ -10,6 +10,11 @@ source("ui.R")
 source("analytics.R")
 source("analytics_character.R")
 
+dict <- list(
+  "Ranks" = c("English" = "Ranks", "日本語" = "段位"),
+  "Stages" = c("English" = "Stages", "日本語" = "ステージ")
+)
+
 create_character_tables <- function(output, data, character_name) {
     l_character_name <- tolower(character_name)
 
@@ -131,6 +136,13 @@ server <- function(input, output, session) {
         nrow(filtered_data()) # Get the number of rows in the data
     })
 
+    selected_language <- reactive({
+        input$language
+    })
+    
+    output$Ranks <- renderText(dict[["Ranks"]][[selected_language()]])
+    output$Stages <- renderText(dict[["Stages"]][[selected_language()]])
+
     # Rank distribution plot
     output$rankDistPlot <- renderPlot({
         rank_counts <- filtered_data() %>%
@@ -207,4 +219,5 @@ server <- function(input, output, session) {
     create_character_tables(output, data, "Taka")
     create_character_tables(output, data, "Vanessa")
     create_character_tables(output, data, "Wolf")
+
 }

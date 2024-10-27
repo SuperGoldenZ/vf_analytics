@@ -65,6 +65,19 @@ ui <- fluidPage(
     ),
     navbarPage(
         "VirtuaAnalytics",
+        
+        header = tagList(
+            div(
+                radioButtons(
+                    "language",
+                    label = NULL, # No label to minimize space
+                    choices = c("English", "日本語"),
+                    selected = "English",
+                    inline = TRUE
+                ),
+                style = "position: relative; float: right; margin-right: 20px;margin-top: -50px; z-index: 9999; "
+            )
+        ),
         tabPanel(
             "Summary",
             # titlePanel(tags$h1("VirtuAnalytics")),
@@ -77,7 +90,7 @@ ui <- fluidPage(
                             3,
                             actionButton("select_all_ranks", "Select All"),
                             actionButton("clear_all_ranks", "Clear All"),
-                            checkboxGroupInput("ranks", "Ranks",
+                            checkboxGroupInput("ranks", uiOutput("Ranks"),
                                 choices = ranks,
                                 selected = ranks
                             ),
@@ -101,7 +114,7 @@ ui <- fluidPage(
                             actionButton("clear_all_stages", "Clear All"),
                             div(
                                 class = "two-columns",
-                                checkboxGroupInput("stages", "Stages",
+                                checkboxGroupInput("stages", uiOutput("Stages"),
                                     choices = stages,
                                     selected = stages
                                 )
@@ -154,6 +167,6 @@ ui <- fluidPage(
         generate_character_tab("Shun"),
         generate_character_tab("Taka"),
         generate_character_tab("Vanessa"),
-        generate_character_tab("Wolf")
+        generate_character_tab("Wolf"),
     )
 )
