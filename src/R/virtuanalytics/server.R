@@ -11,8 +11,32 @@ source("analytics.R")
 source("analytics_character.R")
 
 dict <- list(
-  "Ranks" = c("English" = "Ranks", "日本語" = "段位"),
-  "Stages" = c("English" = "Stages", "日本語" = "ステージ")
+    "Ranks" = c("English" = "Ranks", "日本語" = "段位"),
+    "Stages" = c("English" = "Stages", "日本語" = "ステージ"),
+    "Characters" = c("English" = "Characters", "日本語" = "キャラクター"),
+    "Select All" = c("English" = "Select All", "日本語" = "すべて選択"),
+    "Clear All" = c("English" = "Clear All", "日本語" = "すべてクリア"),
+    "Match List" = c("English" = "Match List", "日本語" = "試合一覧"),
+    "Akira" = c("English" = "Akira", "日本語" = "晶"),
+    "Pai" = c("English" = "Pai", "日本語" = "パイ"),
+    "Lau" = c("English" = "Lau", "日本語" = "ラウ"),
+    "Wolf" = c("English" = "Wolf", "日本語" = "ウルフ"),
+    "Jeffry" = c("English" = "Jeffry", "日本語" = "ジェフリー"),
+    "Kage" = c("English" = "Kage", "日本語" = "影"),
+    "Sarah" = c("English" = "Sarah", "日本語" = "サラ"),
+    "Jacky" = c("English" = "Jacky", "日本語" = "ジャッキー"),
+    "Shun" = c("English" = "Shun", "日本語" = "舜 帝"),
+    "Lion" = c("English" = "Lion", "日本語" = "リオン"),
+    "Aoi" = c("English" = "Aoi", "日本語" = "葵"),
+    "LeiFei" = c("English" = "Lei-Fei", "日本語" = "雷 飛"),
+    "Vanessa" = c("English" = "Vanessa", "日本語" = "ベネッサ"),
+    "Brad" = c("English" = "Brad", "日本語" = "ブラッド"),
+    "Goh" = c("English" = "Goh", "日本語" = "剛"),
+    "Eileen" = c("English" = "Eileen", "日本語" = "アイリーン"),
+    "Blaze" = c("English" = "Blaze", "日本語" = "エル・ブレイズ"),
+    "Taka" = c("English" = "Taka", "日本語" = "鷹嵐"),
+    "Jean" = c("English" = "Jean", "日本語" = "ジャン"),
+    "Video Search" = c("English" = "Video Search", "日本語" = "検索")
 )
 
 create_character_tables <- function(output, data, character_name) {
@@ -139,9 +163,39 @@ server <- function(input, output, session) {
     selected_language <- reactive({
         input$language
     })
-    
+
+    output$MatchList <- renderText(dict[["Match List"]][[selected_language()]])
+    output$VideoSearch <- renderText(dict[["Video Search"]][[selected_language()]])
     output$Ranks <- renderText(dict[["Ranks"]][[selected_language()]])
     output$Stages <- renderText(dict[["Stages"]][[selected_language()]])
+    output$Characters <- renderText(dict[["Characters"]][[selected_language()]])
+    output$SelectAllStages <- renderText(dict[["Select All"]][[selected_language()]])
+    output$ClearAllStages <- renderText(dict[["Clear All"]][[selected_language()]])
+    output$SelectAllCharacters <- renderText(dict[["Select All"]][[selected_language()]])
+    output$ClearAllCharacters <- renderText(dict[["Clear All"]][[selected_language()]])
+    output$SelectAllRanks <- renderText(dict[["Select All"]][[selected_language()]])
+    output$ClearAllRanks <- renderText(dict[["Clear All"]][[selected_language()]])
+    
+    output$AkiraButton <- renderText(dict[["Akira"]][[selected_language()]])
+    output$BlazeButton <- renderText(dict[["Blaze"]][[selected_language()]])
+    output$EileenButton <- renderText(dict[["Eileen"]][[selected_language()]])    
+    output$PaiButton <- renderText(dict[["Pai"]][[selected_language()]])
+    output$LauButton <- renderText(dict[["Lau"]][[selected_language()]])
+    output$WolfButton <- renderText(dict[["Wolf"]][[selected_language()]])
+    output$JeffryButton <- renderText(dict[["Jeffry"]][[selected_language()]])
+    output$KageButton <- renderText(dict[["Kage"]][[selected_language()]])
+    output$SarahButton <- renderText(dict[["Sarah"]][[selected_language()]])
+    output$JackyButton <- renderText(dict[["Jacky"]][[selected_language()]])
+    output$ShunButton <- renderText(dict[["Shun"]][[selected_language()]])
+    output$LionButton <- renderText(dict[["Lion"]][[selected_language()]])
+    output$AoiButton <- renderText(dict[["Aoi"]][[selected_language()]])
+    output$LeiFeiButton <- renderText(dict[["LeiFei"]][[selected_language()]])
+    output$VanessaButton <- renderText(dict[["Vanessa"]][[selected_language()]])
+    output$BradButton <- renderText(dict[["Brad"]][[selected_language()]])
+    output$GohButton <- renderText(dict[["Goh"]][[selected_language()]])
+    output$TakaButton <- renderText(dict[["Taka"]][[selected_language()]])
+    output$JeanButton <- renderText(dict[["Jean"]][[selected_language()]])
+
 
     # Rank distribution plot
     output$rankDistPlot <- renderPlot({
@@ -161,8 +215,10 @@ server <- function(input, output, session) {
     output$characterDistPlot <- renderPlot({
         character_counts <- filtered_data() %>%
             select(character) %>%
+            mutate(character = sapply(character, function(char) dict[[char]][[input$language]])) %>%
             pivot_longer(cols = everything(), names_to = "Player", values_to = "Character") %>%
             count(Character)
+            
 
         ggplot(character_counts, aes(x = Character, y = n, fill = Character)) +
             geom_bar(stat = "identity") +
@@ -219,5 +275,4 @@ server <- function(input, output, session) {
     create_character_tables(output, data, "Taka")
     create_character_tables(output, data, "Vanessa")
     create_character_tables(output, data, "Wolf")
-
 }

@@ -13,7 +13,7 @@ characters <- unique(data$Player.1.Character)
 
 generate_character_tab <- function(character) {
     tabPanel(
-        character,
+        uiOutput(paste0(character,"Button")),
         fluidRow(
             tags$p(paste(count_character_matches(data, character), " total matches"))
         ),
@@ -79,7 +79,7 @@ ui <- fluidPage(
             )
         ),
         tabPanel(
-            "Summary",
+            uiOutput("VideoSearch"),
             # titlePanel(tags$h1("VirtuAnalytics")),
 
             # Sidebar layout with checkboxes for each rank
@@ -88,8 +88,8 @@ ui <- fluidPage(
                     fluidRow(
                         column(
                             3,
-                            actionButton("select_all_ranks", "Select All"),
-                            actionButton("clear_all_ranks", "Clear All"),
+                            actionButton("select_all_ranks", uiOutput("SelectAllRanks")),
+                            actionButton("clear_all_ranks", uiOutput("ClearAllRanks")),
                             checkboxGroupInput("ranks", uiOutput("Ranks"),
                                 choices = ranks,
                                 selected = ranks
@@ -98,11 +98,11 @@ ui <- fluidPage(
                         column(
                             4,
                             # Select All / Clear All buttons for characters
-                            actionButton("select_all_characters", "Select All"),
-                            actionButton("clear_all_characters", "Clear All"),
+                            actionButton("select_all_characters", uiOutput("SelectAllCharacters")),
+                            actionButton("clear_all_characters", uiOutput("ClearAllCharacters")),
                             div(
                                 class = "two-columns",
-                                checkboxGroupInput("characters", "Characters",
+                                checkboxGroupInput("characters", uiOutput("Characters"),
                                     choices = characters,
                                     selected = characters,
                                 )
@@ -110,8 +110,8 @@ ui <- fluidPage(
                         ),
                         column(
                             4,
-                            actionButton("select_all_stages", "Select All"),
-                            actionButton("clear_all_stages", "Clear All"),
+                            actionButton("select_all_stages", uiOutput("SelectAllStages")),
+                            actionButton("clear_all_stages", uiOutput("ClearAllStages")),
                             div(
                                 class = "two-columns",
                                 checkboxGroupInput("stages", uiOutput("Stages"),
@@ -128,7 +128,7 @@ ui <- fluidPage(
                     fluidRow(
                         column(
                             4,
-                            h2("Youtube Videos (Source Data)"),
+                            h2(uiOutput("MatchList")),
                             DT::dataTableOutput("youtube_videos_table")
                         ),
                         column(
@@ -160,7 +160,7 @@ ui <- fluidPage(
         generate_character_tab("Jeffry"),
         generate_character_tab("Kage"),
         generate_character_tab("Lau"),
-        generate_character_tab("Lei Fei"),
+        generate_character_tab("LeiFei"),
         generate_character_tab("Lion"),
         generate_character_tab("Pai"),
         generate_character_tab("Sarah"),
