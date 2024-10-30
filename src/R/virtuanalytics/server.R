@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyr)
 library(plotly)
 library(scales)
+library(forcats)
 library(DT) # Load DT package for interactive tables
 
 source("ui.R")
@@ -36,12 +37,16 @@ dict <- list(
     "Blaze" = c("English" = "Blaze", "日本語" = "エル・ブレイズ"),
     "Taka" = c("English" = "Taka", "日本語" = "鷹嵐"),
     "Jean" = c("English" = "Jean", "日本語" = "ジャン"),
-    "Video Search" = c("English" = "Video Search", "日本語" = "検索")
+    "Video Search" = c("English" = "Video Search", "日本語" = "検索"),
+    "matches" = c("English" = " matches", "日本語" = "件"),
+    "Rank Distribution" = c("English" = "Rank Distribution", "日本語" = "段位"),
+    "Character Distribution" = c("English" = "Character Distribution", "日本語" = "キャラクター"),
+    "Stage Distribution" = c("English" = "Stage Distribution", "日本語" = "ステージ"),
+    "Link" = c("English" = "View", "日本語" = "再生")
 )
 
 create_character_tables <- function(output, data, character_name) {
     l_character_name <- tolower(character_name)
-
 
     # Wins per Character Table
     output[[paste0(l_character_name, "_wins_per_character_table")]] <- DT::renderDataTable({
@@ -50,7 +55,7 @@ create_character_tables <- function(output, data, character_name) {
             paging = FALSE,
             searching = FALSE
         )) %>%
-            formatPercentage("Win.Percentage", digits = 0) %>%
+            formatPercentage("Win %", digits = 0) %>%
             formatRound("p_value", digits = 3) %>%
             formatStyle(
                 "p_value",
@@ -65,7 +70,7 @@ create_character_tables <- function(output, data, character_name) {
             paging = FALSE,
             searching = FALSE
         )) %>%
-            formatPercentage("Win.Percentage", digits = 0) %>%
+            formatPercentage("Win %", digits = 0) %>%
             formatRound("p_value", digits = 3) %>%
             formatStyle(
                 "p_value",
@@ -73,6 +78,14 @@ create_character_tables <- function(output, data, character_name) {
             )
     })
 
+    output[[paste0(l_character_name, "_matches_list")]] <- DT::renderDataTable({
+        matches_list <- match_data %>%
+            filter(Player.1.Character == character_name | Player.2.Character == character_name) %>%
+            mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+            select(Stage, Desc, Link)
+
+        datatable(matches_list, escape = FALSE, options = list(lengthChange = FALSE, searching = TRUE))
+    })
 
     return(1)
 
@@ -111,6 +124,19 @@ create_character_tables <- function(output, data, character_name) {
 
 # Define server logic
 server <- function(input, output, session) {
+    query <- reactive({
+        parseQueryString(session$clientData$url_search)
+    })
+
+    output$paramValue <- renderText({
+        # Check if 'param' exists in the query string
+        param_value <- query()[["japanese"]]
+
+        if (!is.null(param_value)) {
+            print("should be Japanese")
+        }
+    })
+
     # Select All / Clear All buttons for ranks
     observeEvent(input$select_all_ranks, {
         updateCheckboxGroupInput(session, "ranks", selected = ranks)
@@ -118,6 +144,18 @@ server <- function(input, output, session) {
 
     observeEvent(input$clear_all_ranks, {
         updateCheckboxGroupInput(session, "ranks", selected = character(0))
+    })
+
+    observe({
+        # Check the number of selected options
+        if (length(input$characters) > 2) {
+            # Show a warning message
+            # output$warning <- renderText("You can only select a maximum of 2 options.")
+            # Update input to keep only the first two selections
+            updateCheckboxGroupInput(session, "characters", selected = input$options[1:2])
+        } else {
+            output$warning <- renderText("") # Clear the warning if valid
+        }
     })
 
     # Select All / Clear All buttons for characters
@@ -140,19 +178,53 @@ server <- function(input, output, session) {
 
     # Reactive data filtering based on selected ranks
     filtered_data <- reactive({
-        data_combined %>%
-            filter(player_rank %in% input$ranks) %>%
-            filter(character %in% input$characters) %>%
-            filter(stage %in% input$stages)
+        checked_count <- length(input$characters)
+        if (checked_count == 0) {
+            data_combined %>%
+                filter(player_rank %in% input$ranks) %>%
+                filter(stage %in% input$stages)
+        } else if (checked_count == 1) {
+            data_combined %>%
+                filter(player_rank %in% input$ranks) %>%
+                filter(character %in% input$characters) %>%
+                filter(stage %in% input$stages)
+        } else if (checked_count == 2) {
+            data_combined %>%
+                filter(player_rank %in% input$ranks) %>%
+                # filter(character %in% input$characters) %>%
+                filter(stage %in% input$stages)
+        }
     })
 
     youtube_video_data <- reactive({
-        match_data %>%
-            filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
-            filter(Player.1.Character %in% input$characters | Player.2.Character %in% input$characters) %>%
-            filter(Stage %in% input$stages) %>%
-            mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
-            select(Stage, Desc, Link)
+        checked_count <- length(input$characters)
+
+        if (checked_count == 1) {
+            match_data %>%
+                filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
+                filter(Player.1.Character %in% input$characters & Player.2.Character %in% input$characters) %>%
+                filter(Stage %in% input$stages) %>%
+                mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+                select(Stage, Desc, Link)
+        } else if (checked_count == 2) {
+            match_data %>%
+                filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
+                filter(
+                    (Player.1.Character == input$characters[[1]] & Player.2.Character == input$characters[[2]]) |
+                        (Player.1.Character == input$characters[[2]] & Player.2.Character == input$characters[[1]])
+                ) %>%
+                filter(Stage %in% input$stages) %>%
+                mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+                select(Stage, Desc, Link)
+        } else if (checked_count == 0) {
+            match_data %>%
+                filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
+                filter(Stage %in% input$stages) %>%
+                mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+                select(Stage, Desc, Link)
+        }
+
+        # colnames(match_data)[colnames(match_data) == "Link"] <- dict[["Link"]][[input$language]]
     })
 
     # Calculate total number of samples
@@ -175,10 +247,10 @@ server <- function(input, output, session) {
     output$ClearAllCharacters <- renderText(dict[["Clear All"]][[selected_language()]])
     output$SelectAllRanks <- renderText(dict[["Select All"]][[selected_language()]])
     output$ClearAllRanks <- renderText(dict[["Clear All"]][[selected_language()]])
-    
+
     output$AkiraButton <- renderText(dict[["Akira"]][[selected_language()]])
     output$BlazeButton <- renderText(dict[["Blaze"]][[selected_language()]])
-    output$EileenButton <- renderText(dict[["Eileen"]][[selected_language()]])    
+    output$EileenButton <- renderText(dict[["Eileen"]][[selected_language()]])
     output$PaiButton <- renderText(dict[["Pai"]][[selected_language()]])
     output$LauButton <- renderText(dict[["Lau"]][[selected_language()]])
     output$WolfButton <- renderText(dict[["Wolf"]][[selected_language()]])
@@ -206,9 +278,26 @@ server <- function(input, output, session) {
 
         ggplot(rank_counts, aes(x = Rank, y = n, fill = Rank)) +
             geom_bar(stat = "identity") +
-            labs(title = paste("Rank Distribution (", comma(total_samples() / 4), " matches)"), x = "Rank", y = "Count") +
+            labs(
+                title = paste(
+                    dict[["Rank Distribution"]][[input$language]], "(", comma(total_samples() / 4),
+                    dict[["matches"]][[input$language]], ")"
+                ),
+                x = dict[["Ranks"]][[input$language]], y = dict[["matches"]][[input$language]]
+            ) +
             theme_minimal() +
-            theme(plot.margin = margin(b = 15))
+            scale_x_discrete(limits = rank_counts$Rank) +
+            theme(
+                plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.x = element_text(size = 16), # X-axis label font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.x = element_text(size = 14), # X-axis tick label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 16), # Legend title font size
+                legend.text = element_text(size = 14),
+                legend.position = "none"
+            )
     })
 
     # Character distribution plot
@@ -218,13 +307,24 @@ server <- function(input, output, session) {
             mutate(character = sapply(character, function(char) dict[[char]][[input$language]])) %>%
             pivot_longer(cols = everything(), names_to = "Player", values_to = "Character") %>%
             count(Character)
-            
+
+        character_counts <- character_counts %>%
+            mutate(Character = fct_reorder(Character, n, .desc = TRUE))
 
         ggplot(character_counts, aes(x = Character, y = n, fill = Character)) +
             geom_bar(stat = "identity") +
-            labs(title = paste("Character Distribution (", comma(total_samples() / 4), " matches)"), x = "Character", y = "Count") +
+            labs(title = paste(dict[["Character Distribution"]][[input$language]], "(", comma(total_samples() / 4), dict[["matches"]][[input$language]], ")"), x = "Character", y = "Count") +
             theme_minimal() +
-            theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = margin(b = 15))
+            theme(
+                axis.text.x = element_text(angle = 45, hjust = 1, size = 14), plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.x = element_text(size = 16), # X-axis label font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 0), # Legend title font size
+                legend.text = element_text(size = 10),
+                legend.position = "none"
+            )
     })
 
     # Character distribution plot
@@ -234,11 +334,22 @@ server <- function(input, output, session) {
             pivot_longer(cols = everything(), values_to = "Stage") %>%
             count(Stage)
 
+        stage_counts <- stage_counts %>%
+            mutate(Stage = fct_reorder(Stage, n, .desc = TRUE))
+
         ggplot(stage_counts, aes(x = Stage, y = n, fill = Stage)) +
             geom_bar(stat = "identity") +
-            labs(title = paste("Stage Distribution (", comma(total_samples() / 4), " matches)"), x = "Stage", y = "Count") +
+            labs(title = paste(dict[["Stage Distribution"]][[input$language]], "(", comma(total_samples() / 4), dict[["matches"]][[input$language]], ")"), x = "Stage", y = "Count") +
             theme_minimal() +
-            theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = margin(b = 15))
+            theme(
+                axis.text.x = element_text(angle = 45, hjust = 1, size = 14), plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 0), # Legend title font size
+                legend.text = element_text(size = 10),
+                legend.position = "none"
+            )
     })
 
     # Calculate and render overall win rates per character
@@ -246,7 +357,7 @@ server <- function(input, output, session) {
 
     # output$character_matchup_table <- renderTable(character_matchup)
     output$youtube_videos_table <- DT::renderDataTable({
-        datatable(youtube_video_data(), escape = FALSE)
+        datatable(youtube_video_data(), escape = FALSE, options = list(lengthChange = FALSE, searching = FALSE))
     })
 
     output$win_rate_table <- DT::renderDataTable({
@@ -254,6 +365,21 @@ server <- function(input, output, session) {
     })
     output$character_matchup_table <- DT::renderDataTable({
         datatable(character_matchup, options = list(paging = FALSE, searching = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
+    })
+
+    output$time_remaining_per_stage <- DT::renderDataTable({
+        datatable(time_remaining_per_stage(), options = list(paging = FALSE, searching = FALSE)) %>%
+            formatRound("Average_Time_Per_Round", digits = 1) %>%
+            formatRound("p_value", digits = 3) %>%
+            formatStyle(
+                "p_value",
+                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+            )
+    })
+
+    output$win_rate_per_rank <- DT::renderDataTable({
+        datatable(win_rate_per_rank(), options = list(paging = TRUE, searching = FALSE)) %>%
+        formatPercentage("win_percentage", digits = 0)
     })
 
     create_character_tables(output, data, "Akira")
@@ -267,7 +393,7 @@ server <- function(input, output, session) {
     create_character_tables(output, data, "Jeffry")
     create_character_tables(output, data, "Kage")
     create_character_tables(output, data, "Lau")
-    create_character_tables(output, data, "Lei Fei")
+    create_character_tables(output, data, "LeiFei")
     create_character_tables(output, data, "Lion")
     create_character_tables(output, data, "Pai")
     create_character_tables(output, data, "Sarah")
@@ -275,4 +401,9 @@ server <- function(input, output, session) {
     create_character_tables(output, data, "Taka")
     create_character_tables(output, data, "Vanessa")
     create_character_tables(output, data, "Wolf")
+
+    localized_characters <- reactive({
+        lang <- input$language # Get the selected language
+        dict$characters[[lang]] # Return character names based on selected language
+    })
 }

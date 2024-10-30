@@ -1,3 +1,20 @@
+stage_types <- data.frame(
+    Stage = c(
+        "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
+        "Broken House", "Grassland", "Aurora", "Island", "Statues",
+        "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
+        "River", "Sumo Ring", "Genesis", "Great Wall"
+    ),
+    Stage_Type = c(
+        "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon",
+        "Octagon", "Breakable Full Fence", "Breakable Full Fence",
+        "Breakable Half Fence", "Breakable Half Fence", "Half Fence",
+        "Half Fence", "Full Fence and Open", "Full Fence and Open",
+        "Low Fence", "Low Fence", "Open", "Open", "Single Wall",
+        "Single Wall"
+    )
+)
+
 win_percentages_per_character <- function(data, character_name) {
     stage_type_lookup <- data.frame(
         Stage = c(
@@ -73,6 +90,10 @@ win_percentages_per_character <- function(data, character_name) {
         blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- t_test_result$p.value
     }
 
+    blaze_win_percentage <- blaze_win_percentage %>%
+        rename(
+            `Win %` = Win.Percentage
+        )
     return(blaze_win_percentage)
 }
 
@@ -451,9 +472,109 @@ character_matchup <- full_matchup_data %>%
         Win_Percentage = (Wins_By_Main_Character / Total_Matches),
         .groups = "drop"
     ) %>%
-    arrange(desc(Total_Matches))
+    arrange(desc(Total_Matches)) %>%
+    rename(`Main\nCharacter` = `Main_Character`) %>%
+    rename(`vs\nCharacter` = `Opponent_Character`) %>%
+    rename(`Total\nMatches` = `Total_Matches`) %>%
+    rename(`Wins By\nMain Character` = `Wins_By_Main_Character`)
 
 count_character_matches <- function(data, character_name) {
     return(nrow(data %>% filter(round_number == 0) %>% filter((Player.1.Character == character_name & Player.2.Character != character_name) |
         (Player.2.Character == character_name & Player.1.Character != character_name))))
+}
+
+time_remaining_per_stage <- function() {
+    # Filter rows where "How Round Ended" is NA
+    filtered_data <- data %>% filter(round_number > 0)
+
+    # Apply floor function to round down the "Time Remaining" to the nearest integer
+    filtered_data <- filtered_data %>%
+        mutate(Time.Seconds = floor(45 - Time.Remaining.When.Round.Ended))
+
+    # Merge filtered data with stage types
+    merged_data <- filtered_data %>%
+        left_join(stage_types, by = "Stage")
+
+    # Calculate average and median Time Remaining for each Stage
+    summary_stats <- merged_data %>%
+        group_by(Stage_Type) %>%
+        summarise(
+            Average_Time_Per_Round = mean(Time.Seconds, na.rm = TRUE),
+            Median_Time_Per_Round = median(Time.Seconds, na.rm = TRUE),
+            NFth = quantile(Time.Seconds, 0.95),
+            Fastest = min(Time.Seconds),            
+            .groups = "drop"
+        ) %>%
+        arrange((Average_Time_Per_Round))
+
+    summary_stats$p_value <- NA
+
+    for (stage_type in unique(summary_stats$`Stage_Type`)) {
+        # print(time_remaining_per_round(stage_type))
+
+        time_remaining_specific <- time_remaining_per_round(stage_type)
+        time_remaining_other <- time_remaining_per_round(stage_type, TRUE)
+
+        t_test_result <- t.test(time_remaining_specific, time_remaining_other)
+
+        summary_stats$p_value[summary_stats$Stage_Type == stage_type] <- t_test_result$p.value
+        #print(merged_data)
+        #summary_stats$Fastest <- merged_data[merged_data$Stage_Type == stage_type][which.min(Time.Seconds), `Youtube Link`]
+    }
+
+    summary_stats$Median_Time_Per_Round <- NULL
+
+    return(
+        summary_stats %>%
+            rename(`Stage\nType` = `Stage_Type`) %>%
+            rename(`95th %tile` = `NFth`) # %>%
+        # rename(`Avg. Time\nPer Round` = `Average Time Per Round`)
+    )
+}
+
+time_remaining_per_round <- function(limit_stage_type, other) {
+    # Filter rows where "How Round Ended" is NA
+    filtered_data <- data %>% filter(round_number > 0)
+
+    # Apply floor function to round down the "Time Remaining" to the nearest integer
+    filtered_data <- filtered_data %>%
+        mutate(Time.Seconds = floor(45 - Time.Remaining.When.Round.Ended))
+
+    # Merge filtered data with stage types
+    merged_data <- filtered_data %>%
+        left_join(stage_types, by = "Stage")
+
+    if (!missing(limit_stage_type) & !missing(other)) {
+        merged_data <- merged_data %>%
+            filter(`Stage_Type` != limit_stage_type)
+    } else if (!missing(limit_stage_type)) {
+        merged_data <- merged_data %>%
+            filter(`Stage_Type` == limit_stage_type)
+    }
+
+    return(merged_data %>% pull(Time.Seconds))
+}
+
+win_rate_per_rank <- function() {
+    match_winners <- data %>%
+        group_by(Match.ID) %>%
+        filter(round_number == max(round_number)) %>% # Get the last round of each match
+        filter(Player.1.Rank != Player.2.Rank) %>%
+        mutate(
+            Winner_Rank = ifelse(Winning.Player.Number == 1, Player.1.Rank, Player.2.Rank),
+            Loser_Rank = ifelse(Winning.Player.Number == 1, Player.2.Rank, Player.1.Rank)
+        ) %>%
+        select(Match.ID, Winner_Rank, Loser_Rank)
+
+    win_percentage_lookup <- match_winners %>%
+        filter(Winner_Rank > 39) %>%
+        group_by(Winner_Rank, Loser_Rank) %>%
+        summarise(
+            wins = n(), # Count the number of wins
+            total_matches = n() + sum(match_winners$Loser_Rank == Winner_Rank & match_winners$Winner_Rank == Loser_Rank), # Total matches involving this rank combination
+            win_percentage = wins / total_matches # Calculate win percentage
+        ) %>%
+        select(Target_Rank = Winner_Rank, Other_Rank = Loser_Rank, win_percentage) %>%
+        ungroup()
+    return(win_percentage_lookup)
 }

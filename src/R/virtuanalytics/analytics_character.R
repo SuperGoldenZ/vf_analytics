@@ -51,6 +51,17 @@ character_matchup_win_table <- function(data, character_name) {
 
         character_matchup$p_value[character_matchup$Opponent_Character == opponent_character_name] <- t_test_result$p.value
     }
+    
+        #rename(!!get_new_name() := Win)
+
+    character_matchup <- character_matchup %>%
+        rename(
+            `Win %` = Win.Percentage,
+            `Main\nCharacter` = `Main_Character`,
+            `Opponent\nCharacter` = `Opponent_Character`,
+            `Total\nMatches` = `Total.Matches`,
+            `Wins By\nMain Character` = `Wins_By_Main_Character`
+        )
 
     return(character_matchup)
 }

@@ -4,28 +4,31 @@ library(dplyr)
 library(tidyr)
 library(plotly)
 library(scales)
+library(shinyfullscreen)
 library(DT) # Load DT package for interactive tables
 
 source("analytics.R")
 source("analytics_character.R")
 
-characters <- unique(data$Player.1.Character)
-
 generate_character_tab <- function(character) {
     tabPanel(
-        uiOutput(paste0(character,"Button")),
+        uiOutput(paste0(character, "Button")),
         fluidRow(
             tags$p(paste(count_character_matches(data, character), " total matches"))
         ),
         fluidRow(
             column(
-                6,
-                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table")),
-                DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
-                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
+                3,
+                DT::dataTableOutput(paste0(tolower(character), "_matches_list")),
             ),
             column(
-                6,
+                4,
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table")),
+                # DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
+                # DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
+            ),
+            column(
+                4,
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table"))
             )
         )
@@ -50,8 +53,12 @@ ui <- fluidPage(
       }
 
         .two-columns .checkbox {
-          width: 50%;
-          float: left;
+        }
+
+        .scroll-checkbox-group {
+            height: 250px;  /* Set desired height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            border: 1px solid #ccc; /* Optional styling */
         }
 
         .dataTable {
@@ -65,7 +72,6 @@ ui <- fluidPage(
     ),
     navbarPage(
         "VirtuaAnalytics",
-        
         header = tagList(
             div(
                 radioButtons(
@@ -80,74 +86,66 @@ ui <- fluidPage(
         ),
         tabPanel(
             uiOutput("VideoSearch"),
-            # titlePanel(tags$h1("VirtuAnalytics")),
-
-            # Sidebar layout with checkboxes for each rank
-            sidebarLayout(
-                sidebarPanel(
+            fluidRow(
+                column(
+                    4,
                     fluidRow(
                         column(
                             3,
-                            actionButton("select_all_ranks", uiOutput("SelectAllRanks")),
-                            actionButton("clear_all_ranks", uiOutput("ClearAllRanks")),
+                            fluidRow(
+                                actionButton("select_all_stages", uiOutput("SelectAllStages"), style = "padding:4px; font-size:80%"),
+                                actionButton("clear_all_stages", uiOutput("ClearAllStages"), style = "padding:4px; font-size:80%")
+                            ),
+                            checkboxGroupInput("stages", uiOutput("Stages"),
+                                choices = stages,
+                                selected = stages
+                            ) %>% div(class = "scroll-checkbox-group")
+                        ),
+                        column(
+                            3,
+                            fluidRow(
+                                actionButton("select_all_ranks", uiOutput("SelectAllRanks"), style = "padding:4px; font-size:80%"),
+                                actionButton("clear_all_ranks", uiOutput("ClearAllRanks"), style = "padding:4px; font-size:80%"),
+                            ),
                             checkboxGroupInput("ranks", uiOutput("Ranks"),
                                 choices = ranks,
                                 selected = ranks
                             ),
                         ),
                         column(
-                            4,
+                            3,
                             # Select All / Clear All buttons for characters
-                            actionButton("select_all_characters", uiOutput("SelectAllCharacters")),
-                            actionButton("clear_all_characters", uiOutput("ClearAllCharacters")),
-                            div(
-                                class = "two-columns",
-                                checkboxGroupInput("characters", uiOutput("Characters"),
-                                    choices = characters,
-                                    selected = characters,
-                                )
-                            )
-                        ),
-                        column(
-                            4,
-                            actionButton("select_all_stages", uiOutput("SelectAllStages")),
-                            actionButton("clear_all_stages", uiOutput("ClearAllStages")),
-                            div(
-                                class = "two-columns",
-                                checkboxGroupInput("stages", uiOutput("Stages"),
-                                    choices = stages,
-                                    selected = stages
-                                )
-                            )
+                            # actionButton("select_all_characters", uiOutput("SelectAllCharacters")),
+                            actionButton("clear_all_characters", uiOutput("ClearAllCharacters"), style = "padding:4px; font-size:80%"),
+                            checkboxGroupInput("characters", uiOutput("Characters"),
+                                choices = characters
+                            ) %>% div(class = "scroll-checkbox-group")
                         )
                     ),
+                    # h2(uiOutput("MatchList")),
+                    DT::dataTableOutput("youtube_videos_table")
                 ),
-
-                # Main panel to display the bar charts
-                mainPanel(
+                column(
+                    8,
                     fluidRow(
-                        column(
-                            4,
-                            h2(uiOutput("MatchList")),
-                            DT::dataTableOutput("youtube_videos_table")
+                        column(6,plotOutput("rankDistPlot")),
+                        column(4,DT::dataTableOutput("win_rate_per_rank"))                        
+                    ),
+                    fluidRow(
+                        column(6, plotOutput("stageDistPlot")),
+                        column(4,DT::dataTableOutput("time_remaining_per_stage")),
+                    ),
+                    fluidRow(
+                        column(6,plotOutput("characterDistPlot")),                        
+                        column(4,
+                            DT::dataTableOutput("win_rate_table"),
+                            DT::dataTableOutput("character_matchup_table"))
                         ),
-                        column(
-                            8,
-                            plotOutput("rankDistPlot"),
-                            plotOutput("characterDistPlot"),
-                            plotOutput("stageDistPlot")
-                        )
-                    )
+                    fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),                    
                 )
             ),
-            hr(style = "border-top: 3px solid #421301; margin-top: 30px; margin-bottom: 30px;"),
-            fluidRow(
-                # column(6,tableOutput('win_rate_table')),
-                # column(6,tableOutput('character_matchup_table')),
-                column(6, DT::dataTableOutput("win_rate_table")),
-                column(6, DT::dataTableOutput("character_matchup_table")),
-            )
         ),
+
         # lapply(characters, generate_character_tab),
         generate_character_tab("Akira"),
         generate_character_tab("Aoi"),
@@ -168,5 +166,36 @@ ui <- fluidPage(
         generate_character_tab("Taka"),
         generate_character_tab("Vanessa"),
         generate_character_tab("Wolf"),
+        tabPanel(
+            "About",
+            tags$p(
+                "VirtuAnalytics v1.1.0"
+            ),
+            tags$hr(),
+            tags$p(
+                "Video scraped teathered via  ",
+                tags$a(href = "https://r10.to/hNXlYV", "Rakuten Mobile", target = "_blank_vf")
+            ),
+            tags$p(
+                "Compiled by ",
+                tags$a(href = "https://x.com/SuperGolden", "@SuperGolden", target = "_blank_twitter")
+            ),
+            tags$p(
+                "Source code: ",
+                tags$a(href = "https://github.com/SuperGoldenZ/vf_analytics", "GitHub", target = "_blank_github")
+            ),
+            tags$p(
+                "Made with ",
+                tags$a(href = "https://github.com/rstudio/shiny", "R & Shiny", target = "_blank_shiny")
+            ),
+            tags$p(
+                "License: ",
+                tags$a(href = "https://github.com/rstudio/shiny/blob/main/LICENSE", "License", target = "_blank_shiny")
+            ),
+            tags$p(
+                "Data scraped from: ",
+                tags$a(href = "https://www.youtube.com/@vfans", "@vfans", target = "_blank_vf")
+            )
+        )
     )
 )
