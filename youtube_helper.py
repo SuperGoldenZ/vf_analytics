@@ -2,6 +2,7 @@ from urllib.parse import urlparse, parse_qs
 import os
 import logging
 import traceback
+import time
 
 from pytubefix import YouTube
 from pytubefix import Playlist
@@ -27,25 +28,29 @@ STREAM_SEARCH = [
 
 
 def get_stream(url, youtube_auth=True):
-    yt = YouTube(url, use_oauth=youtube_auth, client="IOS")
+    for retry in range(1, 3):
+        if retry > 1:
+            time.sleep(1)
+        yt = YouTube(url, use_oauth=youtube_auth, client="IOS")
 
-    logger.debug(f"made youtube for {url}")
+        logger.debug(f"made youtube for {url} retry {retry}")
 
-    try:
-        for stream_params in STREAM_SEARCH:
-            for stream in yt.streams:
-                logger.debug(f"got stream {stream}")
+        try:
+            for stream_params in STREAM_SEARCH:
 
-            ys = yt.streams.filter(
-                res=stream_params["resolution"], fps=stream_params["fps"]
-            )
+                for stream in yt.streams:
+                    logger.debug(f"got stream {stream}")
 
-            ys = ys.first()
-            if ys is not None:
-                return ys
-    except Exception as error:
-        logger.error(f"error occured getting stream {error}")
-        logger.error(traceback.format_exc())
+                ys = yt.streams.filter(
+                    res=stream_params["resolution"], fps=stream_params["fps"]
+                )
+
+                ys = ys.first()
+                if ys is not None:
+                    return ys
+        except Exception as error:
+            logger.error(f"error occured getting stream {error}")
+            logger.error(traceback.format_exc())
     raise Exception(f"Not suitable resolution and FPS found for {url}")
 
 
