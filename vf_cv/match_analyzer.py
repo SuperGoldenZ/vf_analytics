@@ -96,96 +96,88 @@ class MatchAnalyzer:
         self.endround = False
 
         while self.count < end_frame or cam != -1:
-            count_int = int(self.count)
+            result = self.get_next_frame(cam, video_id, actual_count)
+            if result is not None:
+                actual_count = result
 
-            # use epoch time for cam
-            if cam != -1:
-                count_int = int(time.time() * 1000)
-                self.count = count_int
-
-            self.frame = None
-            if self.skip_frames > 0 and cam != -1:
-                self.skip_frames -= 1
-                if cam != -1:
-                    self.cap.read()
-                    self.process_fight_shun_drinks()
-                    time.sleep(self.interval)
-                    # if (not self.DONT_SAVE):
-                    # self.save_cam_frame(f"skipper",)
-                continue
-
-            if self.skip_frames > 0 and cam == -1:
-                self.count += int((self.frame_rate * self.interval) * self.skip_frames)
-                count_int = int(self.count)
-                self.skip_frames = 0
-
-            self.original_frame = None
-
-            if (
-                self.DONT_SAVE is False
-                and cam == -1
-                and os.path.isfile(
-                    self.jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg"
-                )
-            ):
-                try:
-                    filename = self.jpg_folder + "/" + str(f"{count_int:13d}") + ".jpg"
-                    self.frame = cv2.imread(filename)
-                except Exception as e:
-                    self.logger.error(
-                        f"{video_id} {self.count:13d} [ERROR] - error reading from image file",
-                        file=sys.stderr,
-                    )
-                    self.logger.error(repr(e))
-                    continue
-            else:
-                self.frame = None
-
-                if cam != -1:
-                    actual_count = self.count - 1
-
-                while actual_count < count_int:
-                    try:
-                        self.frame = self.cap.read()
-                        self.process_fight_shun_drinks(actual_count)
-                    except:
-                        time.sleep(5)
-                        self.frame = self.cap.read()
-                        self.process_fight_shun_drinks(actual_count)
-
-                    if self.frame is None:
-                        break
-                    actual_count = actual_count + 1
-
-                if self.frame is None:
-                    self.logger.warning(
-                        f"Skipping frame {self.count:13d} because no return"
-                    )
-
-                    continue
-
-            if self.frame is None:
-                self.count += 1
-                print("self.frame none continue")
-                continue
-
-            self.original_frame = self.frame
-            self.frame_height = self.frame.shape[0]  # Get the dimensions of the frame
-
-            if self.state == "before":
-                self.process_before_vs()
-                continue
-            if self.state == "vs":
-                if self.process_vs():
-                    return 0
-                continue
-            if self.state == "fight" and self.process_fight():
-                return self.count
+            result = self.analyze_next_frame(cam)
+            if result is not None:
+                return result
 
         if self.state != "before":
             raise PrematureMatchFinishException()
 
         return 0
+
+    def get_next_frame(self, cam, video_id, actual_count):
+        count_int = int(self.count)
+
+        # use epoch time for cam
+        if cam != -1:
+            count_int = int(time.time() * 1000)
+            self.count = count_int
+
+        self.frame = None
+        if self.skip_frames > 0 and cam != -1:
+            self.skip_frames -= 1
+            if cam != -1:
+                self.cap.read()
+                self.process_fight_shun_drinks()
+                time.sleep(self.interval)
+            return
+
+        if self.skip_frames > 0 and cam == -1:
+            self.count += int((self.frame_rate * self.interval) * self.skip_frames)
+            count_int = int(self.count)
+            self.skip_frames = 0
+
+        self.original_frame = None
+
+        self.frame = None
+
+        if cam != -1:
+            actual_count = self.count - 1
+
+        while actual_count < count_int:
+            try:
+                self.frame = self.cap.read()
+                self.process_fight_shun_drinks(actual_count)
+            except:
+                time.sleep(5)
+                self.frame = self.cap.read()
+                self.process_fight_shun_drinks(actual_count)
+
+            if self.frame is None:
+                break
+            actual_count = actual_count + 1
+
+        if self.frame is None:
+            self.logger.warning(
+                f"Skipping frame {self.count:13d} because no return"
+            )
+
+            return None
+
+        if self.frame is None:
+            self.count += 1
+            print("self.frame none continue")
+            return None
+        
+        return actual_count
+
+    def analyze_next_frame(self):
+        self.original_frame = self.frame
+        self.frame_height = self.frame.shape[0]  # Get the dimensions of the frame
+
+        if self.state == "before":
+            self.process_before_vs()
+            return
+        if self.state == "vs":
+            if self.process_vs():
+                return 0
+            return
+        if self.state == "fight" and self.process_fight():
+            return self.count
 
     def save_cam_frame(self, suffix, force_save=False):
         if self.DONT_SAVE and not force_save:
