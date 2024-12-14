@@ -30,7 +30,7 @@ class VideoCaptureAsync:
             self.queue.put(frame, timeout=1)
 
     def read(self):
-        return self.queue.get(timeout=1)
+        return self.queue.get(timeout=3)
 
     def release(self):
         self.done = True

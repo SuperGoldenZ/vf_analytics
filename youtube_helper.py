@@ -15,30 +15,41 @@ logging.basicConfig(
 RESOLUTION_720P = "720p"
 RESOLUTION_360P = "360p"
 
-STREAM_SEARCH = [
-    {"resolution": "360p", "fps": 30},
-    {"resolution": "480p", "fps": 30},
+STREAM_SEARCH = [    
+    #{"resolution": "360p", "fps": 30},
+    #{"resolution": "480p", "fps": 30},
     {"resolution": "720p", "fps": 30},
+    {"resolution": "720p", "fps": 60},
     {"resolution": "1080p", "fps": 30},
     {"resolution": "360p", "fps": 60},
-    {"resolution": "480p", "fps": 60},
-    {"resolution": "720p", "fps": 60},
+    {"resolution": "480p", "fps": 60},    
     {"resolution": "1080p", "fps": 60},
 ]
 
+STREAM_SEARCH_VS_ONLY = [
+    {"resolution": "1080p", "fps": 30},
+    {"resolution": "1080p", "fps": 60},
+    {"resolution": "720p", "fps": 30},
+    {"resolution": "720p", "fps": 60}
+]
 
-def get_stream(url, youtube_auth=True):
+def get_resolutions(process_vs_only):
+    if (process_vs_only):
+        return STREAM_SEARCH_VS_ONLY
+    return STREAM_SEARCH
+
+def get_stream(url, youtube_auth=True, process_vs_only=False):
     for retry in range(1, 3):
         if retry > 1:
             time.sleep(1)
-        yt = YouTube(url, use_oauth=youtube_auth, client="IOS")
+        yt = YouTube(url, use_oauth=youtube_auth, client="Android")
+        #yt = YouTube(url, use_oauth=youtube_auth)
 
         logger.debug(f"made youtube for {url} retry {retry}")
 
         try:
-            for stream_params in STREAM_SEARCH:
-
-                for stream in yt.streams:
+            for stream_params in get_resolutions(process_vs_only):                
+                for stream in yt.streams:                    
                     logger.debug(f"got stream {stream}")
 
                 ys = yt.streams.filter(
@@ -102,3 +113,4 @@ def get_video_urls_from_playlist(playlist):
             f.write(f"{url}\n")
 
     return urls
+
