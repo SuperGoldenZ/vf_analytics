@@ -20,6 +20,7 @@ class Match:
         self.vs_frame = 0
         self.vs_frame_seconds = 0
         self.rounds = []
+        self.date = None
 
     def got_all_vs_info(self):
         """Returns true if the match has all data that we are expecting to process"""
@@ -30,10 +31,10 @@ class Match:
             return False
         if self.player2character is None:
             return False
-        if self.player1ringname is None:
-            return False
-        if self.player2ringname is None:
-            return False
+        #if self.player1ringname is None:
+            #return False
+        #if self.player2ringname is None:
+            #return False
 
         return True
 
@@ -58,6 +59,7 @@ class Match:
             [
                 self.video_id,
                 self.id,
+                self.date,
                 self.stage,
                 self.player1ringname,
                 self.player1rank,
@@ -69,7 +71,9 @@ class Match:
                 0,
                 "NA",
                 0,
-                f"https://www.youtube.com/watch?v={self.video_id}&t={self.vs_frame_seconds}",
+                None,
+                None,
+                f"https://www.youtube.com/watch?v={self.video_id}&t={self.vs_frame_seconds}"
             ]
         )
 
@@ -82,6 +86,7 @@ class Match:
                 [
                     self.video_id,
                     self.id,
+                    self.date,
                     self.stage,
                     self.player1ringname,
                     self.player1rank,
@@ -93,7 +98,9 @@ class Match:
                     current_round.winning_player_num,
                     current_round.get_victory(),
                     current_round.remaining_time,
-                    current_round.get_youtube_url(self.video_id),
+                    current_round.player1_drink_points_at_start,
+                    current_round.player2_drink_points_at_start,
+                    current_round.get_youtube_url(self.video_id)
                 ]
             )
 
