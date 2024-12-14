@@ -47,6 +47,13 @@ class PlayerRank:
             44: cv2.imread("assets/test_images/480p/rank/44.jpg"),
         }
 
+        self.japanese_rank_titles = {}
+
+        self.youtube_video_title = None
+
+    def set_youtube_video_title(self, title):
+        self.youtube_video_title = title
+
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -76,6 +83,36 @@ class PlayerRank:
 
     # min width 25
     def get_player_rank(self, player_num, debug_player_rank=False):
+
+        # short circuit with video title
+        if (
+            self.youtube_video_title is not None            
+            and ("【VFes  VF5us 高段位戦】" in self.youtube_video_title or "【VFes高段位戦】" in self.youtube_video_title or "名人戦" in self.youtube_video_title
+                 or "【VFes / VF5us 高段位戦】" in self.youtube_video_title)
+            and "VS" in self.youtube_video_title
+        ):
+            split = self.youtube_video_title.strip().split("V")            
+            index=0
+            if player_num == 2:
+                index = len(split)-1
+            else:
+                index = len(split)-2
+
+            if "鬼武帝" in split[index]:
+                return 40
+            if "龍武帝" in split[index]:
+                return 41
+            if "轟雷神" in split[index]:
+                return 42
+            if "爆焔神" in split[index]:
+                return 43
+            if "天翔神" in split[index]:
+                return 44
+            if "幻冥神" in split[index]:
+                return 45
+            if "超煌神" in split[index]:
+                return 46
+
         FULL_REGION = f"player{player_num}rank_full"
         FULL_REGION_ROI = self.get_roi(FULL_REGION)
 
@@ -110,14 +147,17 @@ class PlayerRank:
                 debug_string,
                 full_roi,
             )
+
+            # print(debug_string)
             # cv2.imshow("bw", full_roi_bw)
             cv2.waitKey()
 
         if self.frame_height == 360:
-            if self.frame_height == 360 and mint > 5:
+
+            if mint > 5:
                 return 45
 
-            if 10 <= grellow_count <= 40 and 100 <= white_count <= 140 and grey > 200:
+            if 10 <= grellow_count <= 40 and 70 <= white_count <= 140 and grey > 200:
                 return 40
 
             if yg >= 15:

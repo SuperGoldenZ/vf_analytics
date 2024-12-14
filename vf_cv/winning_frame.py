@@ -2,7 +2,7 @@
 
 import cv2
 import vf_cv.cv_helper
-
+import pytesseract
 
 class WinningFrame:
     frame = None
@@ -67,25 +67,108 @@ class WinningFrame:
         red_tekken_count = vf_cv.CvHelper.count_pixels(
             "#e42e20", roi, override_tolerance=15
         )
+        roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
         if debug:
             cv2.imshow(
                 f"ro g{green_count} red {red_tekken_count} light_green {light_green}",
                 roi,
             )
+
+            cv2.imshow(f"ro bw {green_count}", roi_bw)
             cv2.waitKey()
 
         if self.frame_height == 360:
+            if roi_bw[27,17] < 190:
+                return False
+
+            if roi_bw[26,69] < 190:
+                return False
+
+            if roi_bw[26,93] < 190:
+                return False
+
+            if (light_green > 70 and green_count == 0):
+                return False            
             return green_count + light_green > 50
 
         return green_count + light_green > 300 or red_tekken_count > 2000
+    
+    def is_timeout(self, debug=False):
+        region_name = "ro"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+
+        roi_bw = vf_cv.CvHelper.prepare_green_text_for_ocr(roi)
+
+        green_count = vf_cv.CvHelper.count_pixels("#07a319", roi, override_tolerance=15)
+        light_green = vf_cv.CvHelper.count_pixels("#91ff92", roi, override_tolerance=15)
+        red_tekken_count = vf_cv.CvHelper.count_pixels(
+            "#e42e20", roi, override_tolerance=15
+        )
+        
+        if (green_count < 50):
+            return False
+
+        text = pytesseract.image_to_string(roi_bw, config="--psm 7 -c tessedit_char_whitelist=TIMEOUT").strip()
+
+        if debug:
+            cv2.imshow(
+                f"ro g{green_count} red {red_tekken_count} light_green {light_green}",
+                roi,
+            )
+            print(text)
+            cv2.imshow(f"ro bw {green_count}", roi_bw)
+            cv2.waitKey()
+
+        return ("TIME" in text)        
+
+    def is_ko_endround(self, debug_ko=False):
+        region_name = "ko"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+        roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+        if debug_ko:
+            debug_string=f"{self.frame_height} ko"
+            cv2.imshow(
+                debug_string,
+                roi,
+            )                
+            print(debug_string)
+            cv2.resizeWindow(debug_string, 800, 400) 
+            cv2.waitKey()
+
 
     def is_ko(self, debug_ko=False):
         region_name = "ko"
         (x, y, w, h) = self.get_roi(region_name)
 
         roi = self.frame[y : y + h, x : x + w]
+        roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        if debug_ko:
+            debug_string=f"{self.frame_height} ko"
+            cv2.imshow(
+                debug_string,
+                roi_bw,
+            )                
+            print(debug_string)
+            cv2.resizeWindow(debug_string, 800, 400) 
+            cv2.waitKey()
 
+        if self.frame_height==360:
+            if roi_bw[92,9] > 80:
+                return False
+            if roi_bw[13,82] > 60:
+                return False
+            if roi_bw[69,23] < 235:
+                return False
+            if roi_bw[20,80] < 200:
+                return False
+            return True
+                
         gold_count = vf_cv.CvHelper.count_pixels("#ce9e54", roi, override_tolerance=5)
         # red_count = vf_cv.CvHelper.count_pixels("#b3200e", roi, override_tolerance=25)
         purple_count = vf_cv.CvHelper.count_pixels(
@@ -97,21 +180,24 @@ class WinningFrame:
             "#e42e20", roi, override_tolerance=10
         )
         blue = vf_cv.CvHelper.count_pixels("#5c78ef", roi)
+        brown_gold = vf_cv.CvHelper.count_pixels("#c98c38", roi, override_tolerance=5)
 
         # ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
-        if (
-            self.frame_height == 360
-            or self.frame_height == 480
+        if (self.frame_height == 480
             or self.frame_height == 720
             or self.frame_height == 1080
         ):
             if debug_ko:
+                debug_string=f"{self.frame_height} ko bg {brown_gold} roi gold {gold_count} purple{purple_count} blue {blue} white {white_count} black{black_count}"
                 cv2.imshow(
-                    f"{self.frame_height} ko roi gold {gold_count} purple{purple_count} blue {blue} white {white_count} black{black_count}",
+                    debug_string,
                     roi,
-                )
+                )                
+                print(debug_string)
+                cv2.resizeWindow(debug_string, 800, 400) 
                 cv2.waitKey()
 
+                
             if blue > 1800:
                 return False
 
@@ -123,23 +209,43 @@ class WinningFrame:
             ):
                 return True
 
-            if self.frame_height == 360 and gold_count >= 17 and blue >= 10:
-                return True
+            if self.frame_height == 360:
+                if gold_count >= 17 and blue >= 10 and black_count < 1000:
+                    return True
+            
+                if 5 <= brown_gold <= 18 and 10 <= gold_count <= 20 and 900 <= white_count <= 1100:
+                    return True
+                
+                if 90 <= brown_gold <= 110 and 7 <= gold_count <= 27:
+                    return True
+                
+                if gold_count >= 2 and 45 <= black_count < 1000 and white_count >= 1000:
+                    return True
 
+                if gold_count > 10 and white_count > 7000:
+                    return True
+                if white_count > 200 and gold_count > 15 and purple_count > 30 and black_count < 5000:
+                    return True
+                if gold_count > 42 and purple_count > 10 and white_count > 0:
+                    return True
+                if gold_count >= 25 and blue >= 20 and 125 <= white_count <= 275 and black_count < 2500:
+                    return True 
             if self.frame_height == 480 and gold_count > 130 and blue < 20:
                 return True
 
             if self.frame_height == 480 and purple_count > 140 and black_count > 200:
                 return False
-            if gold_count > 10 and white_count > 7000:
-                return True
-            if white_count > 15000:
-                return True
-            if gold_count > 42 and purple_count > 10:
-                return True
+            
+            if self.frame_height != 360:
+                if gold_count > 10 and white_count > 7000:
+                    return True
+                if white_count > 15000:
+                    return True
+                if gold_count > 42 and purple_count > 10:
+                    return True
 
-            if red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000:
-                return True
+                if red_tekken_count > 40 and red_tekken_count < 165 and black_count > 5000:
+                    return True
 
         return False
 
@@ -157,6 +263,7 @@ class WinningFrame:
         (x, y, w, h) = self.get_roi(region_name)
 
         roi = self.frame[y : y + h, x : x + w]
+        roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
         white_count = vf_cv.CvHelper.count_pixels("#ffffff", roi, override_tolerance=5)
         gold_count = vf_cv.CvHelper.count_pixels("#ce9e54", roi, override_tolerance=5)
@@ -168,20 +275,32 @@ class WinningFrame:
         light_yellow = vf_cv.CvHelper.count_pixels("#f8ff7b", roi, override_tolerance=5)
         lg = vf_cv.CvHelper.count_pixels("#fbf2b6", roi, override_tolerance=5)
         if debug_excellent is True:
+            debug_string=f"{self.frame_height} ex  w{white_count}_g{gold_count}_r{red_count}p{purple_count}_b{black_count}_ly{light_yellow}_lg{lg}"
+            print(debug_string)
             cv2.imshow(
-                f"{self.frame_height} ex  w{white_count}_g{gold_count}_r{red_count}p{purple_count}_b{black_count}_ly{light_yellow}_lg{lg}",
-                roi,
-            )
+                debug_string,roi)
+            cv2.imshow(f"excellent roi bw{lg}",roi_bw)
+
             cv2.waitKey()
 
-        if self.frame_height == 360 and white_count > 375 and gold_count > 20:
-            return True
+        if self.frame_height == 360:
+            if roi_bw[27,31] < 200:
+                return False
 
-        if self.frame_height == 360 and lg > 300 and gold_count > 5:
-            return True
+            if roi_bw[11,174] < 180:
+                return False
 
-        if self.frame_height == 360 and lg > 120 and white_count > 50:
-            return True
+            if roi_bw[9,362] < 180:
+                return False
+
+            if white_count > 375 and gold_count > 20 and black_count < 1300:
+                return True
+
+            if lg > 300 and gold_count > 5  and black_count < 1300:
+                return True
+
+            if lg > 120 and white_count > 20  and black_count < 1300:
+                return True
 
         if (
             self.frame_height == 1080
@@ -235,7 +354,7 @@ class WinningFrame:
             and black_count < 220
         ):
             return True
-
+        
         if (
             black_count > 2300
             and white_count < 15
@@ -250,6 +369,9 @@ class WinningFrame:
 
         if self.frame_height == 720 and white_count < 10 and gold_count < 40:
             return False
+
+        if self.frame_height == 720 and lg > 600:
+            return True
 
         if self.frame_height == 480:
             if 150 <= white_count <= 175 and 100 <= gold_count <= 120:

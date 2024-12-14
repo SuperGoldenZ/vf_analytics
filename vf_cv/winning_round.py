@@ -3,7 +3,6 @@
 import cv2
 import vf_cv.cv_helper
 
-
 class WinningRound:
     frame = None
     frame_height = None
@@ -202,11 +201,11 @@ class WinningRound:
                 ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, threshold)
                 tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, threshold)
                 teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
-                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
-
+                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)            
+                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)            
                 if debug_winning_round:
                     cv2.imshow(
-                        f"aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
+                        f"city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
                         roi,
                     )
 
@@ -218,6 +217,9 @@ class WinningRound:
                     if tblue + teal >= 5:
                         return player_num
 
+                    if (stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3):
+                        return player_num
+                    
                     threshold = 150
 
                     if (
@@ -225,6 +227,9 @@ class WinningRound:
                         or stage == "Temple"
                         or stage == "Broken House"
                     ):
+                        threshold = 190
+
+                    if stage == "Grassland":
                         threshold = 190
 
                     if stage == "City":
@@ -341,8 +346,8 @@ class WinningRound:
             grey_count = vf_cv.CvHelper.count_pixels("#aaaaac", roi, 5)
 
             if player_num == 1:
-                threshold = 5
-
+                threshold = 5  
+                e94966 = vf_cv.CvHelper.count_pixels("#e94966", roi, threshold)
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, threshold)
                 other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, threshold)
                 opp = vf_cv.CvHelper.count_pixels("#ffa8a9", roi, threshold)
@@ -353,14 +358,17 @@ class WinningRound:
                 ap2 = vf_cv.CvHelper.count_pixels("#c97a7e", roi, threshold)
                 aw2 = vf_cv.CvHelper.count_pixels("#ffb3b8", roi, threshold)
                 f3 = vf_cv.CvHelper.count_pixels("#f34a68", roi, threshold)
+                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold) 
                 de = vf_cv.CvHelper.count_pixels("#de4c59", roi, threshold)
                 fb = vf_cv.CvHelper.count_pixels("#fb3155", roi, threshold)
                 e1 = vf_cv.CvHelper.count_pixels("#e15868", roi, threshold)
                 pf2 = vf_cv.CvHelper.count_pixels("#f28c93", roi, threshold)
+                de2 = vf_cv.CvHelper.count_pixels("#de5c68", roi, threshold)
+                fe = vf_cv.CvHelper.count_pixels("#fe717c", roi, threshold)
 
                 if debug_winning_round:
                     cv2.imshow("p1 winning round", self.frame)
-                    debug_string = f"pf2 {pf2} e1 {e1} fb {fb} de {de} f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
+                    debug_string = f"fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
                     print(debug_string)
                     cv2.imshow(
                         debug_string,
@@ -375,13 +383,17 @@ class WinningRound:
                 else:
                     if op > 5:
                         return player_num
-                if white_red_count >= 15:
+
+                if self.frame_height == 360 and white_red_count >= 15:
                     return player_num
 
                 if self.frame_height == 480 and other_pink >= 3 and op >= 1:
                     return player_num
 
                 if self.frame_height == 720 and 15 <= other_pink <= 25:
+                    return player_num
+
+                if self.frame_height == 720 and fe > 5 and de > 2:
                     return player_num
 
                 if self.frame_height == 720 and 15 <= opp <= 25:
@@ -396,6 +408,15 @@ class WinningRound:
 
                 # player1 B&W
                 if self.frame_height == 360:
+                    if f34 >= 3 and de2 >= 1:
+                        return player_num
+                    
+                    if de2 >= 15:
+                        return player_num
+                    
+                    if e94966 >= 3 and f3 >= 3:
+                        return player_num
+                    
                     if pf2 >= 4 and pr >= 1:
                         return player_num
 

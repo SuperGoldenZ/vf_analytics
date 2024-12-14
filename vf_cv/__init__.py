@@ -17,6 +17,9 @@ from vf_cv.character import Character
 from vf_cv.winning_frame import WinningFrame
 from vf_cv.match_analyzer import MatchAnalyzer
 from vf_cv.match_analyzer import PrematureMatchFinishException
+from vf_cv.timer import UnrecognizeTimeDigitException
 from vf_cv.stage import Stage
+from vf_cv.vs_screen import VsScreen
+from vf_cv.drinks import Drinks
 
 from vf_cv.version import __version__
