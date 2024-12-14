@@ -54,14 +54,16 @@ class Character:
     def get_character_name(self, player_num, debug_character=False):
         """Returns the name of the character a certain player is using"""
 
-        parse_title = (
+        parse_title = self.youtube_video_title is not None and (
             "【VFes高段位戦】" in self.youtube_video_title
             or "【VFes  VF5us 高段位戦】" in self.youtube_video_title
+            or "名人戦" in self.youtube_video_title
+            or "【VFes / VF5us 高段位戦】" in self.youtube_video_title
         ) and "VS" in self.youtube_video_title
 
         if parse_title:
             split = self.youtube_video_title.strip().split("V")
-            print(split)
+            #rm print(split)
             offset = len(split)-3
 
             if "影丸" in split[player_num + offset]:
@@ -107,7 +109,7 @@ class Character:
 
             if "アイリーン" in split[player_num + offset]:
                 return "Eileen"
-
+        
         region_name = f"player{player_num}character"
         for retry in range(1, 3):
             (x, y, w, h) = self.get_roi(region_name)
@@ -161,7 +163,7 @@ class Character:
 
                 similarity = vf_cv.CvHelper.color_similarity(roi[0, 0], (32, 144, 194))
                 if player_num == 1 and similarity >= 0.95:
-                    print(f"p{player_num} lei fei with {similarity}")
+                    #print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 b, g, r = roi[5, 45]
@@ -175,7 +177,7 @@ class Character:
                     roi[0, 0], (blue, green, red)
                 )
                 if player_num == 2 and similarity >= 0.95:
-                    print(f"p{player_num} lei fei with {similarity}")
+                    #print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 red = 67

@@ -3,10 +3,12 @@
 import cv2
 import vf_cv.cv_helper
 
-
 class WinningRound:
     frame = None
     frame_height = None
+    GREY_CIRCLE_COLOR_RED = 162
+    GREY_CIRCLE_COLOR_GREEN = 164
+    GREY_CIRCLE_COLOR_BLUE = 178
 
     REGIONS_480P = {
         "player1_rounds": (307, 50, 55, 15),
@@ -56,7 +58,7 @@ class WinningRound:
             h = (int)(h * 2.25)
         return (x, y, w, h)
 
-    def is_winning_round(self, debug_winning_round=False):
+    def is_winning_round(self, debug_winning_round=False, stage=None):
         region_name = "all_rounds"
         (x, y, w, h) = self.get_roi(region_name)
 
@@ -199,11 +201,11 @@ class WinningRound:
                 ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, threshold)
                 tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, threshold)
                 teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
-                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
-
+                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)            
+                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)            
                 if debug_winning_round:
                     cv2.imshow(
-                        f"aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
+                        f"city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
                         roi,
                     )
 
@@ -212,19 +214,95 @@ class WinningRound:
                     cv2.waitKey()
 
                 if self.frame_height == 360:
-                    if whiter_blue >= 2:
-                        return player_num
-
                     if tblue + teal >= 5:
                         return player_num
 
-                    if roi_bw[5, 21] > 150:
+                    if (stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3):
+                        return player_num
+                    
+                    threshold = 150
+
+                    if (
+                        stage == "Island"
+                        or stage == "Temple"
+                        or stage == "Broken House"
+                    ):
+                        threshold = 190
+
+                    if stage == "Grassland":
+                        threshold = 190
+
+                    if stage == "City":
+                        threshold = 170
+
+                    if stage == "River":
+                        threshold = 145
+
+                    if stage == "Snow Mountain":
+                        threshold = 140
+
+                    if (
+                        roi_bw[5, 21] > threshold
+                        and roi_bw[5, 20] > threshold
+                        and roi_bw[5, 19] > threshold
+                        and vf_cv.cv_helper.CvHelper.color_similarity(
+                            roi[5, 20],
+                            (
+                                WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                WinningRound.GREY_CIRCLE_COLOR_RED,
+                            ),
+                        )
+                        < 0.90
+                    ):
+                        print(f"player 2 01 {roi_bw[5,21]}")
                         return player_num
 
-                    if roi_bw[5, 35] > 150:
+                    # circle two player two
+                    if (
+                        roi_bw[5, 35] > threshold
+                        and roi_bw[5, 34] > threshold
+                        and roi_bw[5, 33] > threshold
+                        and roi_bw[5, 32] > threshold
+                        and vf_cv.cv_helper.CvHelper.color_similarity(
+                            roi[5, 35],
+                            (
+                                WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                WinningRound.GREY_CIRCLE_COLOR_RED,
+                            ),
+                        )
+                        < 0.90
+                    ):
+                        print(f"player 2 02 {threshold} {stage} {roi_bw[5,35]}")
                         return player_num
 
-                    if roi_bw[5, 48] > 150:
+                    if (
+                        roi_bw[5 + 0, 49] > threshold
+                        and roi_bw[5 - 1, 49] > threshold
+                        and roi_bw[5 + 1, 49] > threshold
+                        and roi_bw[5 + 0, 49 - 1] > threshold
+                        and roi_bw[5 - 1, 49 - 1] > threshold
+                        and roi_bw[5 + 1, 49 - 1] > threshold
+                        and roi_bw[5 + 0, 49 + 1] > threshold
+                        and roi_bw[5 - 1, 49 + 1] > threshold
+                        and roi_bw[5 + 1, 49 + 1] > threshold
+                        and roi_bw[5 + 2, 49] > threshold
+                        and roi_bw[5 - 2, 49] > threshold
+                        and roi_bw[5 + 2, 49 + 1] > threshold
+                        and roi_bw[5 - 2, 49 - 1] > threshold
+                        and roi_bw[5 + 2, 49 + 2] > threshold
+                        and roi_bw[5 - 2, 49 - 2] > threshold
+                        and vf_cv.cv_helper.CvHelper.color_similarity(
+                            roi[5, 49],
+                            (
+                                WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                WinningRound.GREY_CIRCLE_COLOR_RED,
+                            ),
+                        )
+                        < 0.90
+                    ):
                         return player_num
 
                 if self.frame_height == 480 and 20 <= ob <= 40:
@@ -268,22 +346,32 @@ class WinningRound:
             grey_count = vf_cv.CvHelper.count_pixels("#aaaaac", roi, 5)
 
             if player_num == 1:
-                threshold = 5
-                # if self.frame_height == 360:
-                # threshold=15
-
+                threshold = 5  
+                e94966 = vf_cv.CvHelper.count_pixels("#e94966", roi, threshold)
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, threshold)
                 other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, threshold)
                 opp = vf_cv.CvHelper.count_pixels("#ffa8a9", roi, threshold)
                 pr = vf_cv.CvHelper.count_pixels("#fd486c", roi, threshold)
                 anp = vf_cv.CvHelper.count_pixels("#ff7a89", roi, threshold)
-                # if self.frame_height == 360:
-                # anp = vf_cv.CvHelper.count_pixels("#ff7a89", roi, 15)
                 pf = vf_cv.CvHelper.count_pixels("#f0788a", roi, threshold)
+                arena_pink = vf_cv.CvHelper.count_pixels("#ea6680", roi, threshold)
+                ap2 = vf_cv.CvHelper.count_pixels("#c97a7e", roi, threshold)
+                aw2 = vf_cv.CvHelper.count_pixels("#ffb3b8", roi, threshold)
+                f3 = vf_cv.CvHelper.count_pixels("#f34a68", roi, threshold)
+                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold) 
+                de = vf_cv.CvHelper.count_pixels("#de4c59", roi, threshold)
+                fb = vf_cv.CvHelper.count_pixels("#fb3155", roi, threshold)
+                e1 = vf_cv.CvHelper.count_pixels("#e15868", roi, threshold)
+                pf2 = vf_cv.CvHelper.count_pixels("#f28c93", roi, threshold)
+                de2 = vf_cv.CvHelper.count_pixels("#de5c68", roi, threshold)
+                fe = vf_cv.CvHelper.count_pixels("#fe717c", roi, threshold)
 
                 if debug_winning_round:
+                    cv2.imshow("p1 winning round", self.frame)
+                    debug_string = f"fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
+                    print(debug_string)
                     cv2.imshow(
-                        f"pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}",
+                        debug_string,
                         roi,
                     )
                     cv2.imshow("roi bw player 1", roi_bw)
@@ -295,13 +383,17 @@ class WinningRound:
                 else:
                     if op > 5:
                         return player_num
-                if white_red_count >= 15:
+
+                if self.frame_height == 360 and white_red_count >= 15:
                     return player_num
 
                 if self.frame_height == 480 and other_pink >= 3 and op >= 1:
                     return player_num
 
                 if self.frame_height == 720 and 15 <= other_pink <= 25:
+                    return player_num
+
+                if self.frame_height == 720 and fe > 5 and de > 2:
                     return player_num
 
                 if self.frame_height == 720 and 15 <= opp <= 25:
@@ -316,20 +408,114 @@ class WinningRound:
 
                 # player1 B&W
                 if self.frame_height == 360:
-                    if 120 < roi_bw[6, 33] < 140:
+                    if f34 >= 3 and de2 >= 1:
+                        return player_num
+                    
+                    if de2 >= 15:
+                        return player_num
+                    
+                    if e94966 >= 3 and f3 >= 3:
+                        return player_num
+                    
+                    if pf2 >= 4 and pr >= 1:
                         return player_num
 
-                    if 120 < roi_bw[6, 21] < 140:
+                    if e1 >= 3 and ap2 >= 2:
                         return player_num
 
-                    if roi_bw[6, 21] > 200:
+                    if f3 >= 3 and ap2 >= 3:
                         return player_num
 
-                    if roi_bw[6, 33] > 200:
+                    if f3 >= 5 and pf >= 1:
                         return player_num
 
-                    if roi_bw[6, 6] > 200:
+                    if ap2 >= 1 and de >= 10:
                         return player_num
+
+                    if ap2 >= 2 and 7 <= aw2 <= 15:
+                        return player_num
+
+                    if fb >= 4 and pf >= 1:
+                        return player_num
+
+                    if 2 <= ap2 <= 5 and 1 <= arena_pink <= 3:
+                        return player_num
+
+                    if False:
+                        if (
+                            110 < roi_bw[6, 33] < 140
+                            and 110 < roi_bw[6 - 1, 33] < 140
+                            and roi_bw[6 - 2, 33] < 140
+                        ):
+                            print("p1 01")
+                            return player_num
+
+                        if (
+                            120 < roi_bw[6, 21] < 140
+                            and 120 < roi_bw[5, 21] < 140
+                            and 120 < roi_bw[4, 21] < 140
+                        ):
+                            print("p1 02")
+                            return player_num
+
+                        if (
+                            100 < roi_bw[6, 5] < 120
+                            and 100 < roi_bw[5, 5] < 120
+                            and 100 < roi_bw[4, 5] < 120
+                        ):
+                            print("p1 03")
+                            return player_num
+
+                    if stage != "Temple":
+                        threshold = 200
+
+                        if (
+                            roi_bw[6, 21] > threshold
+                            and roi_bw[5, 21] > threshold
+                            and roi_bw[4, 21] > threshold
+                            and vf_cv.cv_helper.CvHelper.color_similarity(
+                                roi[5, 21],
+                                (
+                                    WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                    WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                    WinningRound.GREY_CIRCLE_COLOR_RED,
+                                ),
+                            )
+                            < 0.90
+                        ):
+                            return player_num
+
+                        if (
+                            roi_bw[6, 33] > threshold
+                            and roi_bw[5, 33] > threshold
+                            and roi_bw[4, 33] > threshold
+                            and vf_cv.cv_helper.CvHelper.color_similarity(
+                                roi[5, 33],
+                                (
+                                    WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                    WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                    WinningRound.GREY_CIRCLE_COLOR_RED,
+                                ),
+                            )
+                            < 0.90
+                        ):
+                            return player_num
+
+                        if (
+                            roi_bw[6, 6] > threshold
+                            and roi_bw[5, 6] > threshold
+                            and roi_bw[4, 6] > threshold
+                            and vf_cv.cv_helper.CvHelper.color_similarity(
+                                roi[5, 6],
+                                (
+                                    WinningRound.GREY_CIRCLE_COLOR_BLUE,
+                                    WinningRound.GREY_CIRCLE_COLOR_GREEN,
+                                    WinningRound.GREY_CIRCLE_COLOR_RED,
+                                ),
+                            )
+                            < 0.90
+                        ):
+                            return player_num
 
                     if pf >= 1 and anp >= 1 and opp >= 1:
                         return player_num

@@ -285,7 +285,7 @@ VS_GRAY_COORDINATES = {
 }
 
 VS_BLACK_COORDINATES = {
-    360: [int(178*0.75), int(363*0.75)],
+    360: [155, 275],
     480: [178, 363],
     720: [int(178 * 1.5), int(363 * 1.5)],
     1080: [int(178 * 2.25), int(363 * 2.25)],
@@ -307,20 +307,20 @@ def is_vs(frame, debug=False):
         debug_message = f"{debug_message} false 1"
         result = False
     else:
-        b1 = frame[
-            IS_VS_BLUE_COORDINATES[height][0], IS_VS_BLUE_COORDINATES[height][1]
-        ][0]
-        b2 = frame[
-            IS_VS_BLUE_COORDINATES[height][0] + 25,
-            IS_VS_BLUE_COORDINATES[height][1] - 125,
-        ][0]
-        frame[
-            IS_VS_BLUE_COORDINATES[height][0] + 25,
-            IS_VS_BLUE_COORDINATES[height][1] - 125,
-        ] = (0, 255, 0)
+        (y1,x1) = IS_VS_BLUE_COORDINATES[height]
+        b1 = frame[y1,x1][0]
 
-        if b1 < 80 and b2 < 80:
-            debug_message = f"{debug_message} false 2"
+        b2 = frame[y1 + 25,x1 - 125][0]
+        if (height == 360):
+            b2 = frame[y1 + 25, 600][0]
+            
+        #frame[
+            #IS_VS_BLUE_COORDINATES[height][0] + 25,
+            #IS_VS_BLUE_COORDINATES[height][1] - 125,
+        #] = (0, 255, 0)
+
+        if (b1 < 80) and (b2 < 80):
+            debug_message = f"{debug_message} false 2  b1[{b1}] b2[{b2}] y{y1} x{x1}  {b1 < 80}  {b2 < 80}"
             result = False
         else:
             (b, g, r) = frame[
@@ -337,17 +337,19 @@ def is_vs(frame, debug=False):
                     debug_message = f"{debug_message} false 4"
                     result = False
                 else:
+                    (y,x) = VS_BLACK_COORDINATES[height]
                     (b, g, r) = frame[
-                        VS_BLACK_COORDINATES[height][0], VS_BLACK_COORDINATES[height][1]
+                        y, x
                     ]
                     if b > 40 or g > 40 or r > 40:
-                        debug_message = f"{debug_message} false 5"
+                        debug_message = f"{debug_message} false 5 for {y} {x}  {r}_{g}_{b}"
                         result = False
+                    
 
     if debug:
         cv2.imshow(debug_message, frame)
         cv2.waitKey()
-
+    
     return result
 
 
