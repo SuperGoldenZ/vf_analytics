@@ -12,14 +12,55 @@ class VsScreen:
     REGIONS_480P = {
         "date": (35, 228, 245, 32),
         "player2character": (584, 228, 245, 32),
+        "stage": (342, 295, 200, 25),
     }
 
+    REGIONS_720P = {
+        'stage': (553, 442, 200, 25),
+    }
+    
     REGIONS_1080P = {
         "date": (694-20, 60-20, 532+20, 73+20),        
         "player1_ringname": (98-5, 708-3, 442+5, 35),
         "player2_ringname": (1322-5, 708-3, 442+5, 35),
+        "stage": (793, 660, 350, 50),
     }
 
+    IS_VS_RED_COORDINATES = {
+        360: [int(91*0.75), int(21*0.75)],
+        480: [91, 21],
+        720: [int(91 * 1.5), int(21 * 1.5)],
+        1080: [int(91 * 2.25), int(21 * 2.25)],
+    }
+
+    IS_VS_BLUE_COORDINATES = {
+        360: [int(91*0.75), int(847*0.75)],
+        480: [91, 847],
+        720: [int(91 * 1.5), int(847 * 1.5)],
+        1080: [int(91 * 2.25), int(847 * 2.25)],
+    }
+
+    IS_P2_BLUE_COORDINATES = {
+        360: [int(296*0.75), int(587*0.75)],
+        480: [296, 587],
+        720: [int(296 * 1.5), int(587 * 1.5)],
+        1080: [int(296 * 2.25), int(587 * 2.25)],
+    }
+
+    VS_GRAY_COORDINATES = {
+        360: [int(186*0.75), int(369*0.75)],
+        480: [186, 369],
+        720: [int(186 * 1.5), int(369 * 1.5)],
+        1080: [int(186 * 2.25), int(369 * 2.25)],
+    }
+
+    VS_BLACK_COORDINATES = {
+        360: [155, 275],
+        480: [178, 363],
+        720: [int(178 * 1.5), int(363 * 1.5)],
+        1080: [int(178 * 2.25), int(363 * 2.25)],
+    }
+    
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -46,7 +87,7 @@ class VsScreen:
         elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
-            (x, y, w, h) = self.REGIONS_1080P[region_name]
+            (x, y, w, h) = self.REGIONS_720P[region_name]
         elif self.frame_height == 1080:
             #print(f"getting 1080p {region_name}")
             (x, y, w, h) = self.REGIONS_1080P[region_name]
@@ -139,3 +180,184 @@ class VsScreen:
             cv2.waitKey()
         
         return (text)        
+
+    def is_vs_ver1(self, debug=False):
+        frame = self.frame
+        height = frame.shape[0]  # Get the dimensions of the frame
+
+        result = True
+
+        debug_message = "is_vs roi"
+        r1 = frame[self.IS_VS_RED_COORDINATES[height][0], self.IS_VS_RED_COORDINATES[height][1]][2]
+        r2 = frame[
+            self.IS_VS_RED_COORDINATES[height][0] + 25, self.IS_VS_RED_COORDINATES[height][1] + 75
+        ][2]
+
+        if r1 < 80 and r2 < 80:
+            debug_message = f"{debug_message} false 1"
+            result = False
+        else:
+            (y1,x1) = self.IS_VS_BLUE_COORDINATES[height]
+            b1 = frame[y1,x1][0]
+
+            b2 = frame[y1 + 25,x1 - 125][0]
+            if (height == 360):
+                b2 = frame[y1 + 25, 600][0]
+                
+            if (b1 < 80) and (b2 < 80):
+                debug_message = f"{debug_message} false 2  b1[{b1}] b2[{b2}] y{y1} x{x1}  {b1 < 80}  {b2 < 80}"
+                result = False
+            else:
+                (b, g, r) = frame[
+                    self.IS_P2_BLUE_COORDINATES[height][0], self.IS_P2_BLUE_COORDINATES[height][1]
+                ]
+                if b < 80:
+                    debug_message = f"{debug_message} false 3"
+                    result = False
+                else:
+                    (b, g, r) = frame[
+                        self.VS_GRAY_COORDINATES[height][0], self.VS_GRAY_COORDINATES[height][1]
+                    ]
+                    if b < 90 or g < 90 or r < 90:
+                        debug_message = f"{debug_message} false 4"
+                        result = False
+                    else:
+                        (y,x) = self.VS_BLACK_COORDINATES[height]
+                        (b, g, r) = frame[
+                            y, x
+                        ]
+                        if b > 40 or g > 40 or r > 40:
+                            debug_message = f"{debug_message} false 5 for {y} {x}  {r}_{g}_{b}"
+                            result = False
+                        
+
+        if debug:
+            cv2.imshow(debug_message, frame)
+            cv2.waitKey()
+        
+        return result
+        
+    @staticmethod
+    def all_but_grey(roi):
+        lower_white = np.array([165, 165, 165])  # Lower bound of white color
+        upper_white = np.array([255, 255, 255])  # Upper bound of white color
+        mask = cv2.inRange(roi, lower_white, upper_white)
+
+        # Apply the mask to keep only white areas in the ROI
+        white_only_roi = cv2.bitwise_and(roi, roi, mask=mask)
+        return white_only_roi
+
+
+    def get_stage(self, debug_stage=False):
+        region_name = "stage"
+        frame = self.frame
+        
+        height = frame.shape[0]  # Get the dimensions of the frame
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = frame[y : y + h, x : x + w]
+
+        all_white_roi = VsScreen.all_but_grey(roi)
+
+        imagem = cv2.bitwise_not(all_white_roi)                
+
+        text = pytesseract.image_to_string(imagem, config="--psm 6")
+        text = str.replace(text, "\n\x0c", "").upper()
+
+        if debug_stage:            
+            cv2.imshow(f"{height} stage [{text}]", frame)
+            cv2.imshow(f"{height} {text}", imagem)
+            cv2.imshow(f"{height} original roi", roi)
+            cv2.waitKey()
+
+        if text == "WATER FALLS":
+            return "Waterfalls"
+
+        if text == "ISLAND":
+            return "Island"
+
+        if text == "SSFAND":
+            return "Island"
+
+        if text == "TAMPIA":
+            return "Temple"
+
+        if len(text) == 6 and "LAND" in text:
+            return "Island"
+
+        if "ARENA" == text:
+            return "Arena"
+
+        if "PALCE" == text:
+            return "Palace"
+
+        if "AURORA" == text:
+            return "Aurora"
+
+        if "TEMPLE" == text:
+            return "Temple"
+
+        if "SUMO RING" == text:
+            return "Sumo Ring"
+
+        if "RUINS" == text:
+            return "Ruins"
+
+        if "STATUES" in text or "STAT" in text:
+            return "Statues"
+
+        if "GREAT WALL" == text:
+            return "Great Wall"
+
+        if "WALL" in text:
+            return "Great Wall"
+
+        if "CITY" in text:
+            return "City"
+
+        if "TERRACE" == text:
+            return "Terrace"
+
+        if "RIVER" == text:
+            return "River"
+
+        if "FALL" in text:
+            return "Waterfalls"
+
+        if "WATER" in text:
+            return "Waterfalls"
+
+        if "WATERFALLS" in text:
+            return "Waterfalls"
+
+        if "GRASS" in text:
+            return "Grassland"
+
+        if "DEEP" in text:
+            return "Deep Mountain"
+
+        if "BROKEN" in text or "House" in text:
+            return "Broken House"
+
+        if "GENESIS" == text:
+            return "Genesis"
+
+        if "SHRINE" == text:
+            return "Shrine"
+
+        if text == "TRAINING ROOM":
+            return "Training Room"
+
+        if "SNOW" in text:
+            return "Snow Mountain"
+
+        if "PALACE" in text:
+            return "Palace"
+
+        if "TEMPLE" in text:
+            return "Temple"
+
+        if "RUINS" in text:
+            return "Ruins"
+
+        return None

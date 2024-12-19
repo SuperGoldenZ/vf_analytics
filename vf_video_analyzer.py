@@ -8,6 +8,7 @@ import ffmpeg
 import cv2
 import VideoCaptureAsync
 import vf_cv.match_analyzer
+import vf_cv.revo
 import vf_analytics
 import vf_data
 import vf_data.match
@@ -22,12 +23,12 @@ PROCESS_VS_ONLY = False
 PROCESS_SHUN_ONLY = True
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="vf_match_analyzer.log",
-    encoding="utf-8",
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-)
+#logging.basicConfig(
+    #filename="vf_match_analyzer.log",
+    #encoding="utf-8",
+    #level=logging.INFO,
+    #format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+#)
 
 resize_video = False
 youtube_auth = True
@@ -68,14 +69,15 @@ def print_error_csv(match: vf_data.Match, resolution, error_message):
         )
 
 
-def get_saved_video_resolution(video_id):
+def get_saved_video_resolution(video_id, url=None):
     if os.path.isfile(f"assets/videos/{video_id}_480p/video.mp4"):
         return 480
     if os.path.isfile(f"assets/videos/{video_id}_1080p/video.mp4"):
         return 1080
     if os.path.isfile(f"assets/videos/{video_id}_720p/video.mp4"):
         return 720
-
+    if os.path.isfile(url):
+        return 1080
     return 0
 
 
@@ -89,6 +91,8 @@ def check_string_in_file(file_path, string_to_search):
                 return True
     return False
 
+def is_youtube_url(url):
+    return "youtube" in url
 
 def analyze_video(url, cam=-1, process_vs_only=False):
     print(f"\n=========\nAnalyze video {url} - START")
@@ -100,15 +104,22 @@ def analyze_video(url, cam=-1, process_vs_only=False):
     jpg_folder = None
     error_message = None
     match_analyzer = None
-
+    saved_video_resolution = None
+    ys = None
+    resolution=None
+    temp_title = None    
+    
     if url is not None:
-        video_id = youtube_helper.get_youtube_video_id(url)
-
-        temp_title = read_video_title(video_id)
-        if (PROCESS_SHUN_ONLY and temp_title is not None and "舜" not in temp_title):
-            print("skipping because not shun")
-            return True
-
+        if (is_youtube_url(url)):
+            video_id = youtube_helper.get_youtube_video_id(url)
+            temp_title = read_video_title(video_id)
+            
+            if (PROCESS_SHUN_ONLY and temp_title is not None and "舜" not in temp_title):
+                print("skipping because not shun")
+                return True
+        else:
+            video_id = pathlib.Path(url).stem
+        
         if pathlib.Path(f"match_data_{video_id}.csv").is_file():
             print(f"\tSkipping {video_id} since it's already in match data")
             return
@@ -130,13 +141,13 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         resolution = None
         jpg_folder = None
 
-        saved_video_resolution = get_saved_video_resolution(video_id)
+        saved_video_resolution = get_saved_video_resolution(video_id, url)
         resolution = f"{saved_video_resolution}p"
         ys = None
 
         if saved_video_resolution == 0:
             # """Video not saved locally, download"""
-
+                        
             ys = youtube_helper.get_stream(url, process_vs_only=process_vs_only)
             resolution = ys.resolution
             vf_analytics.resolution = resolution
@@ -195,8 +206,13 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             if PROCESS_STREAMED_VIDEOS and saved_video_resolution == 0:
                 # print(f"Processing strem for {ys.url}")
                 cap = VideoCaptureAsync.VideoCaptureAsync(ys.url)
-            else:
+            elif os.path.isfile(video_path):
                 cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
+            elif os.path.isfile(url):
+                cap = VideoCaptureAsync.VideoCaptureAsync(url)
+            else:
+                raise Exception(f"File not found {url}")
+            
             frame_rate = round(cap.get_frame_rate())
             frame_count = cap.get_frame_count()
         else:
@@ -425,7 +441,10 @@ def save_video_url(video_id, resolution, frame_rate, url):
         )
 
 # Main function to run the whole process
-def main(video_url=None, playlists_file=None, playlist_file=None, cam=-1, process_vs_only = False):
+def main(video_url=None, playlists_file=None, playlist_file=None, cam=-1, process_vs_only = False, revo = False):
+
+    if (revo):
+        vf_cv.REVO.capture_window()
 
     if video_url is not None and "list=" in video_url:
         process_playlist(video_url, process_vs_only)
@@ -480,6 +499,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--force_append", default=None, help="Force overwrite videos")
     parser.add_argument("--cam", default=None, help="Set to capture from camera")
+    parser.add_argument("--revo", default=None, help="Set to capture from R.E.V.O. in Windows")
     # parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
 
     args = parser.parse_args()
@@ -535,10 +555,13 @@ if __name__ == "__main__":
     if cam is not None:
         cam_int = int(cam)
 
+    revo = vars(args)["revo"]
+
     main(
         video_url=video_url,
         playlists_file=playlists_file,
         playlist_file=playlist_file,
         cam=cam_int,
-        process_vs_only=PROCESS_VS_ONLY
+        process_vs_only=PROCESS_VS_ONLY,
+        revo=revo is not None
     )

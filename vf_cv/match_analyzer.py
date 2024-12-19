@@ -100,7 +100,7 @@ class MatchAnalyzer:
             if result is not None:
                 actual_count = result
 
-            result = self.analyze_next_frame(cam)
+            result = self.analyze_next_frame()
             if result is not None:
                 return result
 
@@ -141,10 +141,19 @@ class MatchAnalyzer:
         while actual_count < count_int:
             try:
                 self.frame = self.cap.read()
+                original_height, original_width = self.frame.shape[:2]
+                
+                if (original_height != 720):
+                    self.frame = cv2.resize(self.frame, (1280, 720))
+                    
                 self.process_fight_shun_drinks(actual_count)
             except:
                 time.sleep(5)
+                                
                 self.frame = self.cap.read()
+                if (original_height != 720):
+                    self.frame = cv2.resize(self.frame, (1280, 720))
+                
                 self.process_fight_shun_drinks(actual_count)
 
             if self.frame is None:
@@ -168,7 +177,8 @@ class MatchAnalyzer:
     def analyze_next_frame(self):
         self.original_frame = self.frame
         self.frame_height = self.frame.shape[0]  # Get the dimensions of the frame
-
+        
+        #print(f"Analyze frame height {self.frame_height}")
         if self.state == "before":
             self.process_before_vs()
             return
@@ -189,7 +199,7 @@ class MatchAnalyzer:
         original_out_filename = (
             self.jpg_folder + "/original/" + str(f"{self.count}_{suffix}") + ".png"
         )
-
+                
         if not os.path.isfile(original_out_filename):
             cv2.imwrite(original_out_filename, self.frame)
 
@@ -197,14 +207,12 @@ class MatchAnalyzer:
     def process_before_vs(self):
         self.logger.debug(f"BEFORE - searching for vs frame count {self.count}")
         stage = None
-        if vf_analytics.is_vs(self.frame):
-            print("got VS!")
-            if self.frame_height != 480:
-                frame_480p = cv2.resize(self.frame, (854, 480))
-            else:
-                frame_480p = self.frame
-
-            stage = vf_analytics.get_stage(frame_480p)
+    
+        self.vs_screen.set_frame(self.frame)    
+        if self.vs_screen.is_vs_ver1():
+            print("Found VS screen")
+            stage = self.vs_screen.get_stage()
+            print(f"Got stage {stage}")
             if stage is None:
                 self.save_cam_frame("invalid_is_vs")
 
@@ -220,9 +228,7 @@ class MatchAnalyzer:
             self.state = "vs"
             self.logger.debug(
                 f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
-            )
-
-            # print(f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}")
+            )            
         else:
             self.count += int(self.frame_rate * self.interval * 40)
             del self.frame
@@ -283,9 +289,11 @@ class MatchAnalyzer:
             self.player_rank.set_frame(self.frame)
             self.player_rank.set_youtube_video_title(self.youtube_video_title)
 
+            debug_player_rank = True
+            
             try:
                 if self.match.player1rank is None:
-                    player1rank = self.player_rank.get_player_rank(1)
+                    player1rank = self.player_rank.get_player_rank(1, debug_player_rank)
                     self.match.player1rank = player1rank
                     if player1rank == 0:
                         self.save_cam_frame(
@@ -293,7 +301,7 @@ class MatchAnalyzer:
                         )
 
                 if self.match.player2rank is None:
-                    player2rank = self.player_rank.get_player_rank(2)
+                    player2rank = self.player_rank.get_player_rank(2, debug_player_rank)
                     self.match.player2rank = player2rank
                     if player2rank == 0:
                         self.save_cam_frame(

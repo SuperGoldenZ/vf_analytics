@@ -15,6 +15,8 @@ class PlayerRank:
 
     REGIONS_720P = {
         "player1rank": (108, 137, 21, 18),
+        "player1rank_full_vs": (319,437,86,34),
+        "player2rank_full_vs": (1136,659,126,50),
         "player1rank_full": (
             int(23 * 1.5) - 10,
             int(82 * 1.5) - 6,
@@ -31,7 +33,7 @@ class PlayerRank:
     }
 
     # REGIONS_720P = {
-    # "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
+# "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
     # "player1rank_full": (23*1.5, 82*1.5, 165, 55),
     # "player2rank": (820*1.5, 91*1.5, 14*1.5, 12*1.5),
     # "player2rank_full": (1718, 80, 165, 55),
@@ -548,7 +550,8 @@ class PlayerRank:
             ##########################
             ## second roi
             ##########################
-            (x, y, w, h) = REGULAR_REGION_ROI
+            (x, y, w, h) = self.get_roi(f"player{player_num}rank_full_vs")
+            
             if retry == 1:
                 w = w - 3
                 x = x + 2
@@ -575,18 +578,30 @@ class PlayerRank:
 
             roi = self.frame[y : y + h, x : x + w]
             all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-                roi, np.array([100, 100, 105])
+                roi, np.array([200, 200, 200])
             )
 
             imagem = cv2.bitwise_not(all_white_roi)
 
-            text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
-
+            text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 4")
+            kyu_pattern = r'(\d{1,2})\s*th\s*kyu'
+            matches = re.findall(kyu_pattern, text)
+            
+            if (debug_player_rank):
+                print(f"{x} {y} {w} {h} {text}")
+                print("kyu matches")
+                print(matches)
+                cv2.imshow(f"player rank full {self.frame_height}", self.frame)
+                cv2.imshow(f"rank [{text}]", imagem)
+                cv2.imshow(f"roi [{text}]", roi)
+                cv2.waitKey()
+                
             text = re.sub("[^0-9]", "", text)
-
+            
             if not text.isnumeric() or int(text) < 10:
                 continue
 
+            
             greyCount = vf_cv.CvHelper.count_pixels("#7c7a82", roi)
 
             rank_int = int(text)

@@ -2,18 +2,18 @@ import re
 import logging
 import cv2
 import numpy as np
-import pytesseract
 import vf_cv
+import pytesseract
 
 # PS4 Resolution is 1920 x 1080 1080P
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="vf_analytics.log",
-    encoding="utf-8",
-    level=logging.ERROR,
-    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-)
+#logging.basicConfig(
+    #filename="vf_analytics.log",
+    #encoding="utf-8",
+    #level=logging.ERROR,
+    #format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+#)
 
 resolution = "1080p"
 excellent = cv2.imread("assets/test_images/480p/excellent/excellent.png")
@@ -255,104 +255,6 @@ def get_dimensions(region_name, local_resolution, override_region=None):
         h = (int)(h * 1.5)
     return (x, y, w, h)
 
-
-IS_VS_RED_COORDINATES = {
-    360: [int(91*0.75), int(21*0.75)],
-    480: [91, 21],
-    720: [int(91 * 1.5), int(21 * 1.5)],
-    1080: [int(91 * 2.25), int(21 * 2.25)],
-}
-
-IS_VS_BLUE_COORDINATES = {
-    360: [int(91*0.75), int(847*0.75)],
-    480: [91, 847],
-    720: [int(91 * 1.5), int(847 * 1.5)],
-    1080: [int(91 * 2.25), int(847 * 2.25)],
-}
-
-IS_P2_BLUE_COORDINATES = {
-    360: [int(296*0.75), int(587*0.75)],
-    480: [296, 587],
-    720: [int(296 * 1.5), int(587 * 1.5)],
-    1080: [int(296 * 2.25), int(587 * 2.25)],
-}
-
-VS_GRAY_COORDINATES = {
-    360: [int(186*0.75), int(369*0.75)],
-    480: [186, 369],
-    720: [int(186 * 1.5), int(369 * 1.5)],
-    1080: [int(186 * 2.25), int(369 * 2.25)],
-}
-
-VS_BLACK_COORDINATES = {
-    360: [155, 275],
-    480: [178, 363],
-    720: [int(178 * 1.5), int(363 * 1.5)],
-    1080: [int(178 * 2.25), int(363 * 2.25)],
-}
-
-
-def is_vs(frame, debug=False):
-    height = frame.shape[0]  # Get the dimensions of the frame
-
-    result = True
-
-    debug_message = "is_vs roi"
-    r1 = frame[IS_VS_RED_COORDINATES[height][0], IS_VS_RED_COORDINATES[height][1]][2]
-    r2 = frame[
-        IS_VS_RED_COORDINATES[height][0] + 25, IS_VS_RED_COORDINATES[height][1] + 75
-    ][2]
-
-    if r1 < 80 and r2 < 80:
-        debug_message = f"{debug_message} false 1"
-        result = False
-    else:
-        (y1,x1) = IS_VS_BLUE_COORDINATES[height]
-        b1 = frame[y1,x1][0]
-
-        b2 = frame[y1 + 25,x1 - 125][0]
-        if (height == 360):
-            b2 = frame[y1 + 25, 600][0]
-            
-        #frame[
-            #IS_VS_BLUE_COORDINATES[height][0] + 25,
-            #IS_VS_BLUE_COORDINATES[height][1] - 125,
-        #] = (0, 255, 0)
-
-        if (b1 < 80) and (b2 < 80):
-            debug_message = f"{debug_message} false 2  b1[{b1}] b2[{b2}] y{y1} x{x1}  {b1 < 80}  {b2 < 80}"
-            result = False
-        else:
-            (b, g, r) = frame[
-                IS_P2_BLUE_COORDINATES[height][0], IS_P2_BLUE_COORDINATES[height][1]
-            ]
-            if b < 80:
-                debug_message = f"{debug_message} false 3"
-                result = False
-            else:
-                (b, g, r) = frame[
-                    VS_GRAY_COORDINATES[height][0], VS_GRAY_COORDINATES[height][1]
-                ]
-                if b < 90 or g < 90 or r < 90:
-                    debug_message = f"{debug_message} false 4"
-                    result = False
-                else:
-                    (y,x) = VS_BLACK_COORDINATES[height]
-                    (b, g, r) = frame[
-                        y, x
-                    ]
-                    if b > 40 or g > 40 or r > 40:
-                        debug_message = f"{debug_message} false 5 for {y} {x}  {r}_{g}_{b}"
-                        result = False
-                    
-
-    if debug:
-        cv2.imshow(debug_message, frame)
-        cv2.waitKey()
-    
-    return result
-
-
 def get_stage_roi(frame):
     region_name = "stage"
 
@@ -375,124 +277,6 @@ def get_stage_roi(frame):
 
     imagem = cv2.bitwise_not(all_white_roi)
     return imagem
-
-
-# Min width of frame is 85
-def get_stage(frame, debug_stage=False):
-    region_name = "stage"
-
-    height = frame.shape[0]  # Get the dimensions of the frame
-    (x, y, w, h) = get_dimensions(region_name, f"{height}p")
-
-    roi = frame[y : y + h, x : x + w]
-
-    all_white_roi = all_but_grey(roi)
-
-    imagem = cv2.bitwise_not(all_white_roi)
-
-    global stage_roi
-    stage_roi = imagem
-
-    text = pytesseract.image_to_string(imagem, config="--psm 6")
-    text = str.replace(text, "\n\x0c", "").upper()
-
-    if debug_stage:
-        cv2.imshow(f"{height} {text}", stage_roi)
-        cv2.imshow(f"{height} stage", frame)
-        cv2.waitKey()
-
-    if text == "WATER FALLS":
-        return "Waterfalls"
-
-    if text == "ISLAND":
-        return "Island"
-
-    if text == "SSFAND":
-        return "Island"
-
-    if text == "TAMPIA":
-        return "Temple"
-
-    if len(text) == 6 and "LAND" in text:
-        return "Island"
-
-    if "ARENA" == text:
-        return "Arena"
-
-    if "PALCE" == text:
-        return "Palace"
-
-    if "AURORA" == text:
-        return "Aurora"
-
-    if "TEMPLE" == text:
-        return "Temple"
-
-    if "SUMO RING" == text:
-        return "Sumo Ring"
-
-    if "RUINS" == text:
-        return "Ruins"
-
-    if "STATUES" == text:
-        return "Statues"
-
-    if "GREAT WALL" == text:
-        return "Great Wall"
-
-    if "WALL" in text:
-        return "Great Wall"
-
-    if "CITY" in text:
-        return "City"
-
-    if "TERRACE" == text:
-        return "Terrace"
-
-    if "RIVER" == text:
-        return "River"
-
-    if "FALL" in text:
-        return "Waterfalls"
-
-    if "WATER" in text:
-        return "Waterfalls"
-
-    if "WATERFALLS" in text:
-        return "Waterfalls"
-
-    if "GRASS" in text:
-        return "Grassland"
-
-    if "DEEP" in text:
-        return "Deep Mountain"
-
-    if "BROKEN" in text or "House" in text:
-        return "Broken House"
-
-    if "GENESIS" == text:
-        return "Genesis"
-
-    if "SHRINE" == text:
-        return "Shrine"
-
-    if text == "TRAINING ROOM":
-        return "Training Room"
-
-    if "SNOW" in text:
-        return "Snow Mountain"
-
-    if "PALACE" in text:
-        return "Palace"
-
-    if "TEMPLE" in text:
-        return "Temple"
-
-    if "RUINS" in text:
-        return "Ruins"
-
-    return None
-
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and

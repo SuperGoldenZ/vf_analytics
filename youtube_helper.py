@@ -8,9 +8,9 @@ from pytubefix import YouTube
 from pytubefix import Playlist
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    filename="analyze_youtube.log", encoding="utf-8", level=logging.ERROR
-)
+#logging.basicConfig(
+    #filename="analyze_youtube.log", encoding="utf-8", level=logging.ERROR
+#)
 
 RESOLUTION_720P = "720p"
 RESOLUTION_360P = "360p"
