@@ -1,11 +1,11 @@
 import pytest
 import cv2
 import os
-import vf_analytics
-import vf_cv.stage
-import traceback
+import vf_cv.vs_screen
 
-test_data = [
+test_data = [    
+    ["assets/test_images/720p/vs/statues.png", "Statues"],
+    ["assets/test_images/720p/vs/statues_02.png", "Statues"],
     #["assets/test_images/480p/main_menu.png", None],
     ["assets/test_images/480p/stage/deep_mountain.png", "Deep Mountain"],
     ["assets/test_images/1080p/stage/snow_mountain.jpg", "Snow Mountain"],
@@ -28,8 +28,6 @@ test_data = [
     ["assets/test_images/vs_akira.png", "Great Wall"],
 ]
 
-stage = vf_cv.stage.Stage()
-
 @pytest.mark.parametrize("image_filename, expected_stage_name", test_data)
 def test_get_stage(image_filename, expected_stage_name):
     """Tests OCR for seeing if a winning round or not"""
@@ -40,12 +38,17 @@ def test_get_stage(image_filename, expected_stage_name):
         assert image is not None
 
         actual_stage = None
+
+        vs_screen = vf_cv.vs_screen.VsScreen()
         
-        roi = vf_analytics.get_stage_roi(image)
+        vs_screen.set_frame(image)
+        
+        #roi = vf_analytics.get_stage_roi(image)
         #cv2.imshow("roi", roi)
         #cv2.waitKey()
 
-        actual_stage = stage.get_stage(roi)
+        DEBUG = True
+        actual_stage = vs_screen.get_stage(DEBUG)
         
         assert (
             actual_stage == expected_stage_name
