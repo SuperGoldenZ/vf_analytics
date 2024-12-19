@@ -15,8 +15,8 @@ class PlayerRank:
 
     REGIONS_720P = {
         "player1rank": (108, 137, 21, 18),
-        "player1rank_full_vs": (319,437,86,34),
-        "player2rank_full_vs": (1136,659,126,50),
+        "player1rank_full_vs": (315, 437, 86, 34),
+        "player2rank_full_vs": (1136, 437, 86, 34),
         "player1rank_full": (
             int(23 * 1.5) - 10,
             int(82 * 1.5) - 6,
@@ -33,7 +33,7 @@ class PlayerRank:
     }
 
     # REGIONS_720P = {
-# "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
+    # "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
     # "player1rank_full": (23*1.5, 82*1.5, 165, 55),
     # "player2rank": (820*1.5, 91*1.5, 14*1.5, 12*1.5),
     # "player2rank_full": (1718, 80, 165, 55),
@@ -59,7 +59,13 @@ class PlayerRank:
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-        self.frame_height = frame.shape[0]
+        original_height = self.frame.shape[0]
+        if original_height != 720:
+            self.frame = cv2.resize(self.frame, (1280, 720))
+
+        self.frame_height = self.frame.shape[0]
+
+        print(f"player rank frame height; {self.frame_height}")
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -83,22 +89,34 @@ class PlayerRank:
             h = (int)(h * 2.25) - 10
         return (x, y, w, h)
 
+    @staticmethod
+    def is_numeric_string(var):
+        try:
+            float(var)
+            return True
+        except ValueError:
+            return False
+
     # min width 25
     def get_player_rank(self, player_num, debug_player_rank=False):
 
         # short circuit with video title
         if (
-            self.youtube_video_title is not None            
-            and ("【VFes  VF5us 高段位戦】" in self.youtube_video_title or "【VFes高段位戦】" in self.youtube_video_title or "名人戦" in self.youtube_video_title
-                 or "【VFes / VF5us 高段位戦】" in self.youtube_video_title)
+            self.youtube_video_title is not None
+            and (
+                "【VFes  VF5us 高段位戦】" in self.youtube_video_title
+                or "【VFes高段位戦】" in self.youtube_video_title
+                or "名人戦" in self.youtube_video_title
+                or "【VFes / VF5us 高段位戦】" in self.youtube_video_title
+            )
             and "VS" in self.youtube_video_title
         ):
-            split = self.youtube_video_title.strip().split("V")            
-            index=0
+            split = self.youtube_video_title.strip().split("V")
+            index = 0
             if player_num == 2:
-                index = len(split)-1
+                index = len(split) - 1
             else:
-                index = len(split)-2
+                index = len(split) - 2
 
             if "鬼武帝" in split[index]:
                 return 40
@@ -520,136 +538,48 @@ class PlayerRank:
         if purple_count > 8:
             return 42
 
-        for retry in range(0, 9):
+        ##########################
+        ## second roi
+        ##########################
+        (x, y, w, h) = self.get_roi(f"player{player_num}rank_full_vs")
 
-            if retry == 8:
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[37]
-                )
+        frame_copy = self.frame.copy()
 
-                if compares > 38:
-                    return 37
+        roi = frame_copy[y : y + h, x : x + w]
+        all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
+            roi, np.array([195, 185, 185])
+        )
 
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[43]
-                )
+        imagem = cv2.bitwise_not(all_white_roi)
 
-                if compares > 38:
-                    return 43
+        text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 4")
+        kyu_pattern = r"(\d{1,2})th"
+        matches = re.findall(kyu_pattern, text)
 
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[44]
-                )
+        # todo update here
+        if debug_player_rank:
+            print(f"{x} {y} {w} {h} {text}")
+            print("kyu matches")
+            print(matches)
+            cv2.imshow(f"player rank full {self.frame_height}", self.frame)
+            cv2.imshow(f"rank [{text}]", imagem)
+            cv2.imshow(f"roi [{text}]", roi)
+            cv2.waitKey()
 
-                if compares > 38:
-                    return 44
+        if "k" in text and PlayerRank.is_numeric_string(matches[0]):
+            print(f"returning kyu {(int(matches[0]))}  returning {11-int(matches[0])}")
+            return 11 - int(matches[0])
 
-                raise UnrecognizePlayerRankException(debug_string)
-                # return 0
+        text = re.sub("[^0-9]", "", text)
 
-            ##########################
-            ## second roi
-            ##########################
-            (x, y, w, h) = self.get_roi(f"player{player_num}rank_full_vs")
-            
-            if retry == 1:
-                w = w - 3
-                x = x + 2
-            elif retry == 2:
-                x = x - 29
-                y = y - 10
-            elif retry == 6 and player_num == 1:
-                w = w + 10
-            elif retry == 6 and player_num == 2:
-                x = x - 5
-                w = w + 5
-                h = h + 3
-            elif retry == 7 and player_num == 2:
-                x = x - 2
-                w = w + 2
-            elif retry == 7 and player_num == 1:
-                y = y - 1
-                w = w - 1
-                x = x + 3
-            elif retry == 8 and player_num == 1:
-                y = y + 1
-                h = h - 3
-                x = x + 2
+        if not text.isnumeric():
+            raise UnrecognizePlayerRankException(debug_string)
 
-            roi = self.frame[y : y + h, x : x + w]
-            all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-                roi, np.array([200, 200, 200])
-            )
+        rank_int = int(text)
+        if rank_int <= 0 or rank_int >= 46:
+            raise UnrecognizePlayerRankException(debug_string)
 
-            imagem = cv2.bitwise_not(all_white_roi)
-
-            text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 4")
-            kyu_pattern = r'(\d{1,2})\s*th\s*kyu'
-            matches = re.findall(kyu_pattern, text)
-            
-            #todo update here
-            if (debug_player_rank):
-                print(f"{x} {y} {w} {h} {text}")
-                print("kyu matches")
-                print(matches)
-                cv2.imshow(f"player rank full {self.frame_height}", self.frame)
-                cv2.imshow(f"rank [{text}]", imagem)
-                cv2.imshow(f"roi [{text}]", roi)
-                cv2.waitKey()
-                
-            text = re.sub("[^0-9]", "", text)
-            
-            if not text.isnumeric() or int(text) < 10:
-                continue
-
-            
-            greyCount = vf_cv.CvHelper.count_pixels("#7c7a82", roi)
-
-            rank_int = int(text)
-            if rank_int == 38 and white_count == 8:
-                return 39
-
-            if rank_int > 46 and retry < 3:
-                continue
-
-            if (rank_int >= 40 and greyCount > 130) and rank_int <= 56:
-                continue
-
-            if rank_int < 0 or rank_int > 46:
-                continue
-
-            if grellow_count > 150 and ry > 60 and rank_int < 30:
-                continue
-
-            if gold_count > 300 and rank_int < 36:
-                continue
-
-            if (
-                grey < 400
-                and rank_int > 36
-                and white_count > 230
-                and grellow_count < 30
-            ):
-                continue
-
-            if rank_int == 35 and gold_count > 200:
-                continue
-
-            if (
-                rank_int > 41
-                and gold_count > 300
-                and teal_count > 10
-                and grellow_count > 200
-            ):
-                continue
-
-            if rank_int == 0:
-                raise UnrecognizePlayerRankException(debug_string)
-
-            return rank_int
-
-        raise UnrecognizePlayerRankException(debug_string)
-        # return 0
+        return rank_int
 
 
 class UnrecognizePlayerRankException(Exception):
