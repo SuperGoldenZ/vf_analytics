@@ -587,6 +587,7 @@ class PlayerRank:
             kyu_pattern = r'(\d{1,2})\s*th\s*kyu'
             matches = re.findall(kyu_pattern, text)
             
+            #todo update here
             if (debug_player_rank):
                 print(f"{x} {y} {w} {h} {text}")
                 print("kyu matches")
