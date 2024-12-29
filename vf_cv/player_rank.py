@@ -5,6 +5,53 @@ import re
 import numpy as np
 
 
+# 級。 Kyu Group [2 White Characters / No rectangle background]
+# 十級 - 一級 10th Kyu to 1st Kyu
+#
+# 段。 Dan Group [2 White Characters / No rectangle background]
+# 初段 - 十段 1st Dan to 10th Dan
+#
+# 士。 Shi Group [2 White Characters / Wood (light brown) Background]
+# 錬士 1 Star - Hunter
+# 烈士 2 Star - Raider
+# 傑士 3 Star - Barbarian
+#
+# 者。 Mono Group [2 White Characters / Light Grey Background]
+# 強者 1 Star - Defender
+# 猛者 2 Star - Sentinel
+# 王者 3 Star - Guardian
+#
+# 人。 Jin Group [2 White Characters / Dark Grey Background]
+# 名人 1 Star - Warrior
+# 達人 2 Star - Veteran
+# 超人 3 Star - Berserker
+#
+# 将。 Shou Group [2 White Characters / Dark Brown Background]
+# 智将 1 Star - Assassin
+# 猛将 2 Star - Shatterer
+# 闘将 3 Star - Destroyer
+#
+# 魔王。 Maou Group [3 White Characters / Light Silver Background]
+# 大魔王 1 Star - Avenger
+# 真魔王 2 Star - Vanquisher
+# 天魔王 3 Star - Conqueror
+#
+# 拳聖。 Kensei Group [3 White Characters / Gold Background]
+# 空拳聖 1 Star - Darkslayer
+# 撃拳聖 2 Star - Grimslayer
+# 剛拳聖 3 Star - Doomslayer
+#
+# 武帝。 Butei Group [3 White Characters / Dark Silver with Blue + Green in the middle Background
+# 獣武帝 1 Star - Tigerclaw
+# 鬼武帝 2 Star - Lionheart
+# 龍武帝 3 Star - Dragonfang
+#
+# マスター。 Master Group ("Gods" Ranks)
+# 轟雷神 Gouraishin (God of Thunder) - Gold Characters / Blue Background with a white stripe in the middle Stormlord
+# 爆焔神 Bakuenshin (God of Flame)- Gold Characters / Orange (top) to Yellow (bottom) Background Magmalord
+# 天翔神 Tenshoushin (Soaring Sky God) - Gold Characters / Orange and White (middle) Background Skylord
+
+
 class PlayerRank:
     REGIONS_480P = {
         "player1rank": (72, 91, 14, 12),
@@ -200,8 +247,12 @@ class PlayerRank:
             kyu_pattern = r"(\d{1,2})rd"
         if "st" in text:
             kyu_pattern = r"(\d{1,2})st"
+        if "nd" in text:
+            kyu_pattern = r"(\d{1,2})nd"
 
         matches = re.findall(kyu_pattern, text)
+
+        is_dan = False
 
         # todo update here
         if debug_player_rank:
@@ -213,11 +264,17 @@ class PlayerRank:
             cv2.imshow(f"roi [{text}]", roi)
             cv2.waitKey()
 
+        if "st dan" in text:
+            return 11
+
         if "Darh" in text:
             return 23
 
         if "Wart" in text:
             return 27
+
+        if "Raider" in text:
+            return 22
 
         if "arrior" in text:
             return 27
@@ -228,10 +285,12 @@ class PlayerRank:
         if "i" in text and "23" in text:
             return 23
 
+        is_kyu = "k" in text
         if (
-            "k" in text
+            is_kyu
             and len(matches) > 0
             and PlayerRank.is_numeric_string(matches[0])
+            # and (matches[0]) != "5"  #skip for 5th 9th
         ):
             if debug_player_rank:
                 print(
@@ -239,10 +298,14 @@ class PlayerRank:
                 )
             return 11 - int(matches[0])
 
+        is_dan = "d" in text
+        fifth = len(matches) > 0 and matches[0] == "5"
+
         if (
-            "d" in text
+            is_dan
             and len(matches) > 0
             and PlayerRank.is_numeric_string(matches[0])
+            and (matches[0]) != "5"  # skip for 5th 9th
         ):
             if debug_player_rank:
                 print(
@@ -253,7 +316,7 @@ class PlayerRank:
         text = re.sub("[^0-9]", "", text)
 
         # retry with small
-        if not text.isnumeric():
+        if not text.isnumeric() or (matches[0]) == "5":  # skip for 5th 9th:
             (x, y, w, h) = self.get_roi(f"player{player_num}rank_small")
 
             if debug_player_rank:
@@ -262,13 +325,14 @@ class PlayerRank:
             roi = frame_copy[y : y + h, x : x + w]
 
             all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-                roi, np.array([170, 170, 170])
+                roi, np.array([165, 160, 160])
             )
 
             all_white_roi = cv2.cvtColor(all_white_roi, cv2.COLOR_BGR2GRAY)
 
             imagem = cv2.bitwise_not(all_white_roi)
             imagem = vf_cv.CvHelper.add_white_column(imagem, 5, True)
+            imagem = vf_cv.CvHelper.add_white_row(imagem, 5)
 
             # gray_image_t = vf_cv.CvHelper.add_white_row(gray_image_t, 15)
 
@@ -289,6 +353,9 @@ class PlayerRank:
                 cv2.imshow(f"roi [{text}]", roi)
                 cv2.waitKey()
                 cv2.waitKey()
+
+            if fifth and is_dan and text == "14":
+                return 19
 
             if not text.isnumeric():
                 raise UnrecognizePlayerRankException(debug_string)
