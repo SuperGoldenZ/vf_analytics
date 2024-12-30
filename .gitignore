@@ -3,3 +3,7 @@ __pycache__/
 *.csv
 *.lprof
 src/
+*prof*
+*backup
+token.json
+match_data*
