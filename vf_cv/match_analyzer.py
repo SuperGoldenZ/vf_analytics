@@ -1,8 +1,11 @@
+"""This module provide functions to extract information from a VFES/US game frame"""
+
 import traceback
-import sys
 import os
 import time
 import cv2
+
+from line_profiler import profile
 
 import vf_data.match
 import vf_analytics
@@ -10,17 +13,19 @@ import vf_cv.winning_frame
 import vf_cv.winning_round
 import vf_cv.character
 import vf_cv.vs_screen
-from line_profiler import profile
+import vf_cv.revo
+import vf_cv.video_capture_async
 
 
 class MatchAnalyzer:
+    """This is the class that analyzes a video of a match, extracts and stores data into other classes"""
 
-    DONT_SAVE = True
-    SAVE_PIC_ALL = True
+    DONT_SAVE = False
+    SAVE_PIC_ALL = False
 
     def __init__(
         self,
-        cap,
+        cap: vf_cv.video_capture_async.VideoCaptureAsync,
         logger,
         jpg_folder,
         interval,
@@ -30,6 +35,9 @@ class MatchAnalyzer:
         dont_save=False,
     ):
         self.match = vf_data.Match()
+        self.match.video_url = cap.src
+        self.match.video_frame_rate = cap.get_frame_rate()
+
         self.cap = cap
         self.logger = logger
 
@@ -73,9 +81,17 @@ class MatchAnalyzer:
         start_frame=0,
     ):
 
-        end_frame = None
-        if end_frame is None or end_frame > frame_count:
-            end_frame = frame_count
+        self.match = vf_data.Match()
+
+        self.match.video_url = self.cap.src
+        self.match.video_frame_rate = self.cap.get_frame_rate()
+
+        self.endround = False
+        self.time_seconds = None
+        self.time_matches = 0
+        self.timestr = None
+
+        end_frame = frame_count
 
         self.count = start_frame + 1
 
@@ -90,25 +106,34 @@ class MatchAnalyzer:
             if not os.path.exists(jpg_folder):
                 os.makedirs(jpg_folder)
 
-        vf_analytics.resolution = "480p"
         actual_count = self.count - 1
 
-        self.endround = False
+        result = self.get_next_frame(cam, video_id, actual_count)
 
-        while self.count < end_frame or cam != -1:
-            result = self.get_next_frame(cam, video_id, actual_count)
-            if result is not None:
-                actual_count = result
+        while (
+            self.cap.frames_read < end_frame or cam != -1
+        ) and self.frame is not None:
+            actual_count = result
+
+            debug_beta = False
+            if self.state != "before" and vf_cv.revo.REVO.is_beta_screen(
+                self.frame, debug_beta
+            ):
+                raise PrematureMatchFinishException("Found Revo BETA Frame")
 
             result = self.analyze_next_frame()
             if result is not None:
                 return result
 
+            result = self.get_next_frame(cam, video_id, actual_count)
+
         if self.state != "before":
             raise PrematureMatchFinishException()
 
+        print(f"returning 0 because {self.cap.frames_read} >= {end_frame}")
         return 0
 
+    @profile
     def get_next_frame(self, cam, video_id, actual_count):
         count_int = int(self.count)
 
@@ -141,19 +166,11 @@ class MatchAnalyzer:
         while actual_count < count_int:
             try:
                 self.frame = self.cap.read()
-                original_height, original_width = self.frame.shape[:2]
-                
-                if (original_height != 720):
-                    self.frame = cv2.resize(self.frame, (1280, 720))
-                    
                 self.process_fight_shun_drinks(actual_count)
             except:
                 time.sleep(5)
-                                
+
                 self.frame = self.cap.read()
-                if (original_height != 720):
-                    self.frame = cv2.resize(self.frame, (1280, 720))
-                
                 self.process_fight_shun_drinks(actual_count)
 
             if self.frame is None:
@@ -161,24 +178,17 @@ class MatchAnalyzer:
             actual_count = actual_count + 1
 
         if self.frame is None:
-            self.logger.warning(
-                f"Skipping frame {self.count:13d} because no return"
-            )
-
-            return None
-
-        if self.frame is None:
+            self.logger.warning(f"Skipping frame {self.count:13d} because no return")
             self.count += 1
             print("self.frame none continue")
             return None
-        
+
         return actual_count
 
     def analyze_next_frame(self):
         self.original_frame = self.frame
         self.frame_height = self.frame.shape[0]  # Get the dimensions of the frame
-        
-        #print(f"Analyze frame height {self.frame_height}")
+
         if self.state == "before":
             self.process_before_vs()
             return
@@ -192,14 +202,20 @@ class MatchAnalyzer:
     def save_cam_frame(self, suffix, force_save=False):
         if self.DONT_SAVE and not force_save:
             return
-        
-        if not os.path.exists(self.jpg_folder + "/original/"):
-            os.makedirs(self.jpg_folder + "/original/")
+
+        if not os.path.exists(self.jpg_folder):
+            os.makedirs(self.jpg_folder)
+
+        if not os.path.exists(self.jpg_folder + f"/{self.matches_processed}"):
+            os.makedirs(self.jpg_folder + f"/{self.matches_processed}")
 
         original_out_filename = (
-            self.jpg_folder + "/original/" + str(f"{self.count}_{suffix}") + ".png"
+            self.jpg_folder
+            + f"/{self.matches_processed}/"
+            + str(f"{self.cap.frames_read}_{suffix}")
+            + ".png"
         )
-                
+
         if not os.path.isfile(original_out_filename):
             cv2.imwrite(original_out_filename, self.frame)
 
@@ -207,8 +223,8 @@ class MatchAnalyzer:
     def process_before_vs(self):
         self.logger.debug(f"BEFORE - searching for vs frame count {self.count}")
         stage = None
-    
-        self.vs_screen.set_frame(self.frame)    
+
+        self.vs_screen.set_frame(self.frame)
         if self.vs_screen.is_vs_ver1():
             print("Found VS screen")
             stage = self.vs_screen.get_stage()
@@ -223,12 +239,12 @@ class MatchAnalyzer:
             formatted_match_id = "%02d" % (self.matches_processed + 1,)
             self.match.id = f"{self.match.video_id}-{formatted_match_id}"
             self.match.stage = stage
-            self.match.vs_frame_seconds = int(self.count / self.frame_rate)
+            self.match.vs_frame_seconds = int(self.cap.frames_read / self.frame_rate)
             print("setting state to vs")
             self.state = "vs"
             self.logger.debug(
                 f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
-            )            
+            )
         else:
             self.count += int(self.frame_rate * self.interval * 40)
             del self.frame
@@ -289,8 +305,8 @@ class MatchAnalyzer:
             self.player_rank.set_frame(self.frame)
             self.player_rank.set_youtube_video_title(self.youtube_video_title)
 
-            debug_player_rank = True
-            
+            debug_player_rank = False
+
             try:
                 if self.match.player1rank is None:
                     player1rank = self.player_rank.get_player_rank(1, debug_player_rank)
@@ -309,10 +325,11 @@ class MatchAnalyzer:
                         )
             except vf_cv.UnrecognizePlayerRankException as e:
                 self.save_cam_frame(f"_unrecognized_rank_{str(e)}")
-                raise e
+                # raise e
 
             self.vs_screen.set_frame(self.frame)
             self.match.date = self.vs_screen.get_date(debug=False)
+            print(f"got date {self.match.date}")
             self.match.player1ringname = self.vs_screen.get_ringname(1, False)
             self.match.player2ringname = self.vs_screen.get_ringname(2, False)
 
@@ -324,7 +341,7 @@ class MatchAnalyzer:
                 return True
 
             self.skip_frames = (int)(25 / self.interval)
-            
+
             self.save_cam_frame("start")
 
             del self.frame
@@ -347,29 +364,6 @@ class MatchAnalyzer:
             print(f"Exception getting time {a}")
             self.save_cam_frame("invalid_time")
             raise a
-
-        self.player_rank.set_frame(self.frame)
-        self.player_rank.set_youtube_video_title(self.youtube_video_title)
-
-        try:
-            if self.match.player1rank is None:
-                player1rank = self.player_rank.get_player_rank(1)
-                self.match.player1rank = player1rank
-                if player1rank == 0:
-                    self.save_cam_frame(
-                        "_rank_0_for_player1",
-                    )
-
-            if self.match.player2rank is None:
-                player2rank = self.player_rank.get_player_rank(2)
-                self.match.player2rank = player2rank
-                if player2rank == 0:
-                    self.save_cam_frame(
-                        "_rank_0_for_player2",
-                    )
-        except vf_cv.UnrecognizePlayerRankException as e:
-            self.save_cam_frame(f"_unrecognized_rank_{str(e)}")
-            raise e
 
         if self.time_seconds == "endround":
             if self.old_time_seconds is None:
@@ -398,7 +392,7 @@ class MatchAnalyzer:
             and not self.endround
         ):
             self.save_cam_frame("invalid_time")
-            raise Exception(
+            raise UnexpectedTimeException(
                 f"Unexpected time seconds old {self.old_time_seconds}   new {self.time_seconds}"
             )
 
@@ -582,7 +576,7 @@ class MatchAnalyzer:
                 f"{self.match.video_id} {self.count:13d} - round is over but player 2 rank is 0"
             )
 
-        self.current_round.seconds = int(self.count / self.frame_rate)
+        self.current_round.seconds = int(self.cap.frames_read / self.frame_rate)
         self.current_round.remaining_time = self.timestr
 
         self.match.add_finished_round(self.current_round)
@@ -598,6 +592,9 @@ class MatchAnalyzer:
             # print("advancing one frame")
             self.count += 1
             return True
+
+        if self.match.get_round_num() > 5:
+            raise Exception(f"Invalid round number {self.current_round.num}")
 
         # print(f"advancing {int(self.frame_rate * 0.5)} frames at end")
         self.count += int(self.frame_rate * 0.5)
@@ -617,6 +614,11 @@ class MatchAnalyzer:
             return
         if self.current_round.player2_drink_points_at_start is not None:
             return
+
+        original_height = self.frame.shape[0]
+        if original_height != 720:
+            self.frame = cv2.resize(self.frame, (1280, 720))
+
         if self.match.get_round_num() == 1:
             if self.match.player1character == "Shun":
                 self.current_round.player1_drink_points_at_start = 0
@@ -641,7 +643,7 @@ class MatchAnalyzer:
             return
 
         self.drinks.set_frame(self.frame)
-        
+
         if self.match.player1character == "Shun":
             self.current_round.player1_drink_points_at_start = (
                 self.drinks.get_drink_points(1)
@@ -650,8 +652,8 @@ class MatchAnalyzer:
                 f"player1_character-shun-drinks_{self.match.stage}_{self.current_round.player1_drink_points_at_start}",
                 force_save=True,
             )
-        
-        if self.match.player2character == "Shun":            
+
+        if self.match.player2character == "Shun":
             self.current_round.player2_drink_points_at_start = (
                 self.drinks.get_drink_points(2)
             )
@@ -660,6 +662,13 @@ class MatchAnalyzer:
                 force_save=True,
             )
 
+    def remaining_video(self):
+        return self.cap.queue.qsize() > 0
+
 
 class PrematureMatchFinishException(Exception):
+    pass
+
+
+class UnexpectedTimeException(Exception):
     pass
