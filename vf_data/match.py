@@ -1,6 +1,13 @@
-import vf_data.round
+"""This module provides classes that contain VF match data"""
+
 import csv
 import io
+import hashlib
+from datetime import timedelta
+
+import vf_data.round
+import vf_cv.player_rank
+
 
 class Match:
     """wrapping up VF match data"""
@@ -21,6 +28,8 @@ class Match:
         self.vs_frame_seconds = 0
         self.rounds = []
         self.date = None
+        self.video_url = None
+        self.video_frame_rate = None
 
     def got_all_vs_info(self):
         """Returns true if the match has all data that we are expecting to process"""
@@ -31,10 +40,10 @@ class Match:
             return False
         if self.player2character is None:
             return False
-        #if self.player1ringname is None:
-            #return False
-        #if self.player2ringname is None:
-            #return False
+        # if self.player1ringname is None:
+        # return False
+        # if self.player2ringname is None:
+        # return False
 
         return True
 
@@ -54,7 +63,9 @@ class Match:
         new_round.num = self.get_round_num()
         self.rounds.append(new_round)
 
-    def vs_frame_to_string(self, writer: csv.DictWriter):
+    def vs_frame_to_string(self, writer: csv.writer):
+        self.id = self.make_id()
+
         writer.writerow(
             [
                 self.video_id,
@@ -73,14 +84,59 @@ class Match:
                 0,
                 None,
                 None,
-                f"https://www.youtube.com/watch?v={self.video_id}&t={self.vs_frame_seconds}"
+                f"https://www.youtube.com/watch?v={self.video_id}&t={self.vs_frame_seconds}",
             ]
         )
 
+    def make_id(self):
+        fields = [
+            self.date,
+            self.player1character,
+            self.player1ringname,
+            self.player2character,
+            self.player2ringname,
+            self.player1rank,
+            self.player2rank,
+        ]
+
+        if len(self.rounds) >= 3:
+            fields = [
+                self.date,
+                self.player1character,
+                self.player1ringname,
+                self.player2character,
+                self.player2ringname,
+                self.player1rank,
+                self.player2rank,
+                self.rounds[0].victory,
+                self.rounds[0].remaining_time,
+                self.rounds[0].winning_player_num,
+                self.rounds[1].victory,
+                self.rounds[1].remaining_time,
+                self.rounds[1].winning_player_num,
+                self.rounds[2].victory,
+                self.rounds[2].remaining_time,
+                self.rounds[2].winning_player_num,
+            ]
+
+        m = hashlib.md5()
+        for s in fields:
+            if type(s) == str:
+                m.update(s.encode())
+            elif type(s) == int:
+                m.update(s.to_bytes(10, "big"))
+            elif s is not None:
+                print(type(s))
+                m.update(s)
+
+        return m.hexdigest()
+
     def __str__(self):
         output = io.StringIO()
-        writer = csv.writer(output, quoting=csv.QUOTE_NONE)
+        writer = csv.writer(output, quoting=csv.QUOTE_NONE, escapechar="\\")
         self.vs_frame_to_string(writer)
+        self.id = self.make_id()
+
         for current_round in self.rounds:
             writer.writerow(
                 [
@@ -100,8 +156,35 @@ class Match:
                     current_round.remaining_time,
                     current_round.player1_drink_points_at_start,
                     current_round.player2_drink_points_at_start,
-                    current_round.get_youtube_url(self.video_id)
+                    current_round.get_youtube_url(self.video_id),
                 ]
             )
 
         return output.getvalue()
+
+    def to_youtube_title(self):
+        player1rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+            self.player1rank
+        ]
+        player2rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+            self.player2rank
+        ]
+
+        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} \\"{self.player1ringname}\\" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} \\"{self.player2ringname}\\" - {self.stage}'
+
+    def to_ffmpeg_copy_command(self):
+        if self.video_url is None or "youtube" in self.video_url:
+            return ""
+
+        first_round: vf_data.Round = self.rounds[0]
+        match_start_seconds = (
+            int(first_round.seconds) - (45 - float(first_round.remaining_time)) - 17
+        )
+
+        last_round: vf_data.Round = self.rounds[len(self.rounds) - 1]
+
+        start_timestamp = str(timedelta(seconds=match_start_seconds))
+        clip_duration = int((int(last_round.seconds) - match_start_seconds) + 15)
+
+        dest_dir = "/mnt/sdb/Users/alexa/Videos/2024Q4 Open Beta/Matches/"
+        return f'ffmpeg -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
