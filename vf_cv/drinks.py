@@ -29,12 +29,16 @@ class Drinks:
         self.quads = {}
         self.thresholded_image = None
         self.stage = stage
-        # self._model = load_model('best_model.keras')
 
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame.copy()
-        self.frame_height = frame.shape[0]
+
+        original_height = self.frame.shape[0]
+        if original_height == 1080:
+            self.frame = cv2.resize(self.frame, (1280, 720))
+
+        self.frame_height = self.frame.shape[0]
 
     def get_roi(self, playernum):
         """Returns ROI based on resolution"""
@@ -66,14 +70,14 @@ class Drinks:
     def get_drink_points(self, playernum, debug=False):
         """Returns Shun Drink Points"""
 
-        #Waterfalls stage is difficult because of white background
-        if (self.stage == "Waterfalls" and playernum==1):
+        # Waterfalls stage is difficult because of white background
+        if self.stage == "Waterfalls" and playernum == 1:
             return -1
 
-        if (self.stage == "Island"):
+        if self.stage == "Island":
             return -1
 
-        if (self.stage == "River" and playernum == 1):
+        if self.stage == "River" and playernum == 1:
             return -1
 
         text = ""
@@ -103,7 +107,7 @@ class Drinks:
         # roi[condition] = [0, 0, 0]
 
         # Define the condition: blue > 250 and red < 220 and green < 220
-        if self.stage == "Waterfalls" and playernum == 1:            
+        if self.stage == "Waterfalls" and playernum == 1:
             condition = (
                 (roi[:, :, 0] < 240) & (roi[:, :, 1] < 240) & (roi[:, :, 2] > 235)
             )
@@ -247,15 +251,6 @@ class Drinks:
             second_digit, threshold_value, 255, cv2.THRESH_BINARY
         )
 
-        # contours = cv2.findContours(
-        # thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        # )[0]
-
-        # if contours:
-        # x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-        # Crop the image to the bounding box
-        # thresholded_image = thresholded_image[y : y + h, x : x + w]
-
         gray_image_t = 255 - thresholded_image
         first_digit_gray = 255 - first_digit_threhold
         second_digit_gray = 255 - second_digit_threhold
@@ -300,8 +295,8 @@ class Drinks:
         override_value = None
 
         if self.frame_height == 720:
-            if (self.stage == "Waterfalls" and playernum == 1):
-                if (53-10 <= black_pix <= 53+10):
+            if self.stage == "Waterfalls" and playernum == 1:
+                if 53 - 10 <= black_pix <= 53 + 10:
                     override_value = 7
             elif (
                 135 <= black_pix <= 145
