@@ -1,9 +1,10 @@
-import vf_cv.cv_helper
+"""This module provide functions to extract information from a VFES/US game frame"""
+
 import cv2
 import pytesseract
 import re
 import numpy as np
-
+import vf_cv.cv_helper
 
 # 級。 Kyu Group [2 White Characters / No rectangle background]
 # 十級 - 一級 10th Kyu to 1st Kyu
@@ -53,6 +54,38 @@ import numpy as np
 
 
 class PlayerRank:
+    """This class extracts player rank from the VS screen of a match"""
+
+    ENGLISH_NAMES = {
+        1: "10th kyu",
+        2: "9th kyu",
+        3: "8th kyu",
+        4: "7th kyu",
+        5: "6th kyu",
+        6: "5th kyu",
+        7: "4th kyu",
+        8: "3rd kyu",
+        9: "2nd kyu",
+        10: "1st kyu",
+        11: "1st dan",
+        12: "2nd dan",
+        13: "3rd dan",
+        14: "4th dan",
+        15: "5th dan",
+        16: "6th dan",
+        17: "7th dan",
+        18: "8th dan",
+        19: "9th dan",
+        20: "10th dan",
+        21: "Hunter",
+        22: "Raider",
+        23: "Barbarian",
+        24: "Defender",
+        25: "Sentinel",
+        26: "Guardian",
+        27: "Warrior",
+    }
+
     REGIONS_480P = {
         "player1rank": (72, 91, 14, 12),
         "player1rank_full": (23, 82, 67, 21),
@@ -80,13 +113,6 @@ class PlayerRank:
         "player1rank_small": (383, 452, 17, 12),
         "player2rank_small": (1203, 452, 17, 12),
     }
-
-    # REGIONS_720P = {
-    # "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
-    # "player1rank_full": (23*1.5, 82*1.5, 165, 55),
-    # "player2rank": (820*1.5, 91*1.5, 14*1.5, 12*1.5),
-    # "player2rank_full": (1718, 80, 165, 55),
-    # }
 
     frame = None
     frame_height = None
