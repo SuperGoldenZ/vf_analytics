@@ -3,7 +3,10 @@
 import cv2
 import vf_cv.cv_helper
 
+
 class WinningRound:
+    """Detects if this frame is a round winnner and how the round was won"""
+
     frame = None
     frame_height = None
     GREY_CIRCLE_COLOR_RED = 162
@@ -30,7 +33,12 @@ class WinningRound:
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-        self.frame_height = frame.shape[0]
+
+        original_height = self.frame.shape[0]
+        if original_height == 1080:
+            self.frame = cv2.resize(self.frame, (640, 360))
+
+        self.frame_height = self.frame.shape[0]
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -201,8 +209,8 @@ class WinningRound:
                 ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, threshold)
                 tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, threshold)
                 teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
-                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)            
-                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)            
+                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
+                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)
                 if debug_winning_round:
                     cv2.imshow(
                         f"city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
@@ -217,9 +225,9 @@ class WinningRound:
                     if tblue + teal >= 5:
                         return player_num
 
-                    if (stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3):
+                    if stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3:
                         return player_num
-                    
+
                     threshold = 150
 
                     if (
@@ -346,7 +354,7 @@ class WinningRound:
             grey_count = vf_cv.CvHelper.count_pixels("#aaaaac", roi, 5)
 
             if player_num == 1:
-                threshold = 5  
+                threshold = 5
                 e94966 = vf_cv.CvHelper.count_pixels("#e94966", roi, threshold)
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, threshold)
                 other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, threshold)
@@ -358,7 +366,7 @@ class WinningRound:
                 ap2 = vf_cv.CvHelper.count_pixels("#c97a7e", roi, threshold)
                 aw2 = vf_cv.CvHelper.count_pixels("#ffb3b8", roi, threshold)
                 f3 = vf_cv.CvHelper.count_pixels("#f34a68", roi, threshold)
-                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold) 
+                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold)
                 de = vf_cv.CvHelper.count_pixels("#de4c59", roi, threshold)
                 fb = vf_cv.CvHelper.count_pixels("#fb3155", roi, threshold)
                 e1 = vf_cv.CvHelper.count_pixels("#e15868", roi, threshold)
@@ -410,13 +418,13 @@ class WinningRound:
                 if self.frame_height == 360:
                     if f34 >= 3 and de2 >= 1:
                         return player_num
-                    
+
                     if de2 >= 15:
                         return player_num
-                    
+
                     if e94966 >= 3 and f3 >= 3:
                         return player_num
-                    
+
                     if pf2 >= 4 and pr >= 1:
                         return player_num
 
