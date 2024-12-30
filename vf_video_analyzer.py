@@ -6,9 +6,8 @@ import pathlib
 import traceback
 import ffmpeg
 import cv2
-import VideoCaptureAsync
+import vf_cv.video_capture_async
 import vf_cv.match_analyzer
-import vf_cv.revo
 import vf_analytics
 import vf_data
 import vf_data.match
@@ -17,18 +16,18 @@ import youtube_helper
 
 FORCE_DELETE_VIDEO = True
 PROCESS_STREAMED_VIDEOS = True
-FORCE_SINGLE_MATCH_PER_VIDEO = True
+FORCE_SINGLE_MATCH_PER_VIDEO = False
 STOP_ON_FIRST_ERROR = False
 PROCESS_VS_ONLY = False
 PROCESS_SHUN_ONLY = True
 
 logger = logging.getLogger(__name__)
-#logging.basicConfig(
-    #filename="vf_match_analyzer.log",
-    #encoding="utf-8",
-    #level=logging.INFO,
-    #format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-#)
+logging.basicConfig(
+    filename="vf_match_analyzer.log",
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+)
 
 resize_video = False
 youtube_auth = True
@@ -53,8 +52,14 @@ def get_available_devices():
 def print_csv(
     match: vf_data.Match,
 ):
-    with open(f"match_data_{match.video_id}.csv", "a") as f:
+    out_filename = f"match_data_{match.make_id()}.csv"
+
+    if pathlib.Path(out_filename).is_file():
+        out_filename = out_filename + ".duplicate"
+
+    with open(out_filename, "w") as f:
         f.write(str(match))
+
 
 def print_csv_match_only(
     match: vf_data.Match,
@@ -62,10 +67,11 @@ def print_csv_match_only(
     with open(f"matches.csv", "a") as f:
         f.write(str(match))
 
+
 def print_error_csv(match: vf_data.Match, resolution, error_message):
     with open("errors.csv", "a") as f:
         f.write(
-            f"{match.video_id},{resolution},{match.player1character},{match.player1rank},{match.player2character},{match.player2rank},{match.stage},{error_message}\n"
+            f"{match.video_id},{resolution},{match.player1character},{match.player1rank},{match.player1ringname},{match.player2character},{match.player2rank},{match.player2ringname},{match.stage},{error_message}\n"
         )
 
 
@@ -91,8 +97,10 @@ def check_string_in_file(file_path, string_to_search):
                 return True
     return False
 
+
 def is_youtube_url(url):
     return "youtube" in url
+
 
 def analyze_video(url, cam=-1, process_vs_only=False):
     print(f"\n=========\nAnalyze video {url} - START")
@@ -106,20 +114,20 @@ def analyze_video(url, cam=-1, process_vs_only=False):
     match_analyzer = None
     saved_video_resolution = None
     ys = None
-    resolution=None
-    temp_title = None    
-    
+    resolution = None
+    temp_title = None
+
     if url is not None:
-        if (is_youtube_url(url)):
+        if is_youtube_url(url):
             video_id = youtube_helper.get_youtube_video_id(url)
             temp_title = read_video_title(video_id)
-            
-            if (PROCESS_SHUN_ONLY and temp_title is not None and "舜" not in temp_title):
+
+            if PROCESS_SHUN_ONLY and temp_title is not None and "舜" not in temp_title:
                 print("skipping because not shun")
                 return True
         else:
             video_id = pathlib.Path(url).stem
-        
+
         if pathlib.Path(f"match_data_{video_id}.csv").is_file():
             print(f"\tSkipping {video_id} since it's already in match data")
             return
@@ -127,7 +135,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         if check_string_in_file("matches.csv", video_id):
             print(f"\tSkipping {video_id} since it's already in matches.csv")
             return
-        
+
         error_string = f"{video_id}"
         if check_string_in_file("vf_analytics.log", error_string):
             print(f"\tSkipping {video_id} since it's already in log as error")
@@ -141,13 +149,16 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         resolution = None
         jpg_folder = None
 
-        saved_video_resolution = get_saved_video_resolution(video_id, url)
+        saved_video_resolution = -1
+        if "youtube" in url:
+            saved_video_resolution = get_saved_video_resolution(video_id, url)
+
         resolution = f"{saved_video_resolution}p"
         ys = None
 
         if saved_video_resolution == 0:
             # """Video not saved locally, download"""
-                        
+
             ys = youtube_helper.get_stream(url, process_vs_only=process_vs_only)
             resolution = ys.resolution
             vf_analytics.resolution = resolution
@@ -205,16 +216,17 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         if video_path is not None:
             if PROCESS_STREAMED_VIDEOS and saved_video_resolution == 0:
                 # print(f"Processing strem for {ys.url}")
-                cap = VideoCaptureAsync.VideoCaptureAsync(ys.url)
+                cap = vf_cv.video_capture_async.VideoCaptureAsync(ys.url)
             elif os.path.isfile(video_path):
-                cap = VideoCaptureAsync.VideoCaptureAsync(video_path)
+                cap = vf_cv.video_capture_async.VideoCaptureAsync(video_path)
             elif os.path.isfile(url):
-                cap = VideoCaptureAsync.VideoCaptureAsync(url)
+                cap = vf_cv.video_capture_async.VideoCaptureAsync(url)
             else:
                 raise Exception(f"File not found {url}")
-            
+
             frame_rate = round(cap.get_frame_rate())
             frame_count = cap.get_frame_count()
+            print(f"{frame_count} at {frame_rate} FPS")
         else:
             cap = cv2.VideoCapture(cam)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -231,10 +243,10 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             youtube_video_title = ys.title
             save_video_title(video_id, youtube_video_title)
             save_video_url(video_id, resolution, frame_rate, ys.url)
-        if (ys is not None and PROCESS_SHUN_ONLY and "舜" not in ys.title):
+        if ys is not None and PROCESS_SHUN_ONLY and "舜" not in ys.title:
             print("skipping because not shun")
             return True
-        
+
         if ys is None or ys.title is None:
             youtube_video_title = read_video_title(video_id)
 
@@ -242,8 +254,10 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         if not os.path.exists(jpg_folder):
             os.makedirs(jpg_folder, exist_ok=True)
 
-        if (saved_video_resolution == 0):
-            print(f"\tCreating match for youtube video title {ys.title} {frame_rate}FPS ")
+        if saved_video_resolution == 0:
+            print(
+                f"\tCreating match for youtube video title {ys.title} {frame_rate}FPS "
+            )
         else:
             print(f"\tCreating from saved video")
         match_analyzer = vf_cv.match_analyzer.MatchAnalyzer(
@@ -253,21 +267,98 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             interval=fps,
             frame_rate=frame_rate,
             youtube_video_title=youtube_video_title,
-            process_vs_only=process_vs_only
+            process_vs_only=process_vs_only,
         )
         processed = 0
         matches_processed = 0
         frames_processed = -1
         while frames_processed != 0:
             print(f"\tProcessing match {matches_processed+1}")
-            frames_processed = match_analyzer.analyze_next_match(
-                video_id=video_id,
-                cam=cam,
-                frame_count=frame_count,
-                start_frame=processed,                
-            )  # Extract a frame every 7 seconds
+            try:
+                frames_processed = match_analyzer.analyze_next_match(
+                    video_id=video_id,
+                    cam=cam,
+                    frame_count=frame_count,
+                    start_frame=processed,
+                )  # Extract a frame every 7 seconds
+            except vf_cv.PrematureMatchFinishException as e:
+                error_message = str(e)
+                print(
+                    f"Premature Match End exception occured {e} processing video {video_id}"
+                )
+                logger.error(
+                    f"Premature match end exception occured {e} processing video {video_id}"
+                )
+                print_error_csv(match_analyzer.match, resolution, "premature_end")
+                if STOP_ON_FIRST_ERROR:
+                    exit("premature_end")
 
-            if (process_vs_only):
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            except (
+                vf_cv.UnrecognizeTimeDigitException,
+                vf_cv.InvalidTimeException,
+            ) as e:
+                error_message = str(e)
+                print(
+                    f"Time Error {e} processing video {video_id} match {match_analyzer.matches_processed}"
+                )
+                logger.error(
+                    f"Time Error {e} processing video {video_id} match {match_analyzer.matches_processed}"
+                )
+                print_error_csv(
+                    match_analyzer.match, resolution, "unrecognized_time_digit"
+                )
+                if STOP_ON_FIRST_ERROR:
+                    exit("unrecognized_time_digit")
+
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            except vf_cv.UnexpectedTimeException as e:
+                error_message = str(e)
+                print(f"Unexpected time found {e}")
+                logger.error(f"Unexpected time found {e}")
+                print_error_csv(match_analyzer.match, resolution, "unexpected_time")
+                if STOP_ON_FIRST_ERROR:
+                    exit("unrecognized_time_digit")
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+
+            except vf_cv.UnrecognizeTimeDigitException as e:
+                logger.error(f"An exception occured {e} processing video {video_id}")
+                print(
+                    f"UnrecognizedTimeDigit exception occured {e} processing video {video_id}"
+                )
+                print_error_csv(
+                    match_analyzer.match, resolution, "unrecognized_time_digit"
+                )
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                if STOP_ON_FIRST_ERROR:
+                    exit("unrecognized_player_rank")
+                continue
+            except vf_cv.UnrecognizePlayerRankException as e:
+                error_message = str(e)
+                logger.error(f"An exception occured {e} processing video {video_id}")
+                print(
+                    f"UnrecognizedPlayerRank exception occured {e} processing video {video_id}"
+                )
+                print_error_csv(
+                    match_analyzer.match, resolution, "unrecognized_player_rank"
+                )
+                if STOP_ON_FIRST_ERROR:
+                    exit("unrecognized_player_rank")
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            except IndexError as e:
+                error_message = str(e)
+                logger.error(f"An exception occured {e} processing video {video_id}")
+                print(f"IndexError exception occured {e} processing video {video_id}")
+                print_error_csv(match_analyzer.match, resolution, "index_error")
+                if STOP_ON_FIRST_ERROR:
+                    exit("index_error")
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            if process_vs_only:
                 print_csv_match_only(match_analyzer.match)
                 processed += frames_processed
                 matches_processed += 1
@@ -275,55 +366,37 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
             if frames_processed != 0:
                 print_csv(match_analyzer.match)
+                print("\ncommand:")
+                print(match_analyzer.match.to_ffmpeg_copy_command())
+                os.system(match_analyzer.match.to_ffmpeg_copy_command())
+
                 processed += frames_processed
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
                 matches_processed += 1
 
                 if FORCE_SINGLE_MATCH_PER_VIDEO:
                     break
-    except vf_cv.PrematureMatchFinishException as e:
-        error_message = str(e)
-        print(f"Premature Match End exception occured {e} processing video {video_id}")
-        logger.error(
-            f"Premature match end exception occured {e} processing video {video_id}"            
-        )
-        print_error_csv(match_analyzer.match, resolution, "premature_end")
-        if (STOP_ON_FIRST_ERROR):
-            exit("premature_end")
-    except vf_cv.UnrecognizeTimeDigitException as e:
-        logger.error(f"An exception occured {e} processing video {video_id}")
-        print(
-            f"UnrecognizedTimeDigit exception occured {e} processing video {video_id}"
-        )
-        print_error_csv(match_analyzer.match, resolution, "unrecognized_time_digit")
-        if (STOP_ON_FIRST_ERROR):
-            exit("unrecognized_player_rank")        
-    except vf_cv.UnrecognizePlayerRankException as e:
-        error_message = str(e)
-        logger.error(f"An exception occured {e} processing video {video_id}")
-        print(
-            f"UnrecognizedPlayerRank exception occured {e} processing video {video_id}"
-        )
-        print_error_csv(match_analyzer.match, resolution, "unrecognized_player_rank")
-        if (STOP_ON_FIRST_ERROR):
-            exit("unrecognized_player_rank")
     except Exception as e:
         error_message = str(e)
         print(f"\tAnother exception occured {e} processing video {video_id}")
         logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
-        if (match_analyzer is not None):
+        if match_analyzer is not None:
             print_error_csv(match_analyzer.match, resolution, "other")
-        if (STOP_ON_FIRST_ERROR):
-            exit("other error")
+        match_analyzer.matches_processed = match_analyzer.matches_processed + 1
     finally:
         # print("\tFinally - Releasing cap")
         cap.release()
         # print("\tFinally - Checking to delete")
-        if (saved_video_resolution == 0 and FORCE_DELETE_VIDEO or error_message is None) and os.path.isfile(video_path):
+        if (
+            saved_video_resolution == 0 and FORCE_DELETE_VIDEO or error_message is None
+        ) and os.path.isfile(video_path):
             os.remove(video_path)
 
-        if (saved_video_resolution == 0 and FORCE_DELETE_VIDEO) and os.path.isfile(video_path):
+        if (saved_video_resolution == 0 and FORCE_DELETE_VIDEO) and os.path.isfile(
+            video_path
+        ):
             os.remove(video_path)
 
         # if (error_message is not None):
@@ -401,20 +474,22 @@ def process_playlists(playlist_array):
     for playlist in playlist_array:
         process_playlist(playlist)
 
+
 def read_video_title(video_id):
     video_path = f"assets/videos/"
     title_file = f"{video_path}{video_id}.title"
 
     s = None
     try:
-        with open(title_file) as f: s = f.read()
+        with open(title_file) as f:
+            s = f.read()
     except:
         s = None
-    
+
     return s
 
 
-def save_video_title(video_id, title):    
+def save_video_title(video_id, title):
     video_path = f"assets/video_meta/{video_id}/"
 
     if not os.path.exists(video_path):
@@ -423,9 +498,8 @@ def save_video_title(video_id, title):
     title_file = f"{video_path}{video_id}.title.txt"
 
     with open(title_file, "w") as f:
-        f.write(
-            title
-        )
+        f.write(title)
+
 
 def save_video_url(video_id, resolution, frame_rate, url):
     video_path = f"assets/video_meta/{video_id}/"
@@ -436,14 +510,20 @@ def save_video_url(video_id, resolution, frame_rate, url):
     title_file = f"{video_path}{video_id}_{resolution}_{frame_rate}fps.url.txt"
 
     with open(title_file, "w") as f:
-        f.write(
-            url
-        )
+        f.write(url)
+
 
 # Main function to run the whole process
-def main(video_url=None, playlists_file=None, playlist_file=None, cam=-1, process_vs_only = False, revo = False):
+def main(
+    video_url=None,
+    playlists_file=None,
+    playlist_file=None,
+    cam=-1,
+    process_vs_only=False,
+    revo=False,
+):
 
-    if (revo):
+    if revo:
         vf_cv.REVO.capture_window()
 
     if video_url is not None and "list=" in video_url:
@@ -499,7 +579,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--force_append", default=None, help="Force overwrite videos")
     parser.add_argument("--cam", default=None, help="Set to capture from camera")
-    parser.add_argument("--revo", default=None, help="Set to capture from R.E.V.O. in Windows")
+    parser.add_argument(
+        "--revo", default=None, help="Set to capture from R.E.V.O. in Windows"
+    )
     # parser.add_argument('--resolution', default='1080p', help="video resolution 10809p, 480p, 360p")
 
     args = parser.parse_args()
@@ -563,5 +645,5 @@ if __name__ == "__main__":
         playlist_file=playlist_file,
         cam=cam_int,
         process_vs_only=PROCESS_VS_ONLY,
-        revo=revo is not None
+        revo=revo is not None,
     )
