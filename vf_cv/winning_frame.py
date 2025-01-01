@@ -302,7 +302,7 @@ class WinningFrame:
         light_yellow = vf_cv.CvHelper.count_pixels("#f8ff7b", roi, override_tolerance=5)
         lg = vf_cv.CvHelper.count_pixels("#fbf2b6", roi, override_tolerance=5)
         if debug_excellent is True:
-            debug_string = f"{self.frame_height} ex  w{white_count}_g{gold_count}_r{red_count}p{purple_count}_b{black_count}_ly{light_yellow}_lg{lg}"
+            debug_string = f"{self.frame_height} ex  w[{white_count}]_g[{gold_count}]_r[{red_count}]p[{purple_count}]_b[{black_count}]_ly[{light_yellow}]_lg[{lg}]"
             print(debug_string)
             cv2.imshow(debug_string, roi)
             cv2.imshow(f"excellent roi bw{lg}", roi_bw)
@@ -319,7 +319,7 @@ class WinningFrame:
             if roi_bw[9, 362] < 180:
                 return False
 
-            if white_count > 375 and gold_count > 20 and black_count < 1300:
+            if white_count > 375 and gold_count > 20 and black_count < 1390:
                 return True
 
             if lg > 300 and gold_count > 5 and black_count < 1300:
@@ -429,6 +429,9 @@ class WinningFrame:
         if self.frame_height == 1080:
             if white_count > 7901 - 10 and gold_count > 400 and black_count < 100:
                 return True
+
+        if debug_excellent:
+            print(f"{self.frame_height}p excellent returning default false")
 
         return False
 
