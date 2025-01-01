@@ -2,34 +2,38 @@
 
 import numpy as np
 import cv2
+import vf_cv.cv_helper
 
 
 class REVO:
     """Detects The Open Beta Splash Screen"""
 
+    POINTS = {
+        1080: [
+            {"x": 489, "y": 71},
+            {"x": 765, "y": 678},
+            {"x": 1724, "y": 56},
+            {"x": 1665, "y": 1068},
+            {"x": 207, "y": 957},
+        ],
+        720: [
+            {"x": 326, "y": 50},
+            {"x": 494, "y": 372},
+            {"x": 1124, "y": 617},
+        ],
+    }
+
     @staticmethod
     def is_beta_screen(image, debug):
         """Returns true if image is the Open Beta Splash Screen"""
-        roi = image.copy()
-        frame_height = roi.shape[0]
-        gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # roi = image.copy()
 
-        # Apply a threshold to keep only the bright white colors
-        threshold_value = 200
+        frame_height = image.shape[0]
+        for i in range(len(REVO.POINTS[frame_height])):
+            point = REVO.POINTS[frame_height][i]
 
-        _, thresholded_image = cv2.threshold(
-            gray_image, threshold_value, 255, cv2.THRESH_BINARY
-        )
+            (g, b, r) = image[point["y"], point["x"]]
+            if g < 240 and r < 240 and b < 240:
+                return False
 
-        n_white_pix = 0
-
-        n_white_pix = np.sum(thresholded_image == 255)
-
-        if debug:
-            cv2.imshow(f"threshold {n_white_pix}", thresholded_image)
-
-            cv2.waitKey()
-        if frame_height == 1080 and n_white_pix > 1000000:
-            return True
-
-        return False
+        return True
