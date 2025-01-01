@@ -35,15 +35,10 @@ class Timer:
 
         # self._model = load_model('best_model.keras')
 
-    def set_frame(self, frame):
+    def set_frame(self, frame, stage=None):
         """Sets the image to extract data from"""
         self.frame = frame
-
-        original_height = self.frame.shape[0]
-        if original_height == 1080 or original_height == 720:
-            self.frame = cv2.resize(self.frame, (640, 360))
-
-        self.frame_height = self.frame.shape[0]
+        self.stage = stage
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -1315,532 +1310,14 @@ class Timer:
         elif self.frame_height == 1080:
             factor = 2.25
 
-        if self.frame_height == 480 or self.frame_height == 360:
-            is_endround_roi = self.frame[0:14, 402 : 402 + 90]
-            if self.frame_height == 360:
-                is_endround_roi = self.frame[0:10, 301 : 301 + 100]
+        original_height = self.frame.shape[0]
+        if original_height == 1080 or original_height == 720:
+            self.frame = cv2.resize(self.frame, (640, 360))
 
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels(
-                "#0e3e97", is_endround_roi, override_tolerance=5
-            )
+        self.frame_height = self.frame.shape[0]
 
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
-
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-
-            ldrb = vf_cv.CvHelper.count_pixels(
-                "#0a10d5", is_endround_roi, override_tolerance=10
-            )
-
-            rdb = vf_cv.CvHelper.count_pixels(
-                "#1a11b2", is_endround_roi, override_tolerance=10
-            )
-
-            skyblue = vf_cv.CvHelper.count_pixels(
-                "#5d5bf0", is_endround_roi, override_tolerance=5
-            )
-            b55 = vf_cv.CvHelper.count_pixels(
-                "#554ce2", is_endround_roi, override_tolerance=5
-            )
-
-            other_endround = self.frame[0:35, 165:202]
-            another_endround = self.frame[35 + 15 : 35 + 35 + 15, 165 + 65 : 202 + 65]
-            p2_life_roi = self.frame[24 : 24 + 12, 360 : 360 + 150]
-            p1_life_roi = self.frame[20 : 20 + 12, 83 : 83 + 200]
-
-            bot_roi_w = 75
-            bot_roi_h = 80
-            bot_roi_x = 90
-            bot_roi_y = 380 - bot_roi_h - 1
-
-            bot_roi = self.frame[
-                bot_roi_y : bot_roi_y + bot_roi_h, bot_roi_x : bot_roi_x + bot_roi_w
-            ]
-
-            bred = vf_cv.CvHelper.count_pixels("#cf0b19", bot_roi, override_tolerance=5)
-            brightred = vf_cv.CvHelper.count_pixels(
-                "#e1142c", bot_roi, override_tolerance=5
-            )
-            dred = vf_cv.CvHelper.count_pixels("#af0017", bot_roi, override_tolerance=5)
-            green_blue = vf_cv.CvHelper.count_pixels(
-                "#327790", p2_life_roi, override_tolerance=5
-            )
-
-            bmaroon = vf_cv.CvHelper.count_pixels(
-                "#641400", bot_roi, override_tolerance=5
-            )
-            bvoliet = vf_cv.CvHelper.count_pixels(
-                "#342bc3", bot_roi, override_tolerance=10
-            )
-
-            pink = vf_cv.CvHelper.count_pixels(
-                "#ff7c89", other_endround, override_tolerance=5
-            )
-            hotpink = vf_cv.CvHelper.count_pixels(
-                "#f4a2f3", other_endround, override_tolerance=5
-            )
-            br = vf_cv.CvHelper.count_pixels(
-                "#d85c39", other_endround, override_tolerance=5
-            )
-            wp = vf_cv.CvHelper.count_pixels(
-                "#ebbbc9", other_endround, override_tolerance=5
-            )
-
-            anred = vf_cv.CvHelper.count_pixels(
-                "#db0114", another_endround, override_tolerance=5
-            )
-            anmaroon = vf_cv.CvHelper.count_pixels(
-                "#900e11", another_endround, override_tolerance=5
-            )
-
-            ano = vf_cv.CvHelper.count_pixels(
-                "#d45b76", another_endround, override_tolerance=5
-            )
-
-            # anhotpink = vf_cv.CvHelper.count_pixels("#f4a2f3", another_endround, override_tolerance=5)
-            # anbr = vf_cv.CvHelper.count_pixels("#d85c39", another_endround, override_tolerance=5)
-            # anwp = vf_cv.CvHelper.count_pixels("#ebbbc9", another_endround, override_tolerance=5)
-
-            ddb = vf_cv.CvHelper.count_pixels(
-                "#08148b", is_endround_roi, override_tolerance=5
-            )
-            b433 = vf_cv.CvHelper.count_pixels(
-                "#433be9", is_endround_roi, override_tolerance=5
-            )
-            aob = vf_cv.CvHelper.count_pixels(
-                "#264ecf", is_endround_roi, override_tolerance=5
-            )
-            redbrown = vf_cv.CvHelper.count_pixels(
-                "#4a0d14", other_endround, override_tolerance=10
-            )
-
-            arb = vf_cv.CvHelper.count_pixels(
-                "#a91e2f", other_endround, override_tolerance=10
-            )
-            yellow = vf_cv.CvHelper.count_pixels(
-                "#f5f347", other_endround, override_tolerance=5
-            )
-            yellowp1 = vf_cv.CvHelper.count_pixels(
-                "#fff57a", p1_life_roi, override_tolerance=5
-            )
-            yellowp12 = vf_cv.CvHelper.count_pixels(
-                "#dee93f", p1_life_roi, override_tolerance=5
-            )
-            yellowp2 = vf_cv.CvHelper.count_pixels(
-                "#fff57a", p2_life_roi, override_tolerance=5
-            )
-            pv = vf_cv.CvHelper.count_pixels(
-                "#34051a", another_endround, override_tolerance=5
-            )
-            pp = vf_cv.CvHelper.count_pixels(
-                "#ff9fc2", another_endround, override_tolerance=5
-            )
-            pm = vf_cv.CvHelper.count_pixels(
-                "#750000", another_endround, override_tolerance=5
-            )
-            arena_red = vf_cv.CvHelper.count_pixels(
-                "#e0213d", another_endround, override_tolerance=5
-            )
-
-            if debug_time:
-                cv2.imshow(f"p2 life {green_blue} yellowp2 {yellowp2}", p2_life_roi)
-                cv2.imshow(
-                    f"p1 life {green_blue} yellowp1 {yellowp1} yp12 {yellowp12}",
-                    p1_life_roi,
-                )
-
-                cv2.imshow(
-                    f"b55 {b55} sky {skyblue} {aob} b4 {b433} {dark_blue_left} {dark_blue_right} ddb {ddb} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} rdb {rdb} ldrb {ldrb}",
-                    is_endround_roi,
-                )
-
-                cv2.imshow(
-                    f"yel {yellow} arb {arb} rb {redbrown} pink {pink} hp {hotpink} wp  {wp} br {br}",
-                    other_endround,
-                )
-                cv2.imshow(
-                    f"arema_red {arena_red} pm {pm} anred {anred} anm{anmaroon} ano {ano} pv {pv} pp {pp}",
-                    another_endround,
-                )
-                cv2.imshow(
-                    f"br{bred} bm{bmaroon} bv{bvoliet} bt{brightred} dred{dred}",
-                    bot_roi,
-                )
-
-                cv2.imshow("frame", self.frame)
-                cv2.waitKey()
-
-            if self.frame_height == 360:
-                if yellowp12 > 5:
-                    return "endround"
-
-                if b55 >= 5 and skyblue >= 3:
-                    return "endround"
-
-                if green_blue > 15:
-                    return "endround"
-
-                if yellow > 5:
-                    return "endround"
-
-                if arena_red >= 10 and anmaroon >= 15 and arb >= 15:
-                    return "endround"
-
-                if arb >= 35 and pm >= 1:
-                    return "endround"
-
-                # if (debug_time):
-                # print(f"\nrb {redbrown} pink {pink} hp {hotpink} wp  {wp} br {br}")
-                # print(f"anred {anred} anm{anmaroon} ano {ano} pp{pp} pv{pv}")
-                # print(f"br{bred} bm{bmaroon} bv{bvoliet} bt{brightred} dred{dred}")
-                # print(f"sky {skyblue} {aob} b4 {b433} {dark_blue_left} {dark_blue_right} ddb {ddb} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} rdb {rdb} ldrb {ldrb}")
-
-                (x, y, w, h) = self.get_roi("ko")
-                ko_roi = self.frame[y : y + h, x : x + w]
-                gold_white = vf_cv.CvHelper.count_pixels(
-                    "#fdfcff", ko_roi, override_tolerance=5
-                )
-                # cv2.imshow(f"ko roi {gold_white}", ko_roi)
-                # cv2.waitKey()
-
-                if yellowp2 >= 2:
-                    return "endround"
-
-                if gold_white >= 2000:
-                    return "endround"
-
-                if 5 <= bred <= 10 and 3 <= bmaroon <= 7 and 2 <= brightred <= 6:
-                    return "endround"
-
-                if 120 <= arena_red <= 140:
-                    return "endround"
-
-                if 1 <= arena_red <= 15 and 2 <= pm <= 17 and 3 <= anred <= 40:
-                    return "endround"
-
-                if arb > 10 and redbrown >= 5 and anred >= 5:
-                    return "endround"
-
-                if arb >= 10 and redbrown >= 10:
-                    return "endround"
-
-                if 15 <= pm < 20 and anmaroon >= 1 and ano >= 1:
-                    return "endround"
-
-                if dark_blue_left >= 6 and light_blue >= 2:
-                    return "endround"
-
-                if 10 <= redbrown <= 20 and 2 <= pp <= 25:
-                    return "endround"
-
-                if 8 <= skyblue <= 18:
-                    return "endround"
-
-                if 120 <= ano <= 137:
-                    return "endround"
-
-                if 20 <= bvoliet <= 30 and (
-                    bred > 0 or bmaroon > 0 or brightred > 0 or dred > 0
-                ):
-                    return "endround"
-
-                if dred >= 5 and light_blue_three > 7:
-                    return "endround"
-
-                if dred >= 5 and aob >= 5:
-                    return "endround"
-
-                if 7 - 5 <= anmaroon <= 35 and 11 - 5 <= redbrown <= 11 + 5:
-                    return "endround"
-
-                if 24 <= dred <= 44:
-                    return "endround"
-
-                if 68 <= brightred <= 94:
-                    return "endround"
-
-                if 68 <= anmaroon <= 94:
-                    return "endround"
-
-                if 7 <= anred <= 27 and 3 <= pm <= 7:
-                    return "endround"
-
-                if 20 <= anred <= 50:
-                    return "endround"
-
-                if 5 <= bred <= 15 and 7 <= bmaroon <= 17:
-                    return "endround"
-
-                if bred > 7 and bmaroon > 4:
-                    return "endround"
-
-                if br > 30:
-                    return "endround"
-
-                if hotpink > 30:
-                    return "endround"
-
-                if 40 <= bvoliet <= 54:
-                    return "endround"
-
-                if wp > 30:
-                    return "endround"
-
-                if (
-                    light_blue > 5
-                    and light_blue_two > 3
-                    and light_blue_three > 3
-                    and aob > 2
-                ):
-                    return "endround"
-
-                if b433 > 5:
-                    return "endround"
-
-                if ddb > 35:
-                    return "endround"
-
-                if ldrb >= 5:
-                    return "endround"
-
-                if pink >= 5:
-                    return "endround"
-
-                if rdb >= 25:
-                    return "endround"
-
-                if dark_blue_right >= 5 and dark_blue_right < 16:
-                    return "endround"
-
-                if dark_blue_right >= 20:
-                    return "endround"
-
-                if 5 <= rdb <= 10 and 1 <= light_blue <= 2 and 1 <= light_blue_two <= 2:
-                    return "endround"
-
-            if self.frame_height != 360 and (dark_blue_right >= 10 and light_blue >= 5):
-                return "endround"
-
-            if (
-                self.frame_height == 480 or self.frame_height == 360
-            ) and dark_blue_left > 10:
-                return "endround"
-
-            if dark_blue_left >= 30 and dark_blue_right >= 2:
-                return "endround"
-
-        if self.frame_height == 1080:
-            is_endround_roi = self.frame[0:38, 1088 : 1088 + 203]
-
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
-
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-
-            if debug_time:
-                cv2.imshow(
-                    f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three}",
-                    is_endround_roi,
-                )
-                cv2.waitKey()
-
-            if (dark_blue_right > 110 or dark_blue_right_two > 40) and (
-                light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
-            ):
-                return "endround"
-
-        if self.frame_height == 720:
-            # print("f720")
-            is_endround_roi = self.frame[0:25, 725 : 725 + 135]
-            p1_life_roi = self.frame[46 : 46 + 17, 163 : 163 + 400]
-            p2_life_roi = self.frame[46 : 46 + 17, 725 : 725 + 400]
-
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels(
-                "#0e3e97", is_endround_roi, 30
-            )
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
-
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
-                "#44447b", is_endround_roi, override_tolerance=5
-            )
-
-            white = vf_cv.CvHelper.count_pixels(
-                "#dbe9f3", is_endround_roi, override_tolerance=5
-            )
-
-            pb = vf_cv.CvHelper.count_pixels(
-                "#3032bb", is_endround_roi, override_tolerance=15
-            )
-
-            purp = vf_cv.CvHelper.count_pixels(
-                "#6f137b", is_endround_roi, override_tolerance=5
-            )
-            purp2 = vf_cv.CvHelper.count_pixels(
-                "#682a64", is_endround_roi, override_tolerance=5
-            )
-
-            roi_bw = cv2.cvtColor(is_endround_roi, cv2.COLOR_BGR2GRAY)
-
-            yellow_p1 = vf_cv.CvHelper.count_pixels(
-                "#edf43a", p1_life_roi, override_tolerance=10
-            )
-            deb3ad = vf_cv.CvHelper.count_pixels(
-                "#deb3ad", p1_life_roi, override_tolerance=10
-            )
-            yellow_p2 = vf_cv.CvHelper.count_pixels(
-                "#edf43a", p2_life_roi, override_tolerance=10
-            )
-            if debug_time:
-                cv2.imshow("frame", self.frame)
-                cv2.imshow("bw", roi_bw)
-
-                debug_string = f"p[{purp} pb[{pb} w{white} {dark_blue_left} d[{dark_blue_right} d2[: {dark_blue_right_two} lb: {light_blue} lb2: {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}"
-
-                cv2.imshow(
-                    debug_string,
-                    is_endround_roi,
-                )
-
-                cv2.imshow(f"720 p1life {yellow_p1} deb[{deb3ad}]", p1_life_roi)
-                cv2.imshow(f"720 p2life {yellow_p2}", p2_life_roi)
-
-                print(debug_string)
-                cv2.waitKey()
-
-            if deb3ad > 5:
-                return "endround"
-
-            if yellow_p1 > 40:
-                return "endround"
-
-            if pb >= 5 and dark_blue_right >= 150:
-                return "endround"
-
-            if pb >= 35 and light_blue >= 25 and dark_blue_right_three > 8:
-                return "endround"
-
-            if (
-                pb > 0
-                or light_blue > 100
-                or (light_blue > 30 and light_blue_two > 30)
-                or dark_blue_right > 900
-            ) and (purp == 0 and purp2 == 0):
-                if dark_blue_right >= 3 and light_blue >= 5 and light_blue_three >= 1:
-                    return "endround"
-
-                if dark_blue_right > 15 and light_blue_two > 5 and light_blue > 5:
-                    return "endround"
-
-                if light_blue > 5 and dark_blue_right_three > 60:
-                    return "endround"
-
-                if dark_blue_right >= 2 and light_blue > 25:
-                    return "endround"
-
-                if dark_blue_right_two > 5 and light_blue > 40 and light_blue_two > 15:
-                    return "endround"
-
-                if white < 34:
-                    if (dark_blue_right > 10 or dark_blue_right_two > 40) and (
-                        light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
-                    ):
-                        return "endround"
-
-                if dark_blue_right > 1500:
-                    return "endround"
-
-            is_endround_roi = self.frame[0:38, 195 : 195 + 356]
-
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
-
-            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
-                "#44447b", is_endround_roi, override_tolerance=5
-            )
-
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-
-            maroon = vf_cv.CvHelper.count_pixels(
-                "#693038", is_endround_roi, override_tolerance=5
-            )
-
-            d070 = vf_cv.CvHelper.count_pixels(
-                "#4d0700", is_endround_roi, override_tolerance=5
-            )
-            if debug_time:
-                cv2.imshow(
-                    f"d070[{d070}] {dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} mrn: {maroon} thr: {dark_blue_right_three}",
-                    is_endround_roi,
-                )
-                cv2.waitKey()
-
-            if 20 <= d070 <= 27:
-                return "endround"
-
-            if maroon > 40 and light_blue > 10:
-                return "endround"
-
-            if maroon > 50 and light_blue_two > 40:
-                return "endround"
-
-            if maroon > 50 and dark_blue_right > 100:
-                return "endround"
-
-            if light_blue > 20 and light_blue_two > 50:
-                return "endround"
+        if self.is_endround_other(debug_time):
+            return "endround"
 
         for digit_num in range(1, 3):
             region_name = f"time_seconds_digit{digit_num}"
@@ -2253,6 +1730,614 @@ class Timer:
             return 0
 
         raise Exception(f"Invalid time digit {debug_time_digit}")
+
+    def is_endround_other(self, debug_time=False):
+        if self.frame_height == 480 or self.frame_height == 360:
+            is_endround_roi = self.frame[0:14, 402 : 402 + 90]
+            if self.frame_height == 360:
+                is_endround_roi = self.frame[0:10, 301 : 301 + 100]
+
+            dark_blue_left = vf_cv.CvHelper.count_pixels(
+                "#1a2cd1", is_endround_roi, override_tolerance=10
+            )
+            dark_blue_right = vf_cv.CvHelper.count_pixels(
+                "#0e3e97", is_endround_roi, override_tolerance=5
+            )
+
+            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                "#3f4d74", is_endround_roi, override_tolerance=5
+            )
+
+            light_blue = vf_cv.CvHelper.count_pixels(
+                "#999fe4", is_endround_roi, override_tolerance=10
+            )
+            light_blue_two = vf_cv.CvHelper.count_pixels(
+                "#aaa0e8", is_endround_roi, override_tolerance=10
+            )
+            light_blue_three = vf_cv.CvHelper.count_pixels(
+                "#92aaff", is_endround_roi, override_tolerance=10
+            )
+
+            ldrb = vf_cv.CvHelper.count_pixels(
+                "#0a10d5", is_endround_roi, override_tolerance=10
+            )
+
+            rdb = vf_cv.CvHelper.count_pixels(
+                "#1a11b2", is_endround_roi, override_tolerance=10
+            )
+
+            skyblue = vf_cv.CvHelper.count_pixels(
+                "#5d5bf0", is_endround_roi, override_tolerance=5
+            )
+            b55 = vf_cv.CvHelper.count_pixels(
+                "#554ce2", is_endround_roi, override_tolerance=5
+            )
+
+            other_endround = self.frame[0:35, 165:202]
+            another_endround = self.frame[35 + 15 : 35 + 35 + 15, 165 + 65 : 202 + 65]
+            p2_life_roi = self.frame[24 : 24 + 12, 360 : 360 + 150]
+            p1_life_roi = self.frame[20 : 20 + 12, 83 : 83 + 200]
+
+            bot_roi_w = 75
+            bot_roi_h = 80
+            bot_roi_x = 90
+            bot_roi_y = 380 - bot_roi_h - 1
+
+            bot_roi = self.frame[
+                bot_roi_y : bot_roi_y + bot_roi_h, bot_roi_x : bot_roi_x + bot_roi_w
+            ]
+
+            bred = vf_cv.CvHelper.count_pixels("#cf0b19", bot_roi, override_tolerance=5)
+            brightred = vf_cv.CvHelper.count_pixels(
+                "#e1142c", bot_roi, override_tolerance=5
+            )
+            dred = vf_cv.CvHelper.count_pixels("#af0017", bot_roi, override_tolerance=5)
+
+            dark_blue_p2 = vf_cv.CvHelper.count_pixels(
+                "#041166", p2_life_roi, override_tolerance=5
+            )
+
+            green_blue = vf_cv.CvHelper.count_pixels(
+                "#327790", p2_life_roi, override_tolerance=5
+            )
+
+            bmaroon = vf_cv.CvHelper.count_pixels(
+                "#641400", bot_roi, override_tolerance=5
+            )
+            bvoliet = vf_cv.CvHelper.count_pixels(
+                "#342bc3", bot_roi, override_tolerance=10
+            )
+
+            pink = vf_cv.CvHelper.count_pixels(
+                "#ff7c89", other_endround, override_tolerance=5
+            )
+            hotpink = vf_cv.CvHelper.count_pixels(
+                "#f4a2f3", other_endround, override_tolerance=5
+            )
+            br = vf_cv.CvHelper.count_pixels(
+                "#d85c39", other_endround, override_tolerance=5
+            )
+            wp = vf_cv.CvHelper.count_pixels(
+                "#ebbbc9", other_endround, override_tolerance=5
+            )
+
+            anred = vf_cv.CvHelper.count_pixels(
+                "#db0114", another_endround, override_tolerance=5
+            )
+            anmaroon = vf_cv.CvHelper.count_pixels(
+                "#900e11", another_endround, override_tolerance=5
+            )
+
+            ano = vf_cv.CvHelper.count_pixels(
+                "#d45b76", another_endround, override_tolerance=5
+            )
+
+            # anhotpink = vf_cv.CvHelper.count_pixels("#f4a2f3", another_endround, override_tolerance=5)
+            # anbr = vf_cv.CvHelper.count_pixels("#d85c39", another_endround, override_tolerance=5)
+            # anwp = vf_cv.CvHelper.count_pixels("#ebbbc9", another_endround, override_tolerance=5)
+
+            ddb = vf_cv.CvHelper.count_pixels(
+                "#08148b", is_endround_roi, override_tolerance=5
+            )
+            b433 = vf_cv.CvHelper.count_pixels(
+                "#433be9", is_endround_roi, override_tolerance=5
+            )
+            aob = vf_cv.CvHelper.count_pixels(
+                "#264ecf", is_endround_roi, override_tolerance=5
+            )
+            redbrown = vf_cv.CvHelper.count_pixels(
+                "#4a0d14", other_endround, override_tolerance=10
+            )
+
+            arb = vf_cv.CvHelper.count_pixels(
+                "#a91e2f", other_endround, override_tolerance=10
+            )
+            yellow = vf_cv.CvHelper.count_pixels(
+                "#f5f347", other_endround, override_tolerance=5
+            )
+            yellowp1 = vf_cv.CvHelper.count_pixels(
+                "#fff57a", p1_life_roi, override_tolerance=5
+            )
+            yellowp12 = vf_cv.CvHelper.count_pixels(
+                "#dee93f", p1_life_roi, override_tolerance=5
+            )
+            yellowp2 = vf_cv.CvHelper.count_pixels(
+                "#fff57a", p2_life_roi, override_tolerance=5
+            )
+            pv = vf_cv.CvHelper.count_pixels(
+                "#34051a", another_endround, override_tolerance=5
+            )
+            pp = vf_cv.CvHelper.count_pixels(
+                "#ff9fc2", another_endround, override_tolerance=5
+            )
+            pm = vf_cv.CvHelper.count_pixels(
+                "#750000", another_endround, override_tolerance=5
+            )
+            arena_red = vf_cv.CvHelper.count_pixels(
+                "#e0213d", another_endround, override_tolerance=5
+            )
+            m8 = vf_cv.CvHelper.count_pixels(
+                "#882d35", other_endround, override_tolerance=5
+            )
+
+            dfe32e = vf_cv.CvHelper.count_pixels(
+                "#dfe32e", p1_life_roi, override_tolerance=5
+            )
+
+            if debug_time:
+                cv2.imshow(
+                    f"p2 life {dark_blue_p2}  {green_blue} yellowp2 {yellowp2}",
+                    p2_life_roi,
+                )
+                cv2.imshow(
+                    f"p1 life dfe {dfe32e} {green_blue} yellowp1 {yellowp1} yp12 {yellowp12}",
+                    p1_life_roi,
+                )
+
+                cv2.imshow(
+                    f"b55 {b55} sky {skyblue} {aob} b4 {b433} {dark_blue_left} {dark_blue_right} ddb {ddb} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} rdb {rdb} ldrb {ldrb}",
+                    is_endround_roi,
+                )
+
+                cv2.imshow(
+                    f"m8 {m8} yel {yellow} arb {arb} rb {redbrown} pink {pink} hp {hotpink} wp  {wp} br {br}",
+                    other_endround,
+                )
+                cv2.imshow(
+                    f"arema_red {arena_red} pm {pm} anred {anred} anm{anmaroon} ano {ano} pv {pv} pp {pp}",
+                    another_endround,
+                )
+                cv2.imshow(
+                    f"br{bred} bm{bmaroon} bv{bvoliet} bt{brightred} dred{dred}",
+                    bot_roi,
+                )
+
+                print(
+                    f"arema_red {arena_red} pm {pm} anred {anred} anm{anmaroon} ano {ano} pv {pv} pp {pp}"
+                )
+                print(f"br{bred} bm{bmaroon} bv{bvoliet} bt{brightred} dred{dred}")
+
+                cv2.imshow("frame", self.frame)
+                cv2.waitKey()
+
+            if self.frame_height == 360:
+                if dfe32e >= 4 and yellowp12 >= 2:
+                    return True
+
+                if dark_blue_p2 >= 7:
+                    return True
+
+                if m8 >= 8 and arb >= 2:
+                    if debug_time:
+                        print("returning endround 01")
+                    return True
+
+                if yellowp12 > 5:
+                    if debug_time:
+                        print("returning endround 02")
+                    return True
+
+                if b55 >= 5 and skyblue >= 3:
+                    if debug_time:
+                        print("returning endround 03")
+                    return True
+
+                if green_blue > 15:
+                    if debug_time:
+                        print("returning endround 04")
+                    return True
+
+                if yellow > 5:
+                    if debug_time:
+                        print("returning endround 05")
+                    return True
+
+                if arena_red >= 10 and anmaroon >= 15 and arb >= 15:
+                    if debug_time:
+                        print("returning endround 06")
+                    return True
+
+                if arb >= 35 and pm >= 1:
+                    if debug_time:
+                        print("returning endround 07")
+                    return True
+
+                # if (debug_time):
+                # print(f"\nrb {redbrown} pink {pink} hp {hotpink} wp  {wp} br {br}")
+                # print(f"anred {anred} anm{anmaroon} ano {ano} pp{pp} pv{pv}")
+                # print(f"br{bred} bm{bmaroon} bv{bvoliet} bt{brightred} dred{dred}")
+                # print(f"sky {skyblue} {aob} b4 {b433} {dark_blue_left} {dark_blue_right} ddb {ddb} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} rdb {rdb} ldrb {ldrb}")
+
+                (x, y, w, h) = self.get_roi("ko")
+                ko_roi = self.frame[y : y + h, x : x + w]
+                gold_white = vf_cv.CvHelper.count_pixels(
+                    "#fdfcff", ko_roi, override_tolerance=5
+                )
+                # cv2.imshow(f"ko roi {gold_white}", ko_roi)
+                # cv2.waitKey()
+
+                if yellowp2 >= 2:
+                    return True
+
+                if gold_white >= 2000:
+                    return True
+
+                if 5 <= bred <= 10 and 3 <= bmaroon <= 7 and 2 <= brightred <= 6:
+                    if debug_time:
+                        print("to endround 08")
+
+                    return True
+
+                if 120 <= arena_red <= 140:
+                    if debug_time:
+                        print("to endround 09")
+
+                    return True
+
+                if 1 <= arena_red <= 15 and 2 <= pm <= 17 and 3 <= anred <= 40:
+                    if debug_time:
+                        print("to endround 10")
+                    return True
+
+                if arb > 10 and redbrown >= 5 and anred >= 5:
+                    if debug_time:
+                        print("to endround 11")
+                    return True
+
+                if arb >= 10 and redbrown >= 10:
+                    if debug_time:
+                        print("to endround 12")
+                    return True
+
+                if 15 <= pm < 20 and anmaroon >= 1 and ano >= 1:
+                    if debug_time:
+                        print("to endround 13")
+                    return True
+
+                if dark_blue_left >= 6 and light_blue >= 2:
+                    if debug_time:
+                        print("to endround 14")
+                    return True
+
+                if 10 <= redbrown <= 20 and 2 <= pp <= 25:
+                    if debug_time:
+                        print("to endround 15")
+                    return True
+
+                if 8 <= skyblue <= 18:
+                    return True
+
+                if 120 <= ano <= 137:
+                    return True
+
+                if 20 <= bvoliet <= 30 and (
+                    bred > 0 or bmaroon > 0 or brightred > 0 or dred > 0
+                ):
+                    return True
+
+                if dred >= 5 and light_blue_three > 7:
+                    return True
+
+                if dred >= 5 and aob >= 5:
+                    return True
+
+                if (
+                    7 - 5 <= anmaroon <= 35
+                    and 11 - 5 <= redbrown <= 11 + 5
+                    and self.stage != "Deep Mountain"
+                ):
+                    return True
+
+                if 24 <= dred <= 44:
+                    return True
+
+                if 68 <= brightred <= 94:
+                    return True
+
+                if 68 <= anmaroon <= 94:
+                    return True
+
+                if 7 <= anred <= 27 and 3 <= pm <= 7:
+                    return True
+
+                if 20 <= anred <= 50:
+                    return True
+
+                if 5 <= bred <= 15 and 7 <= bmaroon <= 17:
+                    return True
+
+                if bred > 7 and bmaroon > 4:
+                    return True
+
+                if br > 30:
+                    return True
+
+                if hotpink > 30:
+                    return True
+
+                if 40 <= bvoliet <= 54:
+                    return True
+
+                if wp > 30:
+                    return True
+
+                if (
+                    light_blue > 5
+                    and light_blue_two > 3
+                    and light_blue_three > 3
+                    and aob > 2
+                ):
+                    return True
+
+                if b433 > 5:
+                    return True
+
+                if ddb > 35:
+                    return True
+
+                if ldrb >= 5:
+                    return True
+
+                if pink >= 5:
+                    return True
+
+                if rdb >= 25:
+                    return True
+
+                if dark_blue_right >= 5 and dark_blue_right < 16:
+                    return True
+
+                if dark_blue_right >= 20:
+                    return True
+
+                if 5 <= rdb <= 10 and 1 <= light_blue <= 2 and 1 <= light_blue_two <= 2:
+                    return True
+
+            if self.frame_height != 360 and (dark_blue_right >= 10 and light_blue >= 5):
+                return True
+
+            if (
+                self.frame_height == 480 or self.frame_height == 360
+            ) and dark_blue_left > 10:
+                return True
+
+            if dark_blue_left >= 30 and dark_blue_right >= 2:
+                return True
+
+            if self.frame_height == 720:
+                # print("f720")
+                is_endround_roi = self.frame[0:25, 725 : 725 + 135]
+                p1_life_roi = self.frame[46 : 46 + 17, 163 : 163 + 400]
+                p2_life_roi = self.frame[46 : 46 + 17, 725 : 725 + 400]
+
+                dark_blue_left = vf_cv.CvHelper.count_pixels(
+                    "#1a2cd1", is_endround_roi, override_tolerance=10
+                )
+                dark_blue_right = vf_cv.CvHelper.count_pixels(
+                    "#0e3e97", is_endround_roi, 30
+                )
+                dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                    "#3f4d74", is_endround_roi, override_tolerance=5
+                )
+
+                light_blue = vf_cv.CvHelper.count_pixels(
+                    "#999fe4", is_endround_roi, override_tolerance=10
+                )
+                light_blue_two = vf_cv.CvHelper.count_pixels(
+                    "#aaa0e8", is_endround_roi, override_tolerance=10
+                )
+                light_blue_three = vf_cv.CvHelper.count_pixels(
+                    "#92aaff", is_endround_roi, override_tolerance=10
+                )
+                dark_blue_right_three = vf_cv.CvHelper.count_pixels(
+                    "#44447b", is_endround_roi, override_tolerance=5
+                )
+
+                white = vf_cv.CvHelper.count_pixels(
+                    "#dbe9f3", is_endround_roi, override_tolerance=5
+                )
+
+                pb = vf_cv.CvHelper.count_pixels(
+                    "#3032bb", is_endround_roi, override_tolerance=15
+                )
+
+                purp = vf_cv.CvHelper.count_pixels(
+                    "#6f137b", is_endround_roi, override_tolerance=5
+                )
+                purp2 = vf_cv.CvHelper.count_pixels(
+                    "#682a64", is_endround_roi, override_tolerance=5
+                )
+
+                roi_bw = cv2.cvtColor(is_endround_roi, cv2.COLOR_BGR2GRAY)
+
+                yellow_p1 = vf_cv.CvHelper.count_pixels(
+                    "#edf43a", p1_life_roi, override_tolerance=10
+                )
+                deb3ad = vf_cv.CvHelper.count_pixels(
+                    "#deb3ad", p1_life_roi, override_tolerance=10
+                )
+                yellow_p2 = vf_cv.CvHelper.count_pixels(
+                    "#edf43a", p2_life_roi, override_tolerance=10
+                )
+                if debug_time:
+                    cv2.imshow("frame", self.frame)
+                    cv2.imshow("bw", roi_bw)
+
+                    debug_string = f"p[{purp} pb[{pb} w{white} {dark_blue_left} d[{dark_blue_right} d2[: {dark_blue_right_two} lb: {light_blue} lb2: {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}"
+
+                    cv2.imshow(
+                        debug_string,
+                        is_endround_roi,
+                    )
+
+                    cv2.imshow(f"720 p1life {yellow_p1} deb[{deb3ad}]", p1_life_roi)
+                    cv2.imshow(f"720 p2life {yellow_p2}", p2_life_roi)
+
+                    print(debug_string)
+                    cv2.waitKey()
+
+                if deb3ad > 5:
+                    return True
+
+                if yellow_p1 > 40:
+                    return True
+
+                if pb >= 5 and dark_blue_right >= 150:
+                    return True
+
+                if pb >= 35 and light_blue >= 25 and dark_blue_right_three > 8:
+                    return True
+
+                if (
+                    pb > 0
+                    or light_blue > 100
+                    or (light_blue > 30 and light_blue_two > 30)
+                    or dark_blue_right > 900
+                ) and (purp == 0 and purp2 == 0):
+                    if (
+                        dark_blue_right >= 3
+                        and light_blue >= 5
+                        and light_blue_three >= 1
+                    ):
+                        return True
+
+                    if dark_blue_right > 15 and light_blue_two > 5 and light_blue > 5:
+                        return True
+
+                    if light_blue > 5 and dark_blue_right_three > 60:
+                        return True
+
+                    if dark_blue_right >= 2 and light_blue > 25:
+                        return True
+
+                    if (
+                        dark_blue_right_two > 5
+                        and light_blue > 40
+                        and light_blue_two > 15
+                    ):
+                        return True
+
+                    if white < 34:
+                        if (dark_blue_right > 10 or dark_blue_right_two > 40) and (
+                            light_blue >= 1
+                            or light_blue_two >= 1
+                            or light_blue_three >= 1
+                        ):
+                            return True
+
+                    if dark_blue_right > 1500:
+                        return True
+
+                is_endround_roi = self.frame[0:38, 195 : 195 + 356]
+
+                dark_blue_left = vf_cv.CvHelper.count_pixels(
+                    "#1a2cd1", is_endround_roi, override_tolerance=10
+                )
+                dark_blue_right = vf_cv.CvHelper.count_pixels(
+                    "#0e3e97", is_endround_roi
+                )
+                dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                    "#3f4d74", is_endround_roi, override_tolerance=5
+                )
+
+                dark_blue_right_three = vf_cv.CvHelper.count_pixels(
+                    "#44447b", is_endround_roi, override_tolerance=5
+                )
+
+                light_blue = vf_cv.CvHelper.count_pixels(
+                    "#999fe4", is_endround_roi, override_tolerance=10
+                )
+                light_blue_two = vf_cv.CvHelper.count_pixels(
+                    "#aaa0e8", is_endround_roi, override_tolerance=10
+                )
+                light_blue_three = vf_cv.CvHelper.count_pixels(
+                    "#92aaff", is_endround_roi, override_tolerance=10
+                )
+
+                maroon = vf_cv.CvHelper.count_pixels(
+                    "#693038", is_endround_roi, override_tolerance=5
+                )
+
+                d070 = vf_cv.CvHelper.count_pixels(
+                    "#4d0700", is_endround_roi, override_tolerance=5
+                )
+                if debug_time:
+                    cv2.imshow(
+                        f"d070[{d070}] {dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} mrn: {maroon} thr: {dark_blue_right_three}",
+                        is_endround_roi,
+                    )
+                    cv2.waitKey()
+
+                if 20 <= d070 <= 27:
+                    return True
+
+                if maroon > 40 and light_blue > 10:
+                    return True
+
+                if maroon > 50 and light_blue_two > 40:
+                    return True
+
+                if maroon > 50 and dark_blue_right > 100:
+                    return True
+
+                if light_blue > 20 and light_blue_two > 50:
+                    return True
+
+            if self.frame_height == 1080:
+                is_endround_roi = self.frame[0:38, 1088 : 1088 + 203]
+
+                dark_blue_left = vf_cv.CvHelper.count_pixels(
+                    "#1a2cd1", is_endround_roi, override_tolerance=10
+                )
+                dark_blue_right = vf_cv.CvHelper.count_pixels(
+                    "#0e3e97", is_endround_roi
+                )
+                dark_blue_right_two = vf_cv.CvHelper.count_pixels(
+                    "#3f4d74", is_endround_roi, override_tolerance=5
+                )
+
+                light_blue = vf_cv.CvHelper.count_pixels(
+                    "#999fe4", is_endround_roi, override_tolerance=10
+                )
+                light_blue_two = vf_cv.CvHelper.count_pixels(
+                    "#aaa0e8", is_endround_roi, override_tolerance=10
+                )
+                light_blue_three = vf_cv.CvHelper.count_pixels(
+                    "#92aaff", is_endround_roi, override_tolerance=10
+                )
+
+                if debug_time:
+                    cv2.imshow(
+                        f"{dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three}",
+                        is_endround_roi,
+                    )
+                    cv2.waitKey()
+
+                if (dark_blue_right > 110 or dark_blue_right_two > 40) and (
+                    light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
+                ):
+                    return True
+        return False
 
 
 class UnrecognizeTimeDigitException(Exception):
