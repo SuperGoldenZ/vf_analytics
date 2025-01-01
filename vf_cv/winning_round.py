@@ -211,9 +211,11 @@ class WinningRound:
                 teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
                 aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
                 city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)
+                fivece = vf_cv.CvHelper.count_pixels("#5ce3f8", roi, 5)
+                forsix = vf_cv.CvHelper.count_pixels("#46adfc", roi, 5)
                 if debug_winning_round:
                     cv2.imshow(
-                        f"city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
+                        f"{self.frame_height}p forsix {forsix} fivece {fivece} city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
                         roi,
                     )
 
@@ -222,6 +224,12 @@ class WinningRound:
                     cv2.waitKey()
 
                 if self.frame_height == 360:
+                    if forsix >= 4:
+                        return player_num
+
+                    if fivece >= 10:
+                        return player_num
+
                     if tblue + teal >= 5:
                         return player_num
 
@@ -263,7 +271,6 @@ class WinningRound:
                         )
                         < 0.90
                     ):
-                        print(f"player 2 01 {roi_bw[5,21]}")
                         return player_num
 
                     # circle two player two
@@ -282,7 +289,6 @@ class WinningRound:
                         )
                         < 0.90
                     ):
-                        print(f"player 2 02 {threshold} {stage} {roi_bw[5,35]}")
                         return player_num
 
                     if (
@@ -373,10 +379,13 @@ class WinningRound:
                 pf2 = vf_cv.CvHelper.count_pixels("#f28c93", roi, threshold)
                 de2 = vf_cv.CvHelper.count_pixels("#de5c68", roi, threshold)
                 fe = vf_cv.CvHelper.count_pixels("#fe717c", roi, threshold)
+                ea = vf_cv.CvHelper.count_pixels("#ea6367", roi, threshold)
+                fa = vf_cv.CvHelper.count_pixels("#fa576e", roi, threshold)
+                ee = vf_cv.CvHelper.count_pixels("#ee314c", roi, threshold)
 
                 if debug_winning_round:
                     cv2.imshow("p1 winning round", self.frame)
-                    debug_string = f"fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
+                    debug_string = f"ee {ee} fa {fa} ea {ea} fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
                     print(debug_string)
                     cv2.imshow(
                         debug_string,
@@ -391,6 +400,9 @@ class WinningRound:
                 else:
                     if op > 5:
                         return player_num
+
+                if self.frame_height == 360 and ea >= 5 and fe >= 1 and e1 >= 2:
+                    return player_num
 
                 if self.frame_height == 360 and white_red_count >= 15:
                     return player_num
@@ -416,6 +428,12 @@ class WinningRound:
 
                 # player1 B&W
                 if self.frame_height == 360:
+                    if ee >= 19:
+                        return player_num
+
+                    if fa >= 3 and ea >= 1 and f34 >= 1:
+                        return player_num
+
                     if f34 >= 3 and de2 >= 1:
                         return player_num
 
