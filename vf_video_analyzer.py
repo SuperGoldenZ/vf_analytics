@@ -1,5 +1,6 @@
 import os
 from timeit import default_timer as timer
+
 import logging
 import argparse
 import pathlib
@@ -12,7 +13,9 @@ import vf_analytics
 import vf_data
 import vf_data.match
 import youtube_helper
+import vf_cv.config
 
+config: vf_cv.Config = vf_cv.Config.load_config("default.cfg")
 
 FORCE_DELETE_VIDEO = True
 PROCESS_STREAMED_VIDEOS = True
@@ -20,6 +23,7 @@ FORCE_SINGLE_MATCH_PER_VIDEO = False
 STOP_ON_FIRST_ERROR = False
 PROCESS_VS_ONLY = False
 PROCESS_SHUN_ONLY = True
+SAVE_SNIPPETS = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -109,7 +113,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
     video_id = None
     video_folder = None
     video_path = None
-    jpg_folder = None
+
     error_message = None
     match_analyzer = None
     saved_video_resolution = None
@@ -147,7 +151,6 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             return
 
         resolution = None
-        jpg_folder = None
 
         saved_video_resolution = -1
         if "youtube" in url:
@@ -198,7 +201,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 )
         else:
             video_path = f"assets/videos/{video_id}_{resolution}/video.mp4"
-            print(f"found video and loading from {video_path}")
+            logger.debug(f"found video and loading from {video_path}")
 
     start = timer()
 
@@ -226,7 +229,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
             frame_rate = round(cap.get_frame_rate())
             frame_count = cap.get_frame_count()
-            print(f"{frame_count} at {frame_rate} FPS")
+            logger.debug(f"{frame_count} at {frame_rate} FPS")
         else:
             cap = cv2.VideoCapture(cam)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -250,7 +253,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         if ys is None or ys.title is None:
             youtube_video_title = read_video_title(video_id)
 
-        jpg_folder = f"assets/jpg/{video_id}_{resolution}"
+        jpg_folder = f"{config.images_output_folder}{video_id}_{resolution}"
         if not os.path.exists(jpg_folder):
             os.makedirs(jpg_folder, exist_ok=True)
 
@@ -259,7 +262,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 f"\tCreating match for youtube video title {ys.title} {frame_rate}FPS "
             )
         else:
-            print(f"\tCreating from saved video")
+            logger.debug(f"\tCreating from saved video")
         match_analyzer = vf_cv.match_analyzer.MatchAnalyzer(
             cap,
             logger,
@@ -268,12 +271,15 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             frame_rate=frame_rate,
             youtube_video_title=youtube_video_title,
             process_vs_only=process_vs_only,
+            config=config,
         )
         processed = 0
         matches_processed = 0
         frames_processed = -1
         while frames_processed != 0:
-            print(f"\tProcessing match {matches_processed+1}")
+            print(
+                f"\n\n==========================\nProcessing match {matches_processed+1}"
+            )
             try:
                 frames_processed = match_analyzer.analyze_next_match(
                     video_id=video_id,
@@ -284,7 +290,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             except vf_cv.PrematureMatchFinishException as e:
                 error_message = str(e)
                 print(
-                    f"Premature Match End exception occured {e} processing video {video_id}"
+                    f"\tPremature Match End exception occured {e} processing video {video_id}"
                 )
                 logger.error(
                     f"Premature match end exception occured {e} processing video {video_id}"
@@ -366,9 +372,10 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
             if frames_processed != 0:
                 print_csv(match_analyzer.match)
-                print("\ncommand:")
-                print(match_analyzer.match.to_ffmpeg_copy_command())
-                os.system(match_analyzer.match.to_ffmpeg_copy_command())
+                if SAVE_SNIPPETS:
+                    print("\ncommand:")
+                    print(match_analyzer.match.to_ffmpeg_copy_command())
+                    os.system(match_analyzer.match.to_ffmpeg_copy_command())
 
                 processed += frames_processed
                 match_analyzer.matches_processed = match_analyzer.matches_processed + 1
@@ -386,9 +393,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             print_error_csv(match_analyzer.match, resolution, "other")
         match_analyzer.matches_processed = match_analyzer.matches_processed + 1
     finally:
-        # print("\tFinally - Releasing cap")
         cap.release()
-        # print("\tFinally - Checking to delete")
         if (
             saved_video_resolution == 0 and FORCE_DELETE_VIDEO or error_message is None
         ) and os.path.isfile(video_path):
