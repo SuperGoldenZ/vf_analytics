@@ -54,17 +54,21 @@ class Character:
     def get_character_name(self, player_num, debug_character=False):
         """Returns the name of the character a certain player is using"""
 
-        parse_title = self.youtube_video_title is not None and (
-            "【VFes高段位戦】" in self.youtube_video_title
-            or "【VFes  VF5us 高段位戦】" in self.youtube_video_title
-            or "名人戦" in self.youtube_video_title
-            or "【VFes / VF5us 高段位戦】" in self.youtube_video_title
-        ) and "VS" in self.youtube_video_title
+        parse_title = (
+            self.youtube_video_title is not None
+            and (
+                "【VFes高段位戦】" in self.youtube_video_title
+                or "【VFes  VF5us 高段位戦】" in self.youtube_video_title
+                or "名人戦" in self.youtube_video_title
+                or "【VFes / VF5us 高段位戦】" in self.youtube_video_title
+            )
+            and "VS" in self.youtube_video_title
+        )
 
         if parse_title:
             split = self.youtube_video_title.strip().split("V")
-            #rm print(split)
-            offset = len(split)-3
+            # rm print(split)
+            offset = len(split) - 3
 
             if "影丸" in split[player_num + offset]:
                 return "Kage"
@@ -109,7 +113,7 @@ class Character:
 
             if "アイリーン" in split[player_num + offset]:
                 return "Eileen"
-        
+
         region_name = f"player{player_num}character"
         for retry in range(1, 3):
             (x, y, w, h) = self.get_roi(region_name)
@@ -127,10 +131,12 @@ class Character:
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 
-            threshold_value = 250
+            threshold_value = 240
             _, thresholded_image = cv2.threshold(
                 gray_image, threshold_value, 255, cv2.THRESH_BINARY
             )
+
+            thresholded_image = cv2.bitwise_not(thresholded_image)
 
             first_letter = vf_cv.CvHelper.trim(thresholded_image)
 
@@ -154,6 +160,7 @@ class Character:
                     f"p{player_num} char {self.frame_height} {n_white_pix} {width} {height}",
                     thresholded_image,
                 )
+
                 cv2.waitKey()
 
             if self.frame_height == 360:
@@ -163,7 +170,7 @@ class Character:
 
                 similarity = vf_cv.CvHelper.color_similarity(roi[0, 0], (32, 144, 194))
                 if player_num == 1 and similarity >= 0.95:
-                    #print(f"p{player_num} lei fei with {similarity}")
+                    # print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 b, g, r = roi[5, 45]
@@ -177,7 +184,7 @@ class Character:
                     roi[0, 0], (blue, green, red)
                 )
                 if player_num == 2 and similarity >= 0.95:
-                    #print(f"p{player_num} lei fei with {similarity}")
+                    # print(f"p{player_num} lei fei with {similarity}")
                     return "Lei Fei"
 
                 red = 67
@@ -249,8 +256,9 @@ class Character:
 
             roi = self.frame[y : y + h, x : x + w]
 
-            white_only_roi = vf_cv.CvHelper.all_but_white(roi)
-            text = pytesseract.image_to_string(white_only_roi, config="--psm 7").strip()
+            text = pytesseract.image_to_string(
+                thresholded_image, config="--psm 7"
+            ).strip()
 
             if "Tagan Kirin" in text:
                 return "Jean"
@@ -310,6 +318,7 @@ class Character:
             if self.is_vf_character_name(text):
                 return str.replace(text, "\n\x0c", "")
 
+            print(f"\t\t\t\tDid not match character name {text}")
         return None
 
     @staticmethod
