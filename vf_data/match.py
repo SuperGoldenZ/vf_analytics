@@ -187,4 +187,4 @@ class Match:
         clip_duration = int((int(last_round.seconds) - match_start_seconds) + 15)
 
         dest_dir = "/mnt/sdb/Users/alexa/Videos/2024Q4 Open Beta/Matches/"
-        return f'ffmpeg -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
+        return f'ffmpeg -y -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
