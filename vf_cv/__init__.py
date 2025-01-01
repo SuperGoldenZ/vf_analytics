@@ -24,4 +24,5 @@ from vf_cv.vs_screen import VsScreen
 from vf_cv.drinks import Drinks
 from vf_cv.revo import REVO
 from vf_cv.video_capture_async import VideoCaptureAsync
+from vf_cv.config import Config
 from vf_cv.version import __version__
