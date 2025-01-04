@@ -132,13 +132,37 @@ class WinningRound:
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
         third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
         light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
+        darkest_blue = vf_cv.CvHelper.count_pixels("#001a8c", roi, 5)
+        blue_blue = vf_cv.CvHelper.count_pixels("#0000fa", roi, 5)
 
         if debug_winning_round is True:
+            debug_string = f"{self.frame_height}p bb {blue_blue} drkb {darkest_blue} lr {lr} drb {darker_blue} db {dark_blue} other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}"
+            print(debug_string)
+
             cv2.imshow(
-                f"lr {lr} drb {darker_blue} db {dark_blue} lr {lr} {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}",
+                debug_string,
                 roi,
             )
             cv2.waitKey()
+
+        if self.frame_height == 360:
+            if maroon >= 100 and pink >= 20 and maroon_2 >= 20 and lr >= 80:
+                return 0
+
+            if blue_blue >= 10 and other_dark_blue >= 3:
+                return 0
+
+            if lr >= 70 and dark_blue >= 70:
+                return 0
+
+            if darkest_blue >= 20 and darker_blue >= 1 and dark_blue >= 1:
+                return 0
+
+            if darkest_blue >= 5 and darker_blue >= 1 and lr >= 1:
+                return 0
+
+            if darkest_blue >= 4 and dark_blue >= 20:
+                return 0
 
         if self.frame_height == 480 and lr > 85:
             return 0
