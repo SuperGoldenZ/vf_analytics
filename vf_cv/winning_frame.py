@@ -31,11 +31,6 @@ class WinningFrame:
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-
-        original_height = self.frame.shape[0]
-        if original_height == 1080:
-            self.frame = cv2.resize(self.frame, (640, 360))
-
         self.frame_height = self.frame.shape[0]
 
     def get_roi(self, region_name):
@@ -68,25 +63,26 @@ class WinningFrame:
         region_name = "ro"
         (x, y, w, h) = self.get_roi(region_name)
 
+        w = 250
+
         roi = self.frame[y : y + h, x : x + w]
 
         green_count = vf_cv.CvHelper.count_pixels("#07a319", roi, override_tolerance=15)
         light_green = vf_cv.CvHelper.count_pixels("#91ff92", roi, override_tolerance=15)
-        red_tekken_count = vf_cv.CvHelper.count_pixels(
-            "#e42e20", roi, override_tolerance=15
-        )
-        roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        early_green = vf_cv.CvHelper.count_pixels("#72ff2d", roi, override_tolerance=15)
+
+        red_tekken_count = 0
+        roi_bw = None
 
         if debug:
             cv2.imshow(
-                f"ro g{green_count} red {red_tekken_count} light_green {light_green}",
+                f"ro eg {early_green} g{green_count} red {red_tekken_count} light_green {light_green}",
                 roi,
             )
-
-            cv2.imshow(f"ro bw {green_count}", roi_bw)
             cv2.waitKey()
 
         if self.frame_height == 360:
+            roi_bw = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             if roi_bw[27, 17] < 190:
                 return False
 
@@ -99,6 +95,12 @@ class WinningFrame:
             if light_green > 70 and green_count == 0:
                 return False
             return green_count + light_green > 50
+        elif self.frame_height == 1080:
+            if early_green > 1000:
+                return True
+
+            if w == 250 and green_count > 50:
+                return True
 
         return green_count + light_green > 300 or red_tekken_count > 2000
 
@@ -179,7 +181,6 @@ class WinningFrame:
             return True
 
         gold_count = vf_cv.CvHelper.count_pixels("#ce9e54", roi, override_tolerance=5)
-        # red_count = vf_cv.CvHelper.count_pixels("#b3200e", roi, override_tolerance=25)
         purple_count = vf_cv.CvHelper.count_pixels(
             "#422fc9", roi, override_tolerance=25
         )
@@ -191,7 +192,6 @@ class WinningFrame:
         blue = vf_cv.CvHelper.count_pixels("#5c78ef", roi)
         brown_gold = vf_cv.CvHelper.count_pixels("#c98c38", roi, override_tolerance=5)
 
-        # ko count gold 144 red 135 purple91 black 484 white 766 resolution 480p tekken red 3
         if (
             self.frame_height == 480
             or self.frame_height == 720
@@ -207,7 +207,7 @@ class WinningFrame:
                 cv2.resizeWindow(debug_string, 800, 400)
                 cv2.waitKey()
 
-            if blue > 1800:
+            if blue > 1800 and self.frame_height != 1080:
                 return False
 
             if (
