@@ -6,6 +6,7 @@ class Config:
         self.images_output_folder = None
         self.save_all_images = False
         self.dont_save_any_images = False
+        self.save_video_snippets = False
 
     @staticmethod
     def load_config(file_path):
@@ -23,4 +24,9 @@ class Config:
         config.dont_save_any_images = config_parser.getboolean(
             "Settings", "dont_save_any_images"
         )
+
+        config.save_video_snippets = config_parser.getboolean(
+            "Settings", "save_video_snippets"
+        )
+
         return config
