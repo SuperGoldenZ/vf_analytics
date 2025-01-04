@@ -10,7 +10,7 @@ class Character:
     frame_height = None
 
     REGIONS_480P = {
-        "player1character": (35, 228, 245, 32),
+        "player1character": (35, 228, 150, 32),
         "player2character": (584, 228, 245, 32),
     }
 
@@ -157,7 +157,7 @@ class Character:
                 )
 
                 cv2.imshow(
-                    f"p{player_num} char {self.frame_height} {n_white_pix} {width} {height}",
+                    f"p{player_num} threshold char {self.frame_height} {n_white_pix} {width} {height}",
                     thresholded_image,
                 )
 
@@ -257,9 +257,12 @@ class Character:
             roi = self.frame[y : y + h, x : x + w]
 
             text = pytesseract.image_to_string(
-                thresholded_image, config="--psm 7"
+                thresholded_image,
+                config="--psm 7 -c tessedit_char_whitelist=ABCDEFGIJKLMNOPQRSTUVWXYZ\ abcdefghijklmnopqrstuvwxyz",
             ).strip()
 
+            if debug_character:
+                print(f"got text [{text}]")
             if "Tagan Kirin" in text:
                 return "Jean"
             if "Brad" in text:
