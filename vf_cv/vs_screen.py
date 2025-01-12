@@ -1,12 +1,15 @@
 """Extracts information from the VS screen"""
+
 from datetime import datetime
 import cv2
 import numpy as np
 import pytesseract
 import vf_cv.cv_helper
 
+
 class VsScreen:
     """Extracts information from the VS screen"""
+
     frame = None
     frame_height = None
 
@@ -17,7 +20,7 @@ class VsScreen:
     }
 
     REGIONS_720P = {
-        "stage": (553, 442, 200, 25),
+        "stage": (500, 442, 250, 25),
         "date": (450, 27, 368, 62),
         "player1_ringname": (60, 470, 298, 23),
         "player2_ringname": (878, 470, 298, 23),

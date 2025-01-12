@@ -21,6 +21,16 @@ class REVO:
             {"x": 494, "y": 372},
             {"x": 1124, "y": 617},
             {"x": 888, "y": 76},
+            {"x": 578, "y": 414},
+        ],
+    }
+
+    BLACK_POINTS = {
+        720: [
+            {"x": 0, "y": 0},
+        ],
+        1080: [
+            {"x": 0, "y": 0},
         ],
     }
 
@@ -35,6 +45,13 @@ class REVO:
 
             (g, b, r) = image[point["y"], point["x"]]
             if g < 240 and r < 240 and b < 240:
+                return False
+
+        for i in range(len(REVO.BLACK_POINTS[frame_height])):
+            point = REVO.BLACK_POINTS[frame_height][i]
+
+            (g, b, r) = image[point["y"], point["x"]]
+            if g > 100 and r > 100 and b > 100:
                 return False
 
         return True

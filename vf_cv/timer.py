@@ -18,11 +18,36 @@ class Timer:
         "time_ms": (414, 48, 25, 14),
         "time_ms_digit1": (414, 48, 12, 14),
         "time_ms_digit2": (426, 48, 24, 14),
-        "is_endround": {482, 0, 90, 14},
+        "is_endround": (482, 0, 90, 14),
         "ko": (250, 170, 350, 140),
     }
 
-    REGIONS_720P = {"is_endround": {725, 0, 135, 21}}
+    REGIONS_720P = {
+        "is_endround": {725, 0, 135, 21},
+        "p2_endround_other": (724, 65, 37, 5),
+        "p1_endround_other": (164, 47, 394, 16),
+        "time_seconds": (400, 15, 54, 34),
+        "time_seconds_digit1": (403, 15, 25, 34),
+        "time_seconds_digit2": (427, 15, 25, 34),
+        "time_ms": (414, 48, 25, 14),
+        "time_ms_digit1": (414, 48, 12, 14),
+        "time_ms_digit2": (426, 48, 24, 14),
+        "is_endround": (482, 0, 90, 14),
+        "ko": (250, 170, 350, 140),
+    }
+
+    REGIONS_1080P = {
+        "p2_endround_other": (1086, 98, 56, 8),
+        "p1_endround_other": (246, 71, 591, 25),
+        "time_seconds": (400, 15, 54, 34),
+        "time_seconds_digit1": (403, 15, 25, 34),
+        "time_seconds_digit2": (427, 15, 25, 34),
+        "time_ms": (414, 48, 25, 14),
+        "time_ms_digit1": (414, 48, 12, 14),
+        "time_ms_digit2": (426, 48, 24, 14),
+        "is_endround": (482, 0, 90, 14),
+        "ko": (250, 170, 350, 140),
+    }
 
     frame = None
     frame_height = None
@@ -34,6 +59,7 @@ class Timer:
         self.thresholded_image = None
         self.stage = None
         self.message = ""
+        self.resized = False
 
         # self._model = load_model('best_model.keras')
 
@@ -56,17 +82,19 @@ class Timer:
         elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
         elif self.frame_height == 720:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 1.5)
-            y = (int)(y * 1.5)
-            w = (int)(w * 1.5)
-            h = (int)(h * 1.5)
+            (x, y, w, h) = self.REGIONS_720P[region_name]
+            if not "other" in region_name:
+                x = (int)(x * 1.5)
+                y = (int)(y * 1.5)
+                w = (int)(w * 1.5)
+                h = (int)(h * 1.5)
         elif self.frame_height == 1080:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 2.25)
-            y = (int)(y * 2.25)
-            w = (int)(w * 2.25)
-            h = (int)(h * 2.25)
+            (x, y, w, h) = self.REGIONS_1080P[region_name]
+            if not "other" in region_name:
+                x = (int)(x * 2.25)
+                y = (int)(y * 2.25)
+                w = (int)(w * 2.25)
+                h = (int)(h * 2.25)
         return (x, y, w, h)
 
     def get_time_ms(self, debug=False):
@@ -603,26 +631,31 @@ class Timer:
         if self.frame_height != 360 and self.quads[3] > self.quads[9]:
             return False
 
-        if self.frame_height == 360 and 70 <= self.n_white_pix <= 80 and width < 15:
-            return True
+        if self.frame_height == 360:
+            if 70 <= self.n_white_pix <= 80 and width < 15:
+                return True
 
-        if self.frame_height == 360 and width >= 15:
-            return False
+            if width >= 15:
+                return False
 
-        if (
-            self.frame_height == 360
-            # and self.thresholded_image[0, width - 1] != 0
-            and self.thresholded_image[4, 0] == 0
-            and self.thresholded_image[6, 7] == 0
-        ):
-            return False
+            if (
+                height > 6
+                and width > 7
+                # and self.thresholded_image[0, width - 1] != 0
+                and self.thresholded_image[4, 0] == 0
+                and self.thresholded_image[6, 7] == 0
+            ):
+                return False
 
-        if (
-            self.frame_height == 360
-            and self.thresholded_image[4, 1] == 0
-            and self.thresholded_image[4, 0] == 0
-        ):
-            return False
+            if (
+                height > 4
+                and self.thresholded_image[4, 1] == 0
+                and self.thresholded_image[4, 0] == 0
+            ):
+                return False
+
+            if self.n_white_pix >= 97 and not self.resized:
+                return False
 
         if (
             self.frame_height != 480
@@ -651,9 +684,6 @@ class Timer:
             return False
 
         if self.frame_height == 720 and self.n_white_pix > 400:
-            return False
-
-        if self.frame_height == 360 and self.n_white_pix >= 97:
             return False
 
         return True
@@ -740,6 +770,7 @@ class Timer:
         if (
             self.frame_height == 360
             and height > 8
+            and width > 4
             and self.thresholded_image[8, 4] != 0
             and self.thresholded_image[8, 3] != 0
             and self.thresholded_image[8, 2] != 0
@@ -1305,8 +1336,11 @@ class Timer:
         text = ""
 
         original_height = self.frame.shape[0]
+        self.resized = False
+
         if original_height == 1080 or original_height == 720:
             self.frame = cv2.resize(self.frame, (640, 360))
+            self.resized = True
 
         self.frame_height = self.frame.shape[0]
 
@@ -1341,8 +1375,8 @@ class Timer:
 
             blue_count = vf_cv.CvHelper.count_pixels("#5b1dc7", roi)
 
-            if self.frame_height != 360 and blue_count >= 5:
-                return "endround"
+            # if self.frame_height != 360 and blue_count >= 5:
+            #    return "endround"
 
             gray_image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             self.rois[digit_num - 1] = roi
@@ -1363,7 +1397,7 @@ class Timer:
             )
             if debug_time:
                 cv2.imshow(
-                    f"{self.thresholded_image.shape[1]} x {self.thresholded_image.shape[0]} :: {self.n_white_pix} :: {self.quads[7]} {self.quads[9]} {self.quads[1]} {self.quads[3]}",
+                    f"{self.frame_height} {self.thresholded_image.shape[1]} x {self.thresholded_image.shape[0]} :: {self.n_white_pix} :: {self.quads[7]} {self.quads[9]} {self.quads[1]} {self.quads[3]}",
                     self.thresholded_image,
                 )
                 cv2.imshow("original", roi)
@@ -1444,8 +1478,8 @@ class Timer:
                     and self.n_white_pix == 72
                 ):
                     text = f"{text}3"
-                elif self.is_endround():
-                    return "endround"
+                # elif self.is_endround():
+                # return "endround"
                 elif self.is_digit_one():
                     text = f"{text}1"
                 elif self.is_digit_two():
@@ -1467,7 +1501,8 @@ class Timer:
                 elif self.is_digit_zero(digit_num, running_out):
                     text = f"{text}0"
                 else:
-                    return "endround"
+                    raise UnrecognizeTimeDigitException("Unrecognized digit")
+                    # return "endround"
 
             if running_out:
                 return text
@@ -1732,55 +1767,10 @@ class Timer:
         raise Exception(f"Invalid time digit {debug_time_digit}")
 
     def is_endround_other(self, debug_time=False):
-        if self.frame_height == 1080:
-            (x, y, w, h) = (1086, 98, 56, 8)
+        result = False
 
-            p2_life_roi = self.frame[y : y + h, x : x + w]
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#020a80", p2_life_roi, override_tolerance=5
-            )
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#4082f3", p2_life_roi, override_tolerance=75
-            )
-            arena_blue = vf_cv.CvHelper.count_pixels(
-                "#0736a8", p2_life_roi, override_tolerance=75
-            )
-            lb2 = vf_cv.CvHelper.count_pixels(
-                "#3a63e8", p2_life_roi, override_tolerance=75
-            )
-            maroon = vf_cv.CvHelper.count_pixels(
-                "#530000", p2_life_roi, override_tolerance=5
-            )
-
-            if debug_time:
-                cv2.imshow("full", self.frame)
-                cv2.imshow(
-                    f"mr {maroon} lb2 {lb2} ab {arena_blue} lb {light_blue} dbl {dark_blue_left}",
-                    p2_life_roi,
-                )
-                cv2.waitKey()
-
-            if lb2 >= 3:
-                self.message = "p2_lb2"
-                return True
-
-            if dark_blue_left >= 3:
-                self.message = "p2_dbl"
-                return True
-
-            if light_blue >= 3:
-                self.message = "p2_lb"
-                return True
-
-            if arena_blue >= 3:
-                self.message = "p2_ab"
-                return True
-
-            if maroon >= 3:
-                self.message = "p2_m"
-                return True
-
-            (x, y, w, h) = (246, 71, 591, 25)
+        for player_num in range(1, 3):
+            (x, y, w, h) = self.get_roi(f"p{player_num}_endround_other")
 
             p2_life_roi = self.frame[y : y + h, x : x + w]
             dark_blue_left = vf_cv.CvHelper.count_pixels(
@@ -1799,204 +1789,60 @@ class Timer:
                 "#530000", p2_life_roi, override_tolerance=5
             )
 
+            yellow = vf_cv.CvHelper.count_pixels(
+                "#f1f34c", p2_life_roi, override_tolerance=5
+            )
+
+            maroon_780 = vf_cv.CvHelper.count_pixels(
+                "#5e1f00", p2_life_roi, override_tolerance=5
+            )
+
+            db = vf_cv.CvHelper.count_pixels(
+                "#000d64", p2_life_roi, override_tolerance=15
+            )
+
             if debug_time:
                 cv2.imshow("full", self.frame)
                 cv2.imshow(
-                    f"mr {maroon} lb2 {lb2} ab {arena_blue} lb {light_blue} dbl {dark_blue_left}",
+                    f"{self.frame_height} p{player_num} y{yellow} m780[{maroon_780}] db{db} 1mr {maroon} lb2 {lb2} ab {arena_blue} lb {light_blue} dbl {dark_blue_left}",
                     p2_life_roi,
                 )
                 cv2.waitKey()
 
             if lb2 >= 3:
-                self.message = "p1_1"
-                return True
+                self.message = f"p{player_num}_1"
+                result = True
 
             if dark_blue_left >= 3:
-                self.message = "p1_2"
-                return True
+                self.message = f"p{player_num}_2"
+                result = True
 
             if light_blue >= 3:
-                self.message = "p1_3"
-                return True
+                self.message = f"p{player_num}_3"
+                result = True
 
             if arena_blue >= 3:
-                self.message = f"p1_4_{arena_blue}"
-                return True
+                self.message = f"p{player_num}_4"
+                result = True
 
             if maroon >= 3:
-                self.message = "p1_5"
-                return True
+                self.message = f"p{player_num}_5"
+                result = True
 
-            return False
+            if db >= 100:
+                self.message = f"p{player_num}_6"
+                result = True
 
-        if self.frame_height == 720:
-            # print("f720")
-            is_endround_roi = self.frame[0:25, 725 : 725 + 135]
-            p1_life_roi = self.frame[46 : 46 + 17, 163 : 163 + 400]
-            p2_life_roi = self.frame[46 : 46 + 17, 725 : 725 + 400]
+            if self.frame_height == 720:
+                if yellow >= 10 and maroon_780 >= 10:
+                    self.message = f"p{player_num}_7"
+                    result = True
 
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels(
-                "#0e3e97", is_endround_roi, 30
-            )
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
+                if db >= 50:
+                    self.message = f"p{player_num}_8"
+                    result = True
 
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
-                "#44447b", is_endround_roi, override_tolerance=5
-            )
-
-            white = vf_cv.CvHelper.count_pixels(
-                "#dbe9f3", is_endround_roi, override_tolerance=5
-            )
-
-            pb = vf_cv.CvHelper.count_pixels(
-                "#3032bb", is_endround_roi, override_tolerance=15
-            )
-
-            purp = vf_cv.CvHelper.count_pixels(
-                "#6f137b", is_endround_roi, override_tolerance=5
-            )
-            purp2 = vf_cv.CvHelper.count_pixels(
-                "#682a64", is_endround_roi, override_tolerance=5
-            )
-
-            roi_bw = cv2.cvtColor(is_endround_roi, cv2.COLOR_BGR2GRAY)
-
-            yellow_p1 = vf_cv.CvHelper.count_pixels(
-                "#edf43a", p1_life_roi, override_tolerance=10
-            )
-            deb3ad = vf_cv.CvHelper.count_pixels(
-                "#deb3ad", p1_life_roi, override_tolerance=10
-            )
-            yellow_p2 = vf_cv.CvHelper.count_pixels(
-                "#edf43a", p2_life_roi, override_tolerance=10
-            )
-            if debug_time:
-                cv2.imshow("frame", self.frame)
-                cv2.imshow("bw", roi_bw)
-
-                debug_string = f"p[{purp} pb[{pb} w{white} {dark_blue_left} d[{dark_blue_right} d2[: {dark_blue_right_two} lb: {light_blue} lb2: {light_blue_two} {light_blue_three} thr: {dark_blue_right_three}"
-
-                cv2.imshow(
-                    debug_string,
-                    is_endround_roi,
-                )
-
-                cv2.imshow(f"720 p1life {yellow_p1} deb[{deb3ad}]", p1_life_roi)
-                cv2.imshow(f"720 p2life {yellow_p2}", p2_life_roi)
-
-                print(debug_string)
-                cv2.waitKey()
-
-            if deb3ad > 5:
-                return True
-
-            if yellow_p1 > 40:
-                return True
-
-            if pb >= 5 and dark_blue_right >= 150:
-                return True
-
-            if pb >= 35 and light_blue >= 25 and dark_blue_right_three > 8:
-                return True
-
-            if (
-                pb > 0
-                or light_blue > 100
-                or (light_blue > 30 and light_blue_two > 30)
-                or dark_blue_right > 900
-            ) and (purp == 0 and purp2 == 0):
-                if dark_blue_right >= 3 and light_blue >= 5 and light_blue_three >= 1:
-                    return True
-
-                if dark_blue_right > 15 and light_blue_two > 5 and light_blue > 5:
-                    return True
-
-                if light_blue > 5 and dark_blue_right_three > 60:
-                    return True
-
-                if dark_blue_right >= 2 and light_blue > 25:
-                    return True
-
-                if dark_blue_right_two > 5 and light_blue > 40 and light_blue_two > 15:
-                    return True
-
-                if white < 34:
-                    if (dark_blue_right > 10 or dark_blue_right_two > 40) and (
-                        light_blue >= 1 or light_blue_two >= 1 or light_blue_three >= 1
-                    ):
-                        return True
-
-                if dark_blue_right > 1500:
-                    return True
-
-            is_endround_roi = self.frame[0:38, 195 : 195 + 356]
-
-            dark_blue_left = vf_cv.CvHelper.count_pixels(
-                "#1a2cd1", is_endround_roi, override_tolerance=10
-            )
-            dark_blue_right = vf_cv.CvHelper.count_pixels("#0e3e97", is_endround_roi)
-            dark_blue_right_two = vf_cv.CvHelper.count_pixels(
-                "#3f4d74", is_endround_roi, override_tolerance=5
-            )
-
-            dark_blue_right_three = vf_cv.CvHelper.count_pixels(
-                "#44447b", is_endround_roi, override_tolerance=5
-            )
-
-            light_blue = vf_cv.CvHelper.count_pixels(
-                "#999fe4", is_endround_roi, override_tolerance=10
-            )
-            light_blue_two = vf_cv.CvHelper.count_pixels(
-                "#aaa0e8", is_endround_roi, override_tolerance=10
-            )
-            light_blue_three = vf_cv.CvHelper.count_pixels(
-                "#92aaff", is_endround_roi, override_tolerance=10
-            )
-
-            maroon = vf_cv.CvHelper.count_pixels(
-                "#693038", is_endround_roi, override_tolerance=5
-            )
-
-            d070 = vf_cv.CvHelper.count_pixels(
-                "#4d0700", is_endround_roi, override_tolerance=5
-            )
-            if debug_time:
-                cv2.imshow(
-                    f"d070[{d070}] {dark_blue_left} {dark_blue_right} {dark_blue_right_two} {light_blue} {light_blue_two} {light_blue_three} mrn: {maroon} thr: {dark_blue_right_three}",
-                    is_endround_roi,
-                )
-                cv2.waitKey()
-
-            if 20 <= d070 <= 27:
-                return True
-
-            if maroon > 40 and light_blue > 10:
-                return True
-
-            if maroon > 50 and light_blue_two > 40:
-                return True
-
-            if maroon > 50 and dark_blue_right > 100:
-                return True
-
-            if light_blue > 20 and light_blue_two > 50:
-                return True
-
-        return False
+        return result
 
 
 class UnrecognizeTimeDigitException(Exception):

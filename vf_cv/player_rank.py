@@ -13,44 +13,44 @@ import vf_cv.cv_helper
 # 初段 - 十段 1st Dan to 10th Dan
 #
 # 士。 Shi Group [2 White Characters / Wood (light brown) Background]
-# 錬士 1 Star - Hunter
-# 烈士 2 Star - Raider
-# 傑士 3 Star - Barbarian
+# 21 錬士 1 Star - Hunter
+# 22 烈士 2 Star - Raider
+# 23 傑士 3 Star - Barbarian
 #
 # 者。 Mono Group [2 White Characters / Light Grey Background]
-# 強者 1 Star - Defender
-# 猛者 2 Star - Sentinel
-# 王者 3 Star - Guardian
+# 24 強者 1 Star - Defender
+# 25 猛者 2 Star - Sentinel
+# 26 王者 3 Star - Guardian
 #
 # 人。 Jin Group [2 White Characters / Dark Grey Background]
-# 名人 1 Star - Warrior
-# 達人 2 Star - Veteran
-# 超人 3 Star - Berserker
+# 27 名人 1 Star - Warrior
+# 28 達人 2 Star - Veteran
+# 29 超人 3 Star - Berserker
 #
 # 将。 Shou Group [2 White Characters / Dark Brown Background]
-# 智将 1 Star - Assassin
-# 猛将 2 Star - Shatterer
-# 闘将 3 Star - Destroyer
+# 30 智将 1 Star - Assassin
+# 31 猛将 2 Star - Shatterer
+# 32 闘将 3 Star - Destroyer
 #
 # 魔王。 Maou Group [3 White Characters / Light Silver Background]
-# 大魔王 1 Star - Avenger
-# 真魔王 2 Star - Vanquisher
-# 天魔王 3 Star - Conqueror
+# 33 大魔王 1 Star - Avenger
+# 34 真魔王 2 Star - Vanquisher
+# 35 天魔王 3 Star - Conqueror
 #
 # 拳聖。 Kensei Group [3 White Characters / Gold Background]
-# 空拳聖 1 Star - Darkslayer
-# 撃拳聖 2 Star - Grimslayer
-# 剛拳聖 3 Star - Doomslayer
+# 36 空拳聖 1 Star - Darkslayer
+# 37 撃拳聖 2 Star - Grimslayer
+# 38 剛拳聖 3 Star - Doomslayer
 #
 # 武帝。 Butei Group [3 White Characters / Dark Silver with Blue + Green in the middle Background
-# 獣武帝 1 Star - Tigerclaw
-# 鬼武帝 2 Star - Lionheart
-# 龍武帝 3 Star - Dragonfang
+# 39 獣武帝 1 Star - Tigerclaw
+# 40 鬼武帝 2 Star - Lionheart
+# 41 龍武帝 3 Star - Dragonfang
 #
 # マスター。 Master Group ("Gods" Ranks)
-# 轟雷神 Gouraishin (God of Thunder) - Gold Characters / Blue Background with a white stripe in the middle Stormlord
-# 爆焔神 Bakuenshin (God of Flame)- Gold Characters / Orange (top) to Yellow (bottom) Background Magmalord
-# 天翔神 Tenshoushin (Soaring Sky God) - Gold Characters / Orange and White (middle) Background Skylord
+# 42 轟雷神 Gouraishin (God of Thunder) - Gold Characters / Blue Background with a white stripe in the middle Stormlord
+# 43 爆焔神 Bakuenshin (God of Flame)- Gold Characters / Orange (top) to Yellow (bottom) Background Magmalord
+# 44 天翔神 Tenshoushin (Soaring Sky God) - Gold Characters / Orange and White (middle) Background Skylord
 
 
 class PlayerRank:
@@ -342,7 +342,12 @@ class PlayerRank:
         text = re.sub("[^0-9]", "", text)
 
         # retry with small
-        if not text.isnumeric() or (matches[0]) == "5":  # skip for 5th 9th:
+        if (
+            matches is None
+            or len(matches) == 0
+            or not text.isnumeric()
+            or (matches[0]) == "5"
+        ):  # skip for 5th 9th:
             (x, y, w, h) = self.get_roi(f"player{player_num}rank_small")
 
             if debug_player_rank:

@@ -7,6 +7,7 @@ class Config:
         self.save_all_images = False
         self.dont_save_any_images = False
         self.save_video_snippets = False
+        self.cam_int = -1
 
     @staticmethod
     def load_config(file_path):
@@ -28,5 +29,7 @@ class Config:
         config.save_video_snippets = config_parser.getboolean(
             "Settings", "save_video_snippets"
         )
+
+        config.cam_int = config_parser.getint("Settings", "cam_int")
 
         return config

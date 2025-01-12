@@ -43,18 +43,14 @@ class VideoCaptureAsync:
                 self.queue.put(None)
                 break
 
-            while self.queue.qsize() >= self.queue.maxsize - 100:
-                time.sleep(5)
+            while self.queue.qsize() >= self.queue.maxsize - 8:
+                time.sleep(1)
 
             self.queue.put(frame, timeout=3)
 
     @profile
     def read(self):
-        try:
-            result = self.queue.get(timeout=10)
-        except Exception as e:
-            print(f"Error reading from queue! {e}")
-            return None
+        result = self.queue.get(timeout=10)
         self.frames_read += 1
         return result
 

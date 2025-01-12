@@ -26,6 +26,7 @@ class WinningFrame:
         "ko": (250, 170, 350, 140),
         "excellent": (75, 200, 700, 80),
         "ro": (185, 204, 484, 80),
+        "to": (185, 204, 484, 80),
     }
 
     def set_frame(self, frame):
@@ -45,12 +46,23 @@ class WinningFrame:
             h = (int)(h * 0.75)
         elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
-        elif self.frame_height == 720:
+        elif self.frame_height == 720 and region_name != "to":
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 1.5)
             y = (int)(y * 1.5)
             w = (int)(w * 1.5)
             h = (int)(h * 1.5)
+        elif self.frame_height == 720 and region_name == "to":
+            (x, y, w, h) = self.REGIONS_480P[region_name]
+            x = (int)(x * 1.5)
+            y = (int)(y * 1.5)
+            w = (int)(w * 1.5)
+            h = (int)(h * 1.5)
+
+            y += 15
+            h -= 40
+            x += 75
+            w -= 375
         elif self.frame_height == 1080:
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 2.25)
@@ -101,16 +113,24 @@ class WinningFrame:
 
             if w == 250 and green_count > 50:
                 return True
+        elif self.frame_height == 720:
+            if early_green > 665:
+                return True
+
+            if green_count > 50:
+                return True
 
         return green_count + light_green > 300 or red_tekken_count > 2000
 
     def is_timeout(self, debug=False):
-        region_name = "ro"
+        region_name = "to"
         (x, y, w, h) = self.get_roi(region_name)
 
         roi = self.frame[y : y + h, x : x + w]
 
         roi_bw = vf_cv.CvHelper.prepare_green_text_for_ocr(roi)
+        roi_bw = vf_cv.CvHelper.add_white_row(roi_bw, 10)
+        roi_bw = vf_cv.CvHelper.add_white_column(roi_bw, 10)
 
         green_count = vf_cv.CvHelper.count_pixels("#07a319", roi, override_tolerance=15)
         light_green = vf_cv.CvHelper.count_pixels("#91ff92", roi, override_tolerance=15)
@@ -122,7 +142,7 @@ class WinningFrame:
             return False
 
         text = pytesseract.image_to_string(
-            roi_bw, config="--psm 7 -c tessedit_char_whitelist=TIMEOUT"
+            roi_bw, config="--psm 7 -c tessedit_char_whitelist=TIME\\ OUT"
         ).strip()
 
         if debug:
@@ -130,8 +150,8 @@ class WinningFrame:
                 f"ro g{green_count} red {red_tekken_count} light_green {light_green}",
                 roi,
             )
-            print(text)
-            cv2.imshow(f"ro bw {green_count}", roi_bw)
+            print(f"Timeout text [{text}]")
+            cv2.imshow(f"ro bw {green_count} [{text}]", roi_bw)
             cv2.waitKey()
 
         return "TIME" in text

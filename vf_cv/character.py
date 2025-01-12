@@ -263,6 +263,8 @@ class Character:
 
             if debug_character:
                 print(f"got text [{text}]")
+            if "Ejleen" in text:
+                return "Eileen"
             if "Tagan Kirin" in text:
                 return "Jean"
             if "Brad" in text:

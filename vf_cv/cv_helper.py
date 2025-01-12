@@ -211,7 +211,8 @@ class CvHelper:
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # Define HSV range for light to dark green
-        green_lower = np.array([0, 100, 90])  # Lower bound for green
+        # green_lower = np.array([25, 100, 90])  # Lower bound for green
+        green_lower = np.array([35, 100, 90])  # Lower bound for green
         green_upper = np.array([100, 255, 255])  # Upper bound for green
 
         # Create mask for green

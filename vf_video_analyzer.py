@@ -1,11 +1,10 @@
 import os
 from timeit import default_timer as timer
-
+import queue
 import logging
 import argparse
 import pathlib
 import traceback
-import ffmpeg
 import cv2
 import vf_cv.video_capture_async
 import vf_cv.match_analyzer
@@ -14,6 +13,7 @@ import vf_data
 import vf_data.match
 import youtube_helper
 import vf_cv.config
+from datetime import datetime
 
 config: vf_cv.Config = vf_cv.Config.load_config("default.cfg")
 
@@ -22,8 +22,7 @@ PROCESS_STREAMED_VIDEOS = True
 FORCE_SINGLE_MATCH_PER_VIDEO = False
 STOP_ON_FIRST_ERROR = False
 PROCESS_VS_ONLY = False
-PROCESS_SHUN_ONLY = True
-SAVE_SNIPPETS = False
+PROCESS_SHUN_ONLY = False
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -72,10 +71,10 @@ def print_csv_match_only(
         f.write(str(match))
 
 
-def print_error_csv(match: vf_data.Match, resolution, error_message):
+def print_error_csv(match: vf_data.Match, resolution, error_message, match_number=0):
     with open("errors.csv", "a") as f:
         f.write(
-            f"{match.video_id},{resolution},{match.player1character},{match.player1rank},{match.player1ringname},{match.player2character},{match.player2rank},{match.player2ringname},{match.stage},{error_message}\n"
+            f"{match.video_id},{match_number}, {resolution},{match.player1character},{match.player1rank},{match.player1ringname},{match.player2character},{match.player2rank},{match.player2ringname},{match.stage},{error_message}\n"
         )
 
 
@@ -169,29 +168,42 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             if video_folder_param is not None:
                 video_folder = video_folder_param
             else:
-                video_folder = f"assets/videos/{video_id}_{resolution}/"
-            video_path = f"assets/videos/{video_id}_{resolution}/video.mp4"
+                video_folder = f"/mnt/sdb/Users/alexa/Videos/vf_analytics/{video_id}/"
+            video_path = (
+                f"/mnt/sdb/Users/alexa/Videos/vf_analytics/{video_id}/video.mp4"
+            )
 
             if not os.path.exists(video_folder) and not PROCESS_STREAMED_VIDEOS:
                 os.makedirs(video_folder, exist_ok=True)
 
-            if not os.path.isfile(video_path) and not PROCESS_STREAMED_VIDEOS:
+            if (
+                not os.path.isfile(video_path)
+                and not PROCESS_STREAMED_VIDEOS
+                and "youtube" in url
+            ):
                 try:
                     print(f"\tDownloading video {url} at {resolution}")
                     logger.debug(f"Downloading video {url} at {resolution}")
                     temp_path = youtube_helper.download_video(ys, video_id)
 
-                    print(f"Renaming video after download: {temp_path} to {video_path}")
-                    if resolution != "480p" and resize_video:
-                        ffmpeg.input(temp_path).output(
-                            video_path, vf="scale=854:480"
-                        ).run()
-                        os.remove(temp_path)
+                    if os.path.isfile(temp_path):
+                        print(
+                            f"Renaming video after download: {temp_path} to {video_path}"
+                        )
+                        # os.rename(temp_path, video_path)
+                        return
                     else:
-                        os.rename(temp_path, video_path)
+                        raise Exception(f"{temp_path} not found as expected")
+                    # if resolution != "480p" and resize_video:
+                    # ffmpeg.input(temp_path).output(
+                    # video_path, vf="scale=854:480"
+                    # ).run()
+                    # os.remove(temp_path)
+                    # else:
 
                 except Exception as e:
                     print(f'error downloading "{url}" ')
+                    print(traceback.format_exc())
                     print(ys)
                     print(repr(e))
                     return None
@@ -228,6 +240,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 raise Exception(f"File not found {url}")
 
             frame_rate = round(cap.get_frame_rate())
+            print(f"\t{frame_rate}FPS")
             frame_count = cap.get_frame_count()
             logger.debug(f"{frame_count} at {frame_rate} FPS")
         else:
@@ -240,7 +253,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
             frame_rate = cap.get(cv2.CAP_PROP_FPS)
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
+            print(f"opened cam {cam} {frame_rate}FPS")
         youtube_video_title = None
         if ys is not None:
             youtube_video_title = ys.title
@@ -253,7 +266,12 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         if ys is None or ys.title is None:
             youtube_video_title = read_video_title(video_id)
 
-        jpg_folder = f"{config.images_output_folder}{video_id}_{resolution}"
+        if cam == -1:
+            jpg_folder = f"{config.images_output_folder}{video_id}_{resolution}"
+        else:
+            time_str = datetime.now().strftime("%Y%m%d%H%M%S")
+            jpg_folder = f"{config.images_output_folder}cam{time_str}"
+
         if not os.path.exists(jpg_folder):
             os.makedirs(jpg_folder, exist_ok=True)
 
@@ -278,7 +296,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         frames_processed = -1
         while frames_processed != 0:
             print(
-                f"\n\n==========================\nProcessing match {matches_processed+1}"
+                f"\n\n==========================\nProcessing match {match_analyzer.matches_processed}"
             )
             try:
                 frames_processed = match_analyzer.analyze_next_match(
@@ -295,7 +313,12 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 logger.error(
                     f"Premature match end exception occured {e} processing video {video_id}"
                 )
-                print_error_csv(match_analyzer.match, resolution, "premature_end")
+                print_error_csv(
+                    match_analyzer.match,
+                    resolution,
+                    "premature_end",
+                    match_number=match_analyzer.matches_processed,
+                )
                 if STOP_ON_FIRST_ERROR:
                     exit("premature_end")
 
@@ -312,6 +335,8 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 logger.error(
                     f"Time Error {e} processing video {video_id} match {match_analyzer.matches_processed}"
                 )
+                logger.error(traceback.format_exc())
+
                 print_error_csv(
                     match_analyzer.match, resolution, "unrecognized_time_digit"
                 )
@@ -320,10 +345,22 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
                 match_analyzer.matches_processed = match_analyzer.matches_processed + 1
                 continue
+            # except queue.Empty as e:
+            # error_message = str(e)
+            # print(f"Queue empty {e}")
+            # logger.error(f"Queue empty {e}")
+            # print_error_csv(match_analyzer.match, resolution, "queue_empty")
+            # if STOP_ON_FIRST_ERROR:
+            # exit("queue_empty")
+            # match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+            # continue
+
             except vf_cv.UnexpectedTimeException as e:
                 error_message = str(e)
                 print(f"Unexpected time found {e}")
                 logger.error(f"Unexpected time found {e}")
+                print(traceback.format_exc())
+                logger.error(traceback.format_exc())
                 print_error_csv(match_analyzer.match, resolution, "unexpected_time")
                 if STOP_ON_FIRST_ERROR:
                     exit("unrecognized_time_digit")
@@ -332,6 +369,8 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
             except vf_cv.UnrecognizeTimeDigitException as e:
                 logger.error(f"An exception occured {e} processing video {video_id}")
+                print(traceback.format_exc())
+                logger.error(traceback.format_exc())
                 print(
                     f"UnrecognizedTimeDigit exception occured {e} processing video {video_id}"
                 )
@@ -345,6 +384,8 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             except vf_cv.UnrecognizePlayerRankException as e:
                 error_message = str(e)
                 logger.error(f"An exception occured {e} processing video {video_id}")
+                print(traceback.format_exc())
+                logger.error(traceback.format_exc())
                 print(
                     f"UnrecognizedPlayerRank exception occured {e} processing video {video_id}"
                 )
@@ -358,7 +399,11 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             except IndexError as e:
                 error_message = str(e)
                 logger.error(f"An exception occured {e} processing video {video_id}")
+                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 print(f"IndexError exception occured {e} processing video {video_id}")
+                print(traceback.format_exc())
+                print(repr(e))
                 print_error_csv(match_analyzer.match, resolution, "index_error")
                 if STOP_ON_FIRST_ERROR:
                     exit("index_error")
@@ -370,14 +415,17 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 matches_processed += 1
                 continue
 
-            if frames_processed != 0:
+            if frames_processed != 0 or cam != -1:
                 print_csv(match_analyzer.match)
-                if SAVE_SNIPPETS:
-                    print("\ncommand:")
-                    print(match_analyzer.match.to_ffmpeg_copy_command())
-                    os.system(match_analyzer.match.to_ffmpeg_copy_command())
+                if config.save_video_snippets:
+                    command = match_analyzer.match.to_ffmpeg_copy_command()
+                    if command != "":
+                        print("\ncommand:")
+                        print(match_analyzer.match.to_ffmpeg_copy_command())
+                        os.system(match_analyzer.match.to_ffmpeg_copy_command())
 
-                processed += frames_processed
+                if frames_processed is not None and isinstance(frames_processed, int):
+                    processed += frames_processed
                 match_analyzer.matches_processed = match_analyzer.matches_processed + 1
                 matches_processed += 1
 
@@ -386,26 +434,26 @@ def analyze_video(url, cam=-1, process_vs_only=False):
     except Exception as e:
         error_message = str(e)
         print(f"\tAnother exception occured {e} processing video {video_id}")
+        print(repr(e))
+        print(traceback.format_exc())
         logger.error(f"An exception occured {e} processing video {video_id}")
         logger.error(repr(e))
         logger.error(traceback.format_exc())
         if match_analyzer is not None:
             print_error_csv(match_analyzer.match, resolution, "other")
-        match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+            match_analyzer.matches_processed = match_analyzer.matches_processed + 1
     finally:
         cap.release()
-        if (
-            saved_video_resolution == 0 and FORCE_DELETE_VIDEO or error_message is None
-        ) and os.path.isfile(video_path):
-            os.remove(video_path)
+        # if (
+        # saved_video_resolution == 0 and FORCE_DELETE_VIDEO or error_message is None
+        # ) and os.path.isfile(video_path):
+        # os.remove(video_path)
 
         if (saved_video_resolution == 0 and FORCE_DELETE_VIDEO) and os.path.isfile(
             video_path
         ):
             os.remove(video_path)
 
-        # if (error_message is not None):
-        # exit()
     try:
         elapsed_time = timer() - start  # in seconds
         fps = processed / elapsed_time
@@ -421,6 +469,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         )
     except Exception as e:
         print("Another exception")
+        repr(e)
         print(e)
         error_message = str(e)
 
@@ -523,7 +572,6 @@ def main(
     video_url=None,
     playlists_file=None,
     playlist_file=None,
-    cam=-1,
     process_vs_only=False,
     revo=False,
 ):
@@ -539,8 +587,8 @@ def main(
         analyze_video(video_url)
         return
 
-    if cam != -1:
-        analyze_video(cam=cam, url=None)
+    if config.cam_int != -1:
+        analyze_video(cam=config.cam_int, url=None)
         return
 
     if playlists_file is not None:
@@ -622,14 +670,6 @@ if __name__ == "__main__":
     except:
         force_append = False
 
-    cam = None
-    try:
-        cam = vars(args)["cam"]
-        if cam is not None:
-            cam = cam.strip()
-    except:
-        cam = None
-
     video_folder_param = None
     try:
         video_folder_param = vars(args)["video_folder"]
@@ -638,17 +678,12 @@ if __name__ == "__main__":
     except:
         video_folder_param = None
 
-    cam_int = -1
-    if cam is not None:
-        cam_int = int(cam)
-
     revo = vars(args)["revo"]
 
     main(
         video_url=video_url,
         playlists_file=playlists_file,
         playlist_file=playlist_file,
-        cam=cam_int,
         process_vs_only=PROCESS_VS_ONLY,
         revo=revo is not None,
     )

@@ -176,6 +176,9 @@ class Match:
         if self.video_url is None or "youtube" in self.video_url:
             return ""
 
+        if self.rounds is None or len(self.rounds) == 0:
+            return ""
+
         first_round: vf_data.Round = self.rounds[0]
         match_start_seconds = (
             int(first_round.seconds) - (45 - float(first_round.remaining_time)) - 17
