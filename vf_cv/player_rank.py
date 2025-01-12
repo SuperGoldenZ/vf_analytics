@@ -392,7 +392,7 @@ class PlayerRank:
                 raise UnrecognizePlayerRankException(debug_string)
 
         rank_int = int(text)
-        if rank_int <= 0 or rank_int >= 46:
+        if rank_int <= 0 or rank_int > 46:
             raise UnrecognizePlayerRankException(debug_string)
 
         return rank_int
