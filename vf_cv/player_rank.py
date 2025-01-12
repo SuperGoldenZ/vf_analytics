@@ -84,6 +84,7 @@ class PlayerRank:
         25: "Sentinel",
         26: "Guardian",
         27: "Warrior",
+        46: "Magmalord",
     }
 
     REGIONS_480P = {
@@ -217,21 +218,14 @@ class PlayerRank:
         full_roi = self.frame[full_y : full_y + full_h, full_x : full_x + full_w]
 
         white_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 50)
-        purple_count = vf_cv.CvHelper.count_pixels("#7600b9", full_roi)
         grey = vf_cv.CvHelper.count_pixels("#908f95", full_roi)
         dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", full_roi, 15)
-        teal_count = vf_cv.CvHelper.count_pixels("#558784", full_roi)
         grellow_count = vf_cv.CvHelper.count_pixels("#8e9a52", full_roi)
-        gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", full_roi)
         ry = vf_cv.CvHelper.count_pixels("#cc5b31", full_roi)
-        black_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 5)
         yg = vf_cv.CvHelper.count_pixels("#6a8b8e", full_roi, 10)
         green_gold = vf_cv.CvHelper.count_pixels("#8b752b", full_roi, 10)
         orange = vf_cv.CvHelper.count_pixels("#c26e30", full_roi, 15)
         mint = vf_cv.CvHelper.count_pixels("#8bcc98", full_roi, 10)
-
-        # full_roi_bw = self.frame[full_y-10 : full_y + full_h+10, full_x-10 : full_x + full_w+10]
-        # full_roi_bw = cv2.cvtColor(full_roi_bw, cv2.COLOR_BGR2GRAY)
 
         debug_string = f"{self.frame_height}_mint{mint}_gg{green_gold}_{orange}_gre{grellow_count}_ry{ry}_wc{white_count}_g{grey}_dp{dark_purple_count}_yg{yg}"
 
@@ -280,7 +274,6 @@ class PlayerRank:
 
         is_dan = False
 
-        # todo update here
         if debug_player_rank:
             print(f"{x} {y} {w} {h} {text}")
             print("kyu matches")
@@ -312,12 +305,7 @@ class PlayerRank:
             return 23
 
         is_kyu = "k" in text
-        if (
-            is_kyu
-            and len(matches) > 0
-            and PlayerRank.is_numeric_string(matches[0])
-            # and (matches[0]) != "5"  #skip for 5th 9th
-        ):
+        if is_kyu and len(matches) > 0 and PlayerRank.is_numeric_string(matches[0]):
             if debug_player_rank:
                 print(
                     f"returning kyu {(int(matches[0]))}  returning {11-int(matches[0])}"
@@ -365,8 +353,6 @@ class PlayerRank:
             imagem = vf_cv.CvHelper.add_white_column(imagem, 5, True)
             imagem = vf_cv.CvHelper.add_white_row(imagem, 5)
 
-            # gray_image_t = vf_cv.CvHelper.add_white_row(gray_image_t, 15)
-
             text = pytesseract.image_to_string(
                 imagem,
                 timeout=2,
@@ -375,14 +361,12 @@ class PlayerRank:
             text = text.strip()
 
             if debug_player_rank:
-                print(f"retry! {text}")
-                print(f"{x} {y} {w} {h} {text}")
+                print(f"retry player rank: {x} {y} {w} {h} {text}")
                 print("kyu matches")
                 print(matches)
                 cv2.imshow(f"player rank full {self.frame_height}", self.frame)
                 cv2.imshow(f"rank [{text}]", imagem)
                 cv2.imshow(f"roi [{text}]", roi)
-                cv2.waitKey()
                 cv2.waitKey()
 
             if fifth and is_dan and text == "14":

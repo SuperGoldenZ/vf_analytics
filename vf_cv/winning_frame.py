@@ -348,52 +348,32 @@ class WinningFrame:
             if lg > 120 and white_count > 20 and black_count < 1300:
                 return True
 
-        if (
-            self.frame_height == 1080
-            and black_count > 3500
-            and gold_count < 200
-            and white_count < 1000
-        ):
-            return False
+        if self.frame_height == 1080:
+            if black_count > 3500 and gold_count < 200 and white_count < 1000:
+                return False
 
-        if (
-            self.frame_height == 1080
-            and white_count > 3800
-            and gold_count > 250
-            and black_count < 100
-        ):
-            return True
+            if white_count > 3800 and gold_count > 250 and black_count < 100:
+                return True
 
-        if self.frame_height == 1080 and white_count > 5000 and light_yellow > 1200:
-            return True
+            if white_count > 5000 and light_yellow > 1200:
+                return True
 
-        if self.frame_height == 1080 and white_count > 1500 and gold_count > 775:
-            return True
+            if white_count > 1500 and gold_count > 775:
+                return True
 
-        if (
-            self.frame_height == 1080
-            and white_count > 8000
-            and gold_count > 200
-            and black_count < 100
-        ):
-            return True
+            if white_count > 8000 and gold_count > 200 and black_count < 100:
+                return True
 
-        if (
-            self.frame_height == 1080
-            and white_count > 7250
-            and gold_count > 70
-            and red_count > 225
-            and black_count < 75
-        ):
-            return True
+            if (
+                white_count > 7250
+                and gold_count > 70
+                and red_count > 225
+                and black_count < 75
+            ):
+                return True
 
-        if (
-            self.frame_height == 1080
-            and white_count > 30000
-            and gold_count > 50
-            and black_count < 220
-        ):
-            return True
+            if white_count > 23000 and gold_count > 220 and black_count < 220:
+                return True
 
         if (
             black_count > 2300
