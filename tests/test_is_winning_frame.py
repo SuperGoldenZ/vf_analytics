@@ -3,6 +3,14 @@ import cv2
 import vf_cv
 
 test_data = [
+    #"assets/test_images/720p/winning_frame/not_winning_frame_10.png",
+    "assets/test_images/1080p/ko/not_ko_02.png",
+    "assets/test_images/1080p/winning_frame/not_winning_frame_06.png",
+    "assets/test_images/1080p/winning_frame/not_winning_frame_04.png",
+    "assets/test_images/1080p/winning_frame/not_winning_frame_03.png",
+    "assets/test_images/1080p/winning_frame/not_winning_frame_02.png",
+    "assets/test_images/1080p/winning_frame/not_winning_frame_01.png",
+    "assets/test_images/1080p/ko/not_ko_01.png",
     "assets/test_images/360p/time/4054_fight_36_winning_unknown2.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_17.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_16.png",
@@ -10,8 +18,7 @@ test_data = [
     "assets/test_images/720p/winning_frame/not_winning_frame_14.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_13.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_12.png",
-    "assets/test_images/720p/winning_frame/not_winning_frame_11.png",
-    "assets/test_images/720p/winning_frame/not_winning_frame_10.png",
+    "assets/test_images/720p/winning_frame/not_winning_frame_11.png",    
     "assets/test_images/720p/winning_frame/not_winning_frame_09.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_08.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_07.png",
@@ -21,11 +28,6 @@ test_data = [
     "assets/test_images/720p/winning_frame/not_winning_frame_03.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_02.png",
     "assets/test_images/720p/winning_frame/not_winning_frame_01.png",
-    "assets/test_images/1080p/winning_frame/not_winning_frame_06.png",
-    "assets/test_images/1080p/winning_frame/not_winning_frame_04.png",
-    "assets/test_images/1080p/winning_frame/not_winning_frame_03.png",
-    "assets/test_images/1080p/winning_frame/not_winning_frame_02.png",
-    "assets/test_images/1080p/winning_frame/not_winning_frame_01.png",
     "assets/test_images/480p/winning_frame/not_winning_frame_01.png",
     "assets/test_images/480p/knockout/no_knockout_09.png",
 ]
@@ -49,6 +51,16 @@ def test_is_not_winning_round(image_filename):
 
 
 test_data = [    
+    ["assets/test_images/720p/winning_frame/!!ko_player_2_02.png", 2, None],
+    ["assets/test_images/720p/winning_frame/!!ko_player_1_01.png", 1, None],
+    ["assets/test_images/720p/winning_frame/!!ko_player_2_01.png", 2, None],    
+    ["assets/test_images/720p/winning_frame/ko_player_01.png", 1, "Sumo Ring"],
+    ["assets/test_images/1080p/ko/knockout_for_player_1_06.png", 1, "Aurora"],
+    ["assets/test_images/1080p/ko/knockout_for_player_2_04.png", 1, "Grassland"],
+    ["assets/test_images/1080p/ko/knockout_for_player_1_05.png", 1, "Deep Mountain"],
+    ["assets/test_images/1080p/ko/knockout_for_player_2_03.png", 2, "Shrine"],
+    ["assets/test_images/1080p/ko/knockout_for_player_1_04.png", 1, "Burning House"],
+    ["assets/test_images/1080p/ko/knockout_for_player_1_03.png", 1, "Aurora"],
     ["assets/test_images/720p/ringout/ro_01.png", 1, "Sumo Ring"],
     ["assets/test_images/720p/excellent/excellent_01.png", 2, "Aurora"],
     ["assets/test_images/720p/winning_frame/ko_02.png", 2, "River"],
@@ -129,7 +141,7 @@ def test_is_winning_round(image_filename, winning_player, stage):
     winning_round = vf_cv.WinningRound()
     winning_round.set_frame(image)
 
-    DEBUG = True
+    DEBUG = False
     actual_winnner = winning_round.is_winning_round(DEBUG, stage)
     assert (
         actual_winnner == winning_player

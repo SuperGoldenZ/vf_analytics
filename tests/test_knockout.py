@@ -3,6 +3,7 @@ import cv2
 import vf_cv
 
 test_data = [    
+    "assets/test_images/1080p/ko/knockout_for_player_1_06.png",
     "assets/test_images/360p/knockout/knockout_43.png",
     "assets/test_images/360p/knockout/knockout_38.png",
     "assets/test_images/360p/knockout/knockout_37.png",
@@ -38,12 +39,12 @@ def test_is_knockout(image_filename):
 
     winning_frame = vf_cv.WinningFrame()
     winning_frame.set_frame(image)
-    DEBUG = True
+    DEBUG = False
 
     assert winning_frame.is_ko(DEBUG) is True, f"not Knockout as expected"
 
 
-no_knockout_test_data = [    
+no_knockout_test_data = [        
     "assets/test_images/360p/knockout/not_knockout_03.png",
     "assets/test_images/360p/knockout/not_knockout_02.png",
     "assets/test_images/360p/knockout/not_knockout_01.png",
@@ -62,7 +63,7 @@ def test_is_not_knockout(image_filename):
 
     winning_frame = vf_cv.WinningFrame()
     winning_frame.set_frame(image)
-    DEBUG = True
+    DEBUG = False
 
     assert winning_frame.is_excellent(DEBUG) is False, f"is unexpectedly excellent"
     assert winning_frame.is_ko(DEBUG) is False, f"is unexpectedly knockout"

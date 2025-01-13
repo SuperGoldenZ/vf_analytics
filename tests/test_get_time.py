@@ -4,210 +4,120 @@ import vf_cv
 
 DIR = "assets/test_images/"
 
-test_data_720p = [    
-    [f"{DIR}720p/time/29_04.png", "29", 720, True],
-    [f"{DIR}720p/time/39_02.png", "39", 720, True],
-    [f"{DIR}720p/time/26_03.png", "26", 720, True],
-    [f"{DIR}720p/time/9_01.png", "9", 720, True],
-    [f"{DIR}720p/time/29_02.png", "29", 720, True],
-    [f"{DIR}720p/time/32_01.png", "32", 720, True],
-    [f"{DIR}720p/time/35_02.png", "35", 720, True],
-    [f"{DIR}720p/time/24_01.png", "24", 720, True],
-    [f"{DIR}720p/time/29_01.png", "29", 720, True],
-    [f"{DIR}720p/time/endround_05.png", "endround", 720, True],    
-    [f"{DIR}720p/time/26_01.png", "26", 720, True],
-    [f"{DIR}720p/time/16_01.png", "16", 720, True],
-    [f"{DIR}720p/time/25_01.png", "25", 720, True],
-    [f"{DIR}720p/time/29_03.png", "29", 720, False],    
+test_data_other = [
+    f"{DIR}720p/time/endround_08.png",
+    f"{DIR}720p/time/endround_07.png",
+    f"{DIR}720p/time/endround_06.png",
+    f"{DIR}1080p/winning_frame/endround_02.png",
+]
+
+
+@pytest.mark.parametrize(
+    "image_filename",
+    test_data_other,
+)
+def test_other(image_filename):
+    image = cv2.imread(image_filename)
+    assert image is not None, f"{image_filename} is none"
+
+    timer = vf_cv.Timer()
+
+    stage = None
+
+    timer.set_frame(image, stage)
+
+    actual_endround_other = timer.is_endround_other(False)
+
+    assert actual_endround_other == True, f"not endround as expected {image_filename}"
+
+
+test_data_720p = [
+    [f"{DIR}1080p/time/19_02.png", "19", 1080, False],
+    [f"{DIR}1080p/time/19_01.png", "19", 1080, False],
+    [f"{DIR}1080p/time/28_45.png", "28", 1080, False],
+    [f"{DIR}720p/time/29_04.png", "29", 720, False],
+    [f"{DIR}720p/time/39_02.png", "39", 720, False],
+    [f"{DIR}720p/time/26_03.png", "26", 720, False],
+    [f"{DIR}720p/time/9_01.png", "9", 720, False],
+    [f"{DIR}720p/time/29_02.png", "29", 720, False],
+    [f"{DIR}720p/time/32_01.png", "32", 720, False],
+    [f"{DIR}720p/time/35_02.png", "35", 720, False],
+    [f"{DIR}720p/time/24_01.png", "24", 720, False],
+    [f"{DIR}720p/time/29_01.png", "29", 720, False],
+    [f"{DIR}720p/time/26_01.png", "26", 720, False],
+    [f"{DIR}720p/time/16_01.png", "16", 720, False],
+    [f"{DIR}720p/time/25_01.png", "25", 720, False],
+    [f"{DIR}720p/time/29_03.png", "29", 720, False],
     [f"{DIR}720p/time/29_16_01.png", "29", 720, False],
     [f"{DIR}720p/time/38_01.png", "38", 720, False],
     [f"{DIR}720p/time/7848_invalid_time_27_25.png", "26", 720, False],
     [f"{DIR}720p/time/39_01.png", "39", 720, False],
-    [f"{DIR}720p/time/endround_04.png", "endround", 720, False],
     [f"{DIR}720p/time/35_01.png", "35", 720, False],
-    [f"{DIR}720p/time/6573_invalid_time_28.png", "endround", 720, False],
-    [f"{DIR}720p/time/endround_03.png", "endround", 720, False],
     [f"{DIR}720p/time/24_91.png", "24", 720, False],
-    [f"{DIR}720p/time/endround_02.png", "endround", 720, False],
-    [f"{DIR}720p/time/endround_01.png", "endround", 720, False],
-    [f"{DIR}720p/time/38_96.png", "38", 720, False],    
+    [f"{DIR}720p/time/38_96.png", "38", 720, False],
     [f"{DIR}720p/time/31_55.png", "31", 720, False],
     [f"{DIR}720p/time/38_83.png", "38", 720, False],
     [f"{DIR}720p/time/39_83.png", "39", 720, False],
-    [f"{DIR}720p/time/3766_fight_40_endround.png", "endround", 720, False],
-    [f"{DIR}720p/time/2403_fight_29_endround.png", "endround", 720, False],
     [f"{DIR}720p/time/3943_unknown_skip.png", "37", 720, False],
-    [f"{DIR}720p/time/7960_invalid_time_15_10_last.png", "endround", 720, False],
-    [f"{DIR}720p/time/6573_invalid_time_28_last.png", "endround", 720, False],
-    [f"{DIR}720p/time/6575_invalid_time_28_last.png", "endround", 720, False],
-    [f"{DIR}720p/time/6575_invalid_time_28.png", "endround", 720, False],
-    [f"{DIR}720p/time/5397_invalid_time.png", "endround", 720, False],
     [f"{DIR}720p/time/2790_unknown_skip.png", "22", 720, False],
-    [f"{DIR}720p/time/2479_unknown_skip.png", "27", 720, False],    
-    [f"{DIR}720p/time/2401_fight_29_endround.png", "endround", 720, False],
-    [
-        f"{DIR}720p/time/6850_0_1_42_Kage_vs_40_Vanessa_knockout_for_player1_20.70.png",
-        "endround",
-        720,
-        False,
-    ],
+    [f"{DIR}720p/time/2479_unknown_skip.png", "27", 720, False],
     [f"{DIR}720p/time/2116_invalid_time_35_33_last.png", "33", 720, False],
-    [f"{DIR}720p/time/2116_invalid_time_35_33.png", "33", 720, False],    
+    [f"{DIR}720p/time/2116_invalid_time_35_33.png", "33", 720, False],
     [f"{DIR}720p/time/5753_invalid_time_23_28.png", "22", 720, False],
-    [f"{DIR}720p/time/7960_invalid_time_15_10.png", "endround", 720, False],
-    [
-        f"{DIR}720p/time/3483_0_1_41_Lion_vs_42_Shun_knockout_for_player2_13.38.png",
-        "endround",
-        720,
-        False,
-    ],
     [f"{DIR}720p/time/2094_invalid_time_37_35_last.png", "35", 720, False],
     [f"{DIR}720p/time/2094_invalid_time_37_35.png", "35", 720, False],
-    [f"{DIR}720p/time/7528_invalid_time_19.png", "endround", 720, False],        
 ]
 
-test_data = [    
+test_data = [
     [f"{DIR}360p/time/13_01.png", "13", 360, False],
     [f"{DIR}360p/time/23_01.png", "23", 360, False],
     [f"{DIR}360p/time/39_06.png", "39", 360, False],
-    [f"{DIR}360p/time/3215_fight_skip_False_17_16_False.png", "endround", 360, False],
     [f"{DIR}360p/time/39_05.png", "39", 360, False],
     [f"{DIR}360p/time/27_06.png", "27", 360, False],
-    [
-        f"{DIR}360p/time/3001_fight_24_no_match_advance_1_matches.png",
-        "endround",
-        360,
-        True,
-    ],
-    [
-        f"{DIR}360p/time/3607_0_1_42_Jean_vs_42_Taka_knockout_for_player1_33.00.png",
-        "endround",
-        360,
-        True,
-    ],
-    [
-        f"{DIR}360p/time/3606_0_1_42_Jean_vs_42_Taka_knockout_for_player1_33.00.png",
-        "endround",
-        360,
-        True,
-    ],
     [f"{DIR}360p/time/35_05.png", "35", 360, False],
     [f"{DIR}360p/knockout/knockout_43.png", "19", 360, False],
-    [
-        f"{DIR}360p/time/4893_fight_25_no_match_advance_1_matches.png",
-        "endround",
-        360,
-        True,
-    ],
-    [f"{DIR}360p/time/4513_fight_skip_False_33_32_False.png", "endround", 360, False],
-    [f"{DIR}360p/time/39_04.png", "39", 360, False],
-    [
-        f"{DIR}360p/time/3437_fight_13_no_match_advance_1_matches.png",
-        "endround",
-        360,
-        True,
-    ],
-    [f"{DIR}360p/time/5210_invalid_time.png", "endround", 360, False],
     [f"{DIR}360p/time/27_05.png", "27", 360, False],
-    [
-        f"{DIR}360p/time/1233_fight_27_no_match_advance_1_matches.png",
-        "endround",
-        360,
-        False,
-    ],
     [f"{DIR}360p/time/29_01.png", "29", 360, False],
     [f"{DIR}360p/time/43_05.png", "43", 360, False],
     [f"{DIR}360p/time/29_02.png", "29", 360, False],
     [f"{DIR}360p/time/31_03.png", "31", 360, False],
-    [f"{DIR}360p/time/1196_invalid_time.png", "endround", 360, False],
-    [f"{DIR}360p/time/1304_invalid_time.png", "endround", 360, False],
     [f"{DIR}360p/time/26_02.png", "26", 360, False],
     [f"{DIR}360p/time/36_02.png", "36", 360, False],
-    [f"{DIR}360p/time/4683_invalid_time.png", "endround", 360, False],
-    [f"{DIR}360p/time/3438_invalid_time.png", "endround", 360, False],
-    [f"{DIR}360p/time/3132_invalid_time.png", "endround", 360, False],
-    [f"{DIR}360p/time/2166_fight_skip_False_23_22.png", "endround", 360, False],
-    [
-        f"{DIR}360p/time/5236_0_1_41_Akira_vs_44_Kage_knockout_for_player1_25.00.png",
-        "endround",
-        360,
-        False,
-    ],
     [f"{DIR}360p/time/19_02.png", "19", 360, False],
-    [f"{DIR}360p/time/22_01.png", "endround", 360, False],
     [f"{DIR}360p/time/33_01.png", "33", 360, False],
     [f"{DIR}360p/time/30_03.png", "30", 360, False],
-    [
-        f"{DIR}360p/time/2120_0_1_41_Jeffry_vs_40_Taka_excellent_for_player1_21.00.png",
-        "endround",
-        360,
-        False,
-    ],
     [f"{DIR}360p/time/27_04.png", "27", 360, False],
     [f"{DIR}360p/time/43_04.png", "43", 360, False],
     [f"{DIR}360p/time/42_02.png", "42", 360, False],
     [f"{DIR}360p/time/43_03.png", "43", 360, False],
-    [
-        f"{DIR}360p/time/3318_0_1_41_Wolf_vs_43_Pai_knockout_for_player2_15.00.png",
-        "endround",
-        360,
-        False,
-    ],
     [f"{DIR}360p/time/38_04.png", "38", 360, False],
     [f"{DIR}360p/time/40_03.png", "40", 360, False],
     [f"{DIR}360p/time/37_01.png", "37", 360, False],
-    [f"{DIR}360p/time/1436_fight_23_endround.png", "endround", 360, False],
-    [f"{DIR}360p/time/1429_fight_23_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/35_04.png", "35", 360, False],
     [f"{DIR}360p/time/27_03.png", "27", 360, False],
     [f"{DIR}360p/time/34_03.png", "34", 360, False],
     [f"{DIR}360p/time/34_02.png", "34", 360, False],
-    [f"{DIR}360p/time/2832_fight_28_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/27_02.png", "27", 360, False],
     [f"{DIR}360p/time/43_02.png", "43", 360, False],
     [f"{DIR}360p/time/09_02.png", "9", 360, False],
-    [f"{DIR}360p/time/4224_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/3924_fight_16_no_match_advance.png", "endround", 360, False],
-    [
-        f"{DIR}360p/time/5026_0_1_44_Pai_vs_41_Akira_knockout_for_player2_6.00.png",
-        "endround",
-        360,
-        False,
-    ],
-    [f"{DIR}360p/time/3646_fight_17_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/17_01.png", "17", 360, False],
     [f"{DIR}360p/time/2227_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/1243_fight_31_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/2973_invalid time.png", "endround", 360, False],
     [f"{DIR}360p/time/3891_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/2669_fight_24_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/4583_invalid time.png", "endround", 360, False],
     [f"{DIR}360p/time/35_03.png", "35", 360, False],
     [f"{DIR}360p/time/5283_invalid time.png", "endround", 360, False],
     [f"{DIR}360p/time/4031_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/4027_fight_18_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/18_01.png", "18", 360, False],
     [f"{DIR}360p/time/35_02.png", "35", 360, False],
     [f"{DIR}360p/time/40_02.png", "40", 360, False],
-    [f"{DIR}360p/time/4582_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/3447_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/3831_invalid time.png", "endround", 360, False],
     [f"{DIR}360p/time/43_01.png", "43", 360, False],
-    [f"{DIR}360p/time/1756_fight_11_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/09_01.png", "9", 360, False],
     [f"{DIR}360p/time/41_02.png", "41", 360, False],
     [f"{DIR}360p/time/2160_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/2154_fight_30_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/28_02.png", "28", 360, False],
-    [f"{DIR}360p/time/3827_fight_16_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/30_02.png", "30", 360, False],
-    [f"{DIR}360p/time/3424_fight_19_no_match_advance.png", "endround", 360, False],
-    [f"{DIR}360p/time/1337_fight_23_no_match_advance.png", "endround", 360, False],
-    [f"{DIR}480p/knockout/1125_fight_32_no_match_advance.png", "endround", 480, False],
-    [f"{DIR}360p/time/2758_invalid time.png", "endround", 360, False],
-    [f"{DIR}360p/time/2756_invalid time.png", "endround", 360, False],
     [f"{DIR}360p/time/39_03.png", "39", 360, False],
-    [f"{DIR}360p/time/4806_fight_30_no_match_advance.png", "endround", 360, False],
     [f"{DIR}360p/time/38_03.png", "38", 360, False],
     [f"{DIR}360p/time/40_01.png", "40", 360, False],
     [f"{DIR}360p/time/20_01.png", "20", 360, False],
@@ -338,11 +248,11 @@ test_data = [
     [f"{DIR}480p/time/8_86_01.png", "8", 480, False],
     [f"{DIR}480p/time/08_95_01.png", "8", 480, False],
     [f"{DIR}480p/time/09_88_01.png", "9", 480, False],
-    #[f"{DIR}480p/time/40_05_01.png", "40", 480, False],
+    # [f"{DIR}480p/time/40_05_01.png", "40", 480, False],
     [f"{DIR}480p/time/32_21_01.png", "32", 480, False],
     [f"{DIR}480p/time/39_95_01.png", "39", 480, False],
     [f"{DIR}480p/time/roundover.png", "endround", 480, False],
-    #[f"{DIR}480p/time/30_96_01.png", "30", 480, False],
+    # [f"{DIR}480p/time/30_96_01.png", "30", 480, False],
     [f"{DIR}480p/time/19_95_01.png", "19", 480, False],
     [f"{DIR}480p/time/26_98_02.png", "26", 480, False],
     [f"{DIR}480p/time/32_08_01.png", "32", 480, False],
@@ -414,7 +324,7 @@ test_data = [
 ]
 
 
-#@todo move back to all test data
+# @todo move back to all test data
 @pytest.mark.parametrize(
     "image_filename, expected_time_seconds, resolution, DEBUG",
     test_data_720p,
@@ -436,7 +346,13 @@ def test_get_time_seconds(
     ), f"{image_filename} is {height}p instead of expected {resolution}p"
 
     timer = vf_cv.Timer()
-    timer.set_frame(image)
+
+    stage = None
+
+    if "1080p/time/28_45.png" in image_filename:
+        stage = "Deep Mountain"
+
+    timer.set_frame(image, stage)
 
     actual_time_seconds = timer.get_time_seconds(DEBUG)
     assert (

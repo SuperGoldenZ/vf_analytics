@@ -44,12 +44,8 @@ def test_get_stage(image_filename, expected_stage_name):
         
         vs_screen.set_frame(image)
         
-        #roi = vf_analytics.get_stage_roi(image)
-        #cv2.imshow("roi", roi)
-        #cv2.waitKey()
-
-        DEBUG = True
-        actual_stage = vs_screen.get_stage(DEBUG)
+        debug = False
+        actual_stage = vs_screen.get_stage(debug)
         
         assert (
             actual_stage == expected_stage_name

@@ -3,6 +3,11 @@ import cv2
 import vf_cv.revo
 
 test_data = [
+    ["assets/test_images/720p/!!not_beta_03.png", False],
+    ["assets/test_images/720p/!!not_beta_02.png", False],
+    ["assets/test_images/720p/not_beta_01.png", False],
+    ["assets/test_images/720p/beta.png", True],
+    ["assets/test_images/1080p/not_revo.png", False],
     ["assets/test_images/1080p/beta.png", True],
     ["assets/test_images/1080p/vs/statues.png", False],
     ["assets/test_images/1080p/vs/vs_01.jpg", False],    

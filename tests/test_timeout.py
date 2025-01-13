@@ -3,6 +3,12 @@ import cv2
 import vf_cv
 
 test_data = [
+    "assets/test_images/720p/timeout/timeout_03.png",
+    "assets/test_images/720p/timeout/timeout_04.png",
+    "assets/test_images/720p/timeout/timeout_05.png",
+    "assets/test_images/720p/timeout/timeout_06.png",
+    "assets/test_images/720p/timeout/timeout_02.png",
+    "assets/test_images/720p/timeout/timeout_01.png",
     "assets/test_images/360p/timeout/timeout_01.png",
 ]
 
@@ -18,8 +24,8 @@ def test_ringout(image_filename):
     winning_frame = vf_cv.WinningFrame()
     winning_frame.set_frame(image)
 
-    DEBUG=True
+    debug=False
 
     assert (
-        winning_frame.is_timeout(DEBUG) is True
+        winning_frame.is_timeout(debug) is True
     ), f"{image_filename} is not timeout as expected"

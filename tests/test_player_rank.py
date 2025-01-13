@@ -6,6 +6,11 @@ import vf_analytics
 test_data = [
     # work on this characer and data
     # for video ZQoYcM3e8Hw
+    ["assets/test_images/1080p/rank/31_25.png", 31, 25, False],
+    ["assets/test_images/1080p/rank/26_31.png", 26, 31, False],
+    ["assets/test_images/1080p/rank/32_34.png", 32, 34, False],
+    ["assets/test_images/1080p/rank/42_46_01.png", 42, 46, False],
+    ["assets/test_images/1080p/rank/26_42.png", 26, 42, False],
     ["assets/test_images/720p/rank/11_12_01.png", 11, 12, False],
     ["assets/test_images/720p/rank/14_11_01.png", 14, 11, False],
     ["assets/test_images/720p/rank/19_22_01.png", 19, 22, False],

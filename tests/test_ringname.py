@@ -15,19 +15,19 @@ def test_is_vs(image_filename, expected_p1_ringname, expected_p2_ringname):
 
     assert vs_image is not None
 
-    DEBUG = True
+    debug = False
     vs_screen = vf_cv.vs_screen.VsScreen()
     
     vs_screen.set_frame(vs_image)
     
-    p1ringname = vs_screen.get_ringname(1, DEBUG)
+    p1ringname = vs_screen.get_ringname(1, debug)
     
     assert (
         p1ringname == expected_p1_ringname
     ), f"{image_filename} p1ringname is unexpectedly {p1ringname}"
 
 
-    p2ringname = vs_screen.get_ringname(2, DEBUG)
+    p2ringname = vs_screen.get_ringname(2, debug)
     assert (
         p2ringname == expected_p2_ringname
     ), f"{image_filename} p1ringname is unexpectedly {p2ringname}"

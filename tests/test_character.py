@@ -6,6 +6,10 @@ import vf_analytics
 test_data = [
     # work on this characer and data
     # for video ZQoYcM3e8Hw    
+    ["assets/test_images/1080p/characters/shun_vs_akira.png", "Shun", "Akira"],
+    ["assets/test_images/1080p/characters/akira_vs_jacky.png", "Akira", "Jacky"],
+    ["assets/test_images/1080p/characters/goh_vs_kage.png", "Goh", "Kage"],
+    ["assets/test_images/1080p/characters/wolf_vs_shun.png", "Wolf", "Shun"],
     ["assets/test_images/360p/characters/kage_vs_wolf_02.png", "Kage", "Wolf"],
     ["assets/test_images/360p/characters/kage_vs_wolf.png", "Kage", "Wolf"],
     ["assets/test_images/360p/characters/leifei_vs_akira.png", "Lei Fei", "Akira"],
@@ -42,7 +46,7 @@ def test_get_player_character(
 
     character.set_frame(frame)
 
-    DEBUG = True
+    DEBUG = False
     player1_character = character.get_character_name(1, DEBUG)
     
     
@@ -54,6 +58,3 @@ def test_get_player_character(
     assert (
         player2_character == expected_player_2_character
     ), f"{image_filename} p2 {expected_player_2_character} but got {player2_character}"
-
-    vs = vf_analytics.is_vs(frame, DEBUG)
-    assert(vs, "not vs as expected")

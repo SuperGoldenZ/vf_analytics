@@ -3,6 +3,10 @@ import cv2
 import vf_cv
 
 test_data = [
+    "assets/test_images/1080p/ring_out/ringout_05.png",
+    "assets/test_images/1080p/ring_out/ringout_04.png",
+    "assets/test_images/1080p/ring_out/ringout_03.png",
+    "assets/test_images/1080p/ring_out/ringout_02.png",
     "assets/test_images/360p/ringout/ringout_05.png",
     "assets/test_images/360p/ringout/ringout_02.png",
     "assets/test_images/360p/ringout/ringout_01.png",
@@ -21,10 +25,10 @@ def test_ringout(image_filename):
     winning_frame = vf_cv.WinningFrame()
     winning_frame.set_frame(image)
 
-    DEBUG=True
+    debug=False
 
     assert (
-        winning_frame.is_ringout(DEBUG) is True
+        winning_frame.is_ringout(debug) is True
     ), f"{image_filename} is not ringout as expected"
 
 test_data=[
@@ -46,8 +50,8 @@ def test_not_ringout(image_filename):
     winning_frame = vf_cv.WinningFrame()
     winning_frame.set_frame(image)
 
-    DEBUG=True
+    debug=False
 
     assert (
-        winning_frame.is_ringout(DEBUG) is False
+        winning_frame.is_ringout(debug) is False
     ), f"{image_filename} is unexpectedly ringout"

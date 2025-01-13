@@ -1,7 +1,9 @@
+"""Tests to get stage name from vs screen"""
+
 import pytest
 import cv2
-import vf_analytics
-import traceback
+import vf_cv.vs_screen
+
 
 test_data = [
     ["assets/test_images/720p/stage/ruins_01.png", "Ruins"],
@@ -36,8 +38,10 @@ def test_get_stage(image_filename, expected_stage_name):
     assert vs_image is not None, f"{image_filename} is unexpectedly none"
 
     try:
-        DEBUG_STAGE = False
-        stage = vf_analytics.get_stage(vs_image, DEBUG_STAGE)
+        debug_stage = False
+        vs_screen = vf_cv.VsScreen()
+        vs_screen.set_frame(vs_image)
+        stage = vs_screen.get_stage(debug_stage)
         assert expected_stage_name == stage
 
     except Exception as a:
