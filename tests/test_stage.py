@@ -4,6 +4,7 @@ import os
 import vf_cv.vs_screen
 
 test_data = [    
+    ["assets/test_images/720p/vs/snow_mountain.png", "Snow Mountain"],
     ["assets/test_images/720p/vs/statues.png", "Statues"],
     ["assets/test_images/720p/vs/statues_02.png", "Statues"],
     #["assets/test_images/480p/main_menu.png", None],
