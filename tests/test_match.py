@@ -1,4 +1,4 @@
-import cv2
+"""Tests for changing match data to a UUID"""
 import vf_data.match
 import vf_data.round
 
@@ -49,5 +49,5 @@ def test_get_id():
     round.winning_player_num = 2
 
     match.add_finished_round(round)
-
-    assert("4f8d97a83823b5727b710d5b32953868" == match.make_id())
+    
+    assert("f963d04b670a7e56f005c62c6e2c4aae" == match.make_id())
