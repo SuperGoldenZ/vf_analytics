@@ -45,4 +45,4 @@ def test_get_stage(image_filename, expected_stage_name):
         assert expected_stage_name == stage
 
     except Exception as a:
-        assert False, f"Test failed because of exception {a} {traceback.format_exc()}"
+        assert False, f"Test failed because of exception {a}"
