@@ -123,6 +123,21 @@ class CvHelper:
         return white_only_roi
 
     @staticmethod
+    def all_but_maroon(roi):
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        # Define lower and upper bounds for the color close to #80171e
+        lower_bound = np.array([170, 100, 50])  # Adjust these values
+        upper_bound = np.array([180, 255, 200]) # Adjust these values
+
+        # Create mask
+        mask = cv2.inRange(hsv, lower_bound, upper_bound)
+
+        # Create output image: Set matching pixels to black, others to white
+        output= np.where(mask[:, :, None] == 255, (0, 0, 0), (255, 255, 255)).astype(np.uint8)
+        return output
+
+    @staticmethod
     def all_but_white(roi, lower=np.array([230, 230, 230])):
         lower_white = lower  # Lower bound of white color
         upper_white = np.array([255, 255, 255])  # Upper bound of white color
@@ -284,3 +299,19 @@ class CvHelper:
             image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
         )
         return rotated
+
+    @staticmethod
+    def all_but_shatterer(roi):
+        # Convert image to HSV
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        # Define lower and upper bounds for the color range
+        upper_bound = np.array([10, 100, 50])   # Adjust based on #9d4f32
+        lower_bound = np.array([40, 220, 200])  # Adjust based on #e3d2ac
+
+        # Create mask (white where colors are within range, black elsewhere)
+        mask = cv2.inRange(hsv, lower_bound, upper_bound)
+
+        # Create output image: Set matching pixels to black, others to white
+        output = np.where(mask[:, :, None] == 255, (0, 0, 0), (255, 255, 255)).astype(np.uint8)
+        return output

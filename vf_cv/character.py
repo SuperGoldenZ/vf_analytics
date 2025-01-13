@@ -192,6 +192,7 @@ class Character:
                 blue = 188
                 if (
                     player_num == 1
+                    and width > 165
                     and vf_cv.CvHelper.color_similarity(
                         roi[10, 165], (green, blue, red)
                     )

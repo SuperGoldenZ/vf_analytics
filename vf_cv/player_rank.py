@@ -329,6 +329,34 @@ class PlayerRank:
 
         text = re.sub("[^0-9]", "", text)
 
+
+        # Retry with red texg
+        #80171e
+        frame_copy = self.frame.copy()
+
+        roi = frame_copy[y : y + h, x : x + w]
+        all_white_roi = vf_cv.CvHelper.all_but_maroon(roi)
+        text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
+        if ("Manquisher" in text):
+            return 34
+        
+        if (debug_player_rank):
+            print(f"red retry [{text}]")
+            cv2.imshow(f"red retry [{text}] ", all_white_roi)        
+            cv2.waitKey()
+        
+        # retry shatterer
+        frame_copy = self.frame.copy()
+        roi = frame_copy[y : y + h, x : x + w]
+        shat_cnt = vf_cv.CvHelper.count_pixels("#ad522d", roi, override_tolerance=10)
+        #all_white_roi = vf_cv.CvHelper.all_but_shatterer(roi)
+        #text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
+        
+        if (debug_player_rank):
+            print(f"shat retry [{text}] {shat_cnt}")
+            cv2.imshow(f"shat retry [{text}] {shat_cnt}", all_white_roi)        
+            cv2.waitKey()
+        
         # retry with small
         if (
             matches is None
@@ -376,6 +404,9 @@ class PlayerRank:
                 raise UnrecognizePlayerRankException(debug_string)
 
         rank_int = int(text)
+        if (shat_cnt >= 15 and rank_int == 3):
+            return 31
+        
         if rank_int <= 0 or rank_int > 46:
             raise UnrecognizePlayerRankException(debug_string)
 

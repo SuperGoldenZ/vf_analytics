@@ -349,6 +349,12 @@ class WinningFrame:
                 return True
 
         if self.frame_height == 1080:
+            if white_count > 37000 and gold_count < 100 and black_count < 400:
+                return True
+
+            if white_count > 20000 and gold_count < 275 and black_count < 175:
+                return True
+
             if black_count > 3500 and gold_count < 200 and white_count < 1000:
                 return False
 
