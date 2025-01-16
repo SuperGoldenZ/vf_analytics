@@ -123,8 +123,23 @@ class CvHelper:
         return white_only_roi
 
     @staticmethod
+    def all_but_maroon(roi):
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        # Define lower and upper bounds for the color close to #80171e
+        lower_bound = np.array([170, 100, 50])  # Adjust these values
+        upper_bound = np.array([180, 255, 200]) # Adjust these values
+
+        # Create mask
+        mask = cv2.inRange(hsv, lower_bound, upper_bound)
+
+        # Create output image: Set matching pixels to black, others to white
+        output= np.where(mask[:, :, None] == 255, (0, 0, 0), (255, 255, 255)).astype(np.uint8)
+        return output
+
+    @staticmethod
     def all_but_white(roi, lower=np.array([230, 230, 230])):
-        lower_white = lower # Lower bound of white color
+        lower_white = lower  # Lower bound of white color
         upper_white = np.array([255, 255, 255])  # Upper bound of white color
         mask = cv2.inRange(roi, lower_white, upper_white)
 
@@ -187,21 +202,21 @@ class CvHelper:
         similarity = max(0, 1 - (delta_e / 100))
         return similarity
 
-    @staticmethod    
+    @staticmethod
     def get_thresholded_image(gray_image, threshold_value):
-        
+
         _, thresholded_image = cv2.threshold(
             gray_image, threshold_value, 255, cv2.THRESH_BINARY
         )
 
-        #contours = cv2.findContours(
-            #thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        #)[0]
+        # contours = cv2.findContours(
+        # thresholded_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        # )[0]
 
-        #if contours:
-            #x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-            # Crop the image to the bounding box
-            #thresholded_image = thresholded_image[y : y + h, x : x + w]
+        # if contours:
+        # x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+        # Crop the image to the bounding box
+        # thresholded_image = thresholded_image[y : y + h, x : x + w]
 
         return thresholded_image
 
@@ -211,7 +226,8 @@ class CvHelper:
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # Define HSV range for light to dark green
-        green_lower = np.array([0, 100, 90])  # Lower bound for green
+        # green_lower = np.array([25, 100, 90])  # Lower bound for green
+        green_lower = np.array([35, 100, 90])  # Lower bound for green
         green_upper = np.array([100, 255, 255])  # Upper bound for green
 
         # Create mask for green
@@ -221,7 +237,7 @@ class CvHelper:
         inverted_mask = cv2.bitwise_not(green_mask)
 
         # Apply the inverted mask to create the final binary image
-        binary_result = np.where(inverted_mask == 255, 255, 0).astype('uint8')
+        binary_result = np.where(inverted_mask == 255, 255, 0).astype("uint8")
 
         return binary_result
 
@@ -240,34 +256,34 @@ class CvHelper:
 
         # Replace light blue pixels with black in the original image
         image[mask > 0] = [0, 0, 0]
-        return (image)
-    
+        return image
+
     @staticmethod
-    def add_white_column(image, width):
-        height = image.shape[0]        
+    def add_white_column(image, width, mono=False):
+        height = image.shape[0]
 
         # Create a column of white pixels (255 for grayscale)
-        #white_column = 255 * np.ones((height, 1), dtype=np.uint8)
+        # white_column = 255 * np.ones((height, 1), dtype=np.uint8)
         white_image = np.full((height, width), 255, dtype=np.uint8)
 
-        # Concatenate the white column to the left of the image        
-        left_column = np.hstack((white_image, image))        
+        # Concatenate the white column to the left of the image
+        left_column = np.hstack((white_image, image))
         right_column = np.hstack((left_column, white_image))
         return right_column
-    
+
     @staticmethod
     def add_white_row(image, height):
         # Get the width of the image
-        width = image.shape[1]        
+        width = image.shape[1]
 
         # Create a row of white pixels (255 for grayscale)
-        #white_row = 255 * np.ones((1, width), dtype=np.uint8)
+        # white_row = 255 * np.ones((1, width), dtype=np.uint8)
         white_row = np.full((height, width), 255, dtype=np.uint8)
 
         # Concatenate the white row to the bottom of the image
         bottom_row = np.vstack((image, white_row))
         return np.vstack((white_row, bottom_row))
-    
+
     @staticmethod
     def deskew(image):
         coords = np.column_stack(np.where(image > 0))
@@ -279,5 +295,23 @@ class CvHelper:
         (h, w) = image.shape[:2]
         center = (w // 2, h // 2)
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        rotated = cv2.warpAffine(
+            image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
+        )
         return rotated
+
+    @staticmethod
+    def all_but_shatterer(roi):
+        # Convert image to HSV
+        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        # Define lower and upper bounds for the color range
+        upper_bound = np.array([10, 100, 50])   # Adjust based on #9d4f32
+        lower_bound = np.array([40, 220, 200])  # Adjust based on #e3d2ac
+
+        # Create mask (white where colors are within range, black elsewhere)
+        mask = cv2.inRange(hsv, lower_bound, upper_bound)
+
+        # Create output image: Set matching pixels to black, others to white
+        output = np.where(mask[:, :, None] == 255, (0, 0, 0), (255, 255, 255)).astype(np.uint8)
+        return output

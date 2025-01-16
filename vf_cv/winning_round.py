@@ -3,7 +3,10 @@
 import cv2
 import vf_cv.cv_helper
 
+
 class WinningRound:
+    """Detects if this frame is a round winnner and how the round was won"""
+
     frame = None
     frame_height = None
     GREY_CIRCLE_COLOR_RED = 162
@@ -30,7 +33,12 @@ class WinningRound:
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-        self.frame_height = frame.shape[0]
+
+        original_height = self.frame.shape[0]
+        if original_height == 1080:
+            self.frame = cv2.resize(self.frame, (640, 360))
+
+        self.frame_height = self.frame.shape[0]
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -50,6 +58,10 @@ class WinningRound:
             y = (int)(y * 1.5)
             w = (int)(w * 1.5)
             h = (int)(h * 1.5)
+
+            if region_name == "player2_rounds":
+                x += 20
+                w -= 20
         elif self.frame_height == 1080:
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 2.25)
@@ -87,26 +99,31 @@ class WinningRound:
 
         lr = vf_cv.CvHelper.count_pixels("#af0614", roi, 10)
         if self.frame_height == 720 and (lr > 150):
+            print("short circuit return 7206")
             return 0
 
         if self.frame_height == 720 and (lr > 50 and pink > 30):
+            print("short circuit return 7205")
             return 0
 
         dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
         if self.frame_height == 720 and dark_blue > 250:
+            print("short circuit return 7204")
             return 0
 
         darker_blue = vf_cv.CvHelper.count_pixels("#101e5e", roi, 5)
-        if self.frame_height == 720 and darker_blue > 50:
-            return 0
+        # if self.frame_height == 720 and darker_blue > 50:
+        # print("short circuit return 7203")
+        # return 0
 
         if (
             self.frame_height == 720
-            and darker_blue > 10
+            # and darker_blue > 10
             and dark_blue > 100
             and pink > 50
             and maroon > 40
         ):
+            print("short circuit return 7202")
             return 0
 
         if (
@@ -116,21 +133,47 @@ class WinningRound:
             and maroon > 100
             and maroon_2 > 80
         ):
+            print("short circuit return 7201")
             return 0
 
         if self.frame_height == 720 and pink > 70 and maroon > 40 and maroon_2 > 40:
+            print("short circuit return 720")
             return 0
 
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)
         third_dark_blue = vf_cv.CvHelper.count_pixels("#1316f0", roi, 5)
         light_blue = vf_cv.CvHelper.count_pixels("#6e90ff", roi, 5)
+        darkest_blue = vf_cv.CvHelper.count_pixels("#001a8c", roi, 5)
+        blue_blue = vf_cv.CvHelper.count_pixels("#0000fa", roi, 5)
 
         if debug_winning_round is True:
+            debug_string = f"{self.frame_height}p bb {blue_blue} drkb {darkest_blue} lr {lr} db {dark_blue} other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}"
+            print(debug_string)
+
             cv2.imshow(
-                f"lr {lr} drb {darker_blue} db {dark_blue} lr {lr} {self.frame_height}  other {other_dark_blue}  third {third_dark_blue} lb {light_blue} pink {pink} mr {maroon} m2 {maroon_2}",
+                debug_string,
                 roi,
             )
             cv2.waitKey()
+
+        if self.frame_height == 360:
+            if maroon >= 100 and pink >= 20 and maroon_2 >= 20 and lr >= 80:
+                return 0
+
+            if blue_blue >= 10 and other_dark_blue >= 3:
+                return 0
+
+            if lr >= 70 and dark_blue >= 70:
+                return 0
+
+            if darkest_blue >= 20 and darker_blue >= 1 and dark_blue >= 1:
+                return 0
+
+            if darkest_blue >= 5 and darker_blue >= 1 and lr >= 1:
+                return 0
+
+            if darkest_blue >= 4 and dark_blue >= 20:
+                return 0
 
         if self.frame_height == 480 and lr > 85:
             return 0
@@ -201,11 +244,13 @@ class WinningRound:
                 ob = vf_cv.CvHelper.count_pixels("#d9f4ff", roi, threshold)
                 tblue = vf_cv.CvHelper.count_pixels("#64e1ee", roi, threshold)
                 teal = vf_cv.CvHelper.count_pixels("#4ccafb", roi, threshold)
-                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)            
-                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)            
+                aot = vf_cv.CvHelper.count_pixels("#88f6ff", roi, threshold)
+                city_teal = aot = vf_cv.CvHelper.count_pixels("#6ff3fe", roi, threshold)
+                fivece = vf_cv.CvHelper.count_pixels("#5ce3f8", roi, 5)
+                forsix = vf_cv.CvHelper.count_pixels("#46adfc", roi, 5)
                 if debug_winning_round:
                     cv2.imshow(
-                        f"city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
+                        f"{self.frame_height}p forsix {forsix} fivece {fivece} city {city_teal} aot {aot} w_b {whiter_blue}  w {white} ob {ob} tb {tblue} t {teal}",
                         roi,
                     )
 
@@ -214,12 +259,18 @@ class WinningRound:
                     cv2.waitKey()
 
                 if self.frame_height == 360:
+                    if forsix >= 4:
+                        return player_num
+
+                    if fivece >= 10:
+                        return player_num
+
                     if tblue + teal >= 5:
                         return player_num
 
-                    if (stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3):
+                    if stage == "City" and city_teal >= 4 and aot >= 4 and white >= 3:
                         return player_num
-                    
+
                     threshold = 150
 
                     if (
@@ -255,7 +306,6 @@ class WinningRound:
                         )
                         < 0.90
                     ):
-                        print(f"player 2 01 {roi_bw[5,21]}")
                         return player_num
 
                     # circle two player two
@@ -274,7 +324,6 @@ class WinningRound:
                         )
                         < 0.90
                     ):
-                        print(f"player 2 02 {threshold} {stage} {roi_bw[5,35]}")
                         return player_num
 
                     if (
@@ -346,7 +395,7 @@ class WinningRound:
             grey_count = vf_cv.CvHelper.count_pixels("#aaaaac", roi, 5)
 
             if player_num == 1:
-                threshold = 5  
+                threshold = 5
                 e94966 = vf_cv.CvHelper.count_pixels("#e94966", roi, threshold)
                 op = vf_cv.CvHelper.count_pixels("#fee5f0", roi, threshold)
                 other_pink = vf_cv.CvHelper.count_pixels("#f25f71", roi, threshold)
@@ -358,17 +407,22 @@ class WinningRound:
                 ap2 = vf_cv.CvHelper.count_pixels("#c97a7e", roi, threshold)
                 aw2 = vf_cv.CvHelper.count_pixels("#ffb3b8", roi, threshold)
                 f3 = vf_cv.CvHelper.count_pixels("#f34a68", roi, threshold)
-                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold) 
+                f34 = vf_cv.CvHelper.count_pixels("#f3444d", roi, threshold)
                 de = vf_cv.CvHelper.count_pixels("#de4c59", roi, threshold)
                 fb = vf_cv.CvHelper.count_pixels("#fb3155", roi, threshold)
                 e1 = vf_cv.CvHelper.count_pixels("#e15868", roi, threshold)
                 pf2 = vf_cv.CvHelper.count_pixels("#f28c93", roi, threshold)
                 de2 = vf_cv.CvHelper.count_pixels("#de5c68", roi, threshold)
                 fe = vf_cv.CvHelper.count_pixels("#fe717c", roi, threshold)
+                ea = vf_cv.CvHelper.count_pixels("#ea6367", roi, threshold)
+                fa = vf_cv.CvHelper.count_pixels("#fa576e", roi, threshold)
+                ee = vf_cv.CvHelper.count_pixels("#ee314c", roi, threshold)
+                ff = vf_cv.CvHelper.count_pixels("#fffaf1", roi, threshold)
+                og = vf_cv.CvHelper.count_pixels("#b2b7b3", roi, 5)
 
                 if debug_winning_round:
                     cv2.imshow("p1 winning round", self.frame)
-                    debug_string = f"fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
+                    debug_string = f"ff {ff} ee {ee} fa {fa} ea {ea} fe {fe} f34 {f34} de2 {de2} de {de} e9 {e94966} pf2 {pf2} e1 {e1} fb {fb}  f3 {f3} aw2 {aw2} ap2 {ap2} ap {arena_pink} pf {pf} {anp} {opp} {other_pink} <- op -> {op} wrc{white_red_count}  wc{white_count} pc {pink_count} {light_blue_count} lbc pr {pr}"
                     print(debug_string)
                     cv2.imshow(
                         debug_string,
@@ -380,9 +434,17 @@ class WinningRound:
                 if self.frame_height == 1080:
                     if op > 15:
                         return player_num
+                elif self.frame_height == 720:
+                    if op > 10:
+                        if debug_winning_round:
+                            print("returning player_num op")
+                        return player_num
                 else:
                     if op > 5:
                         return player_num
+
+                if self.frame_height == 360 and ea >= 5 and fe >= 1 and e1 >= 2:
+                    return player_num
 
                 if self.frame_height == 360 and white_red_count >= 15:
                     return player_num
@@ -391,12 +453,23 @@ class WinningRound:
                     return player_num
 
                 if self.frame_height == 720 and 15 <= other_pink <= 25:
+                    if debug_winning_round:
+                        print("returning player_num A")
                     return player_num
 
                 if self.frame_height == 720 and fe > 5 and de > 2:
+                    if debug_winning_round:
+                        print("returning player_num B")
                     return player_num
 
                 if self.frame_height == 720 and 15 <= opp <= 25:
+                    if debug_winning_round:
+                        print("returning player_num C")
+                    return player_num
+
+                if self.frame_height == 720 and ff >= 100:
+                    if debug_winning_round:
+                        print("returning player_num D")
                     return player_num
 
                 if (
@@ -408,15 +481,21 @@ class WinningRound:
 
                 # player1 B&W
                 if self.frame_height == 360:
+                    if ee >= 19:
+                        return player_num
+
+                    if fa >= 3 and ea >= 1 and f34 >= 1:
+                        return player_num
+
                     if f34 >= 3 and de2 >= 1:
                         return player_num
-                    
+
                     if de2 >= 15:
                         return player_num
-                    
+
                     if e94966 >= 3 and f3 >= 3:
                         return player_num
-                    
+
                     if pf2 >= 4 and pr >= 1:
                         return player_num
 
@@ -533,13 +612,23 @@ class WinningRound:
                         return player_num
 
             if 20 <= white_count <= 30 and pink_count == 0:
-                return player_num
+                if self.frame_height == 720 and grey_count < 20 and og < 20:
+                    if debug_winning_round:
+                        print(f"returning player_num Y {grey_count} {og}")
+
+                    return player_num
 
             if (
-                white_count > 8
-                or (pink_count >= 5 and player_num == 1)
-                or light_blue_count >= 5
-            ) and (grey_count < 50):
+                (
+                    white_count > 8
+                    or (pink_count >= 5 and player_num == 1)
+                    or light_blue_count >= 5
+                )
+                and (grey_count < 50)
+                and (self.frame_height != 720 or og < 10)
+            ):
+                if debug_winning_round:
+                    print(f"returning player_num Z {grey_count} {og}")
                 return player_num
 
         return 0

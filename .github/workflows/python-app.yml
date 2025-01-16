@@ -28,7 +28,7 @@ jobs:
         sudo apt install tesseract-ocr
         sudo apt install libtesseract-dev
         python -m pip install --upgrade pip
-        pip install flake8 pytest opencv-python pytesseract
+        pip install flake8 pytest opencv-python pytesseract scikit-image line-profiler
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |

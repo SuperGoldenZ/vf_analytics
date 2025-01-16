@@ -1,8 +1,9 @@
 import pytest
 import cv2
-import vf_analytics
+import vf_cv.vs_screen
 
 test_data = [
+    ["assets/test_images/720p/stage/statues_01.png", "Statues"],
     ["assets/test_images/1080p/vs/vs_02.png", "Ruins"],
     ["assets/test_images/1080p/vs/vs_01.jpg", "Ruins"],
     ["assets/test_images/1080p/vs/vs_03.png", "Ruins"],
@@ -74,7 +75,11 @@ def test_is_vs(image_filename, expected_stage_name):
     assert vs_image is not None
 
     DEBUG = False
-    actual_is_vs = vf_analytics.is_vs(vs_image, DEBUG)
+    vs_screen = vf_cv.vs_screen.VsScreen()
+    
+    vs_screen.set_frame(vs_image)
+    
+    actual_is_vs = vs_screen.is_vs_ver1(DEBUG)
     expected_actual_vs = expected_stage_name is not None
     assert (
         expected_actual_vs == actual_is_vs
