@@ -5,7 +5,7 @@ import cv2
 import vf_cv
 
 test_data = [
-    ["assets/test_images/1080p/rank/webp/31_25.webp", 31, 25, False],
+    ["assets/test_images/1080p/rank/webp/31_25_small.webp", 31, 25, False],
     ["assets/test_images/1080p/rank/webp/26_31.webp", 26, 31, False],
     ["assets/test_images/1080p/rank/webp/32_34.webp", 32, 34, False],
     ["assets/test_images/1080p/rank/webp/42_46_01.webp", 42, 46, False],
