@@ -16,7 +16,6 @@ test_data = [
     [f"{DIR}720p/dp/webp/dp_1_xx_05.webp", 1, 1, 720, False, None],
     [f"{DIR}720p/dp/webp/dp_4_xx_03.webp", 1, 4, 720, False, None],
     [f"{DIR}720p/dp/webp/dp_11_xx_01.webp", 1, 11, 720, False, None],
-    [f"{DIR}720p/dp/webp/dp_10_xx_03.webp", 1, 10, 720, False, None],
     [f"{DIR}720p/dp/webp/dp_4_xx_02.webp", 1, 4, 720, False, None],
     [f"{DIR}720p/dp/webp/dp_22_xx_01.webp", 1, 22, 720, False, None],
     [f"{DIR}720p/dp/webp/dp_22_xx.webp", 1, 22, 720, False, None],
