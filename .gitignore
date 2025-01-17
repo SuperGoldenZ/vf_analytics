@@ -1,1 +1,9 @@
 __pycache__/
+*.log
+*.csv
+*.lprof
+src/
+*prof*
+*backup
+token.json
+match_data*

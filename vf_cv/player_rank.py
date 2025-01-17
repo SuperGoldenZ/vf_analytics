@@ -1,11 +1,92 @@
-import vf_cv.cv_helper
+"""This module provide functions to extract information from a VFES/US game frame"""
+
 import cv2
 import pytesseract
 import re
 import numpy as np
+import vf_cv.cv_helper
+
+# 級。 Kyu Group [2 White Characters / No rectangle background]
+# 十級 - 一級 10th Kyu to 1st Kyu
+#
+# 段。 Dan Group [2 White Characters / No rectangle background]
+# 初段 - 十段 1st Dan to 10th Dan
+#
+# 士。 Shi Group [2 White Characters / Wood (light brown) Background]
+# 21 錬士 1 Star - Hunter
+# 22 烈士 2 Star - Raider
+# 23 傑士 3 Star - Barbarian
+#
+# 者。 Mono Group [2 White Characters / Light Grey Background]
+# 24 強者 1 Star - Defender
+# 25 猛者 2 Star - Sentinel
+# 26 王者 3 Star - Guardian
+#
+# 人。 Jin Group [2 White Characters / Dark Grey Background]
+# 27 名人 1 Star - Warrior
+# 28 達人 2 Star - Veteran
+# 29 超人 3 Star - Berserker
+#
+# 将。 Shou Group [2 White Characters / Dark Brown Background]
+# 30 智将 1 Star - Assassin
+# 31 猛将 2 Star - Shatterer
+# 32 闘将 3 Star - Destroyer
+#
+# 魔王。 Maou Group [3 White Characters / Light Silver Background]
+# 33 大魔王 1 Star - Avenger
+# 34 真魔王 2 Star - Vanquisher
+# 35 天魔王 3 Star - Conqueror
+#
+# 拳聖。 Kensei Group [3 White Characters / Gold Background]
+# 36 空拳聖 1 Star - Darkslayer
+# 37 撃拳聖 2 Star - Grimslayer
+# 38 剛拳聖 3 Star - Doomslayer
+#
+# 武帝。 Butei Group [3 White Characters / Dark Silver with Blue + Green in the middle Background
+# 39 獣武帝 1 Star - Tigerclaw
+# 40 鬼武帝 2 Star - Lionheart
+# 41 龍武帝 3 Star - Dragonfang
+#
+# マスター。 Master Group ("Gods" Ranks)
+# 42 轟雷神 Gouraishin (God of Thunder) - Gold Characters / Blue Background with a white stripe in the middle Stormlord
+# 43 爆焔神 Bakuenshin (God of Flame)- Gold Characters / Orange (top) to Yellow (bottom) Background Magmalord
+# 44 天翔神 Tenshoushin (Soaring Sky God) - Gold Characters / Orange and White (middle) Background Skylord
 
 
 class PlayerRank:
+    """This class extracts player rank from the VS screen of a match"""
+
+    ENGLISH_NAMES = {
+        1: "10th kyu",
+        2: "9th kyu",
+        3: "8th kyu",
+        4: "7th kyu",
+        5: "6th kyu",
+        6: "5th kyu",
+        7: "4th kyu",
+        8: "3rd kyu",
+        9: "2nd kyu",
+        10: "1st kyu",
+        11: "1st dan",
+        12: "2nd dan",
+        13: "3rd dan",
+        14: "4th dan",
+        15: "5th dan",
+        16: "6th dan",
+        17: "7th dan",
+        18: "8th dan",
+        19: "9th dan",
+        20: "10th dan",
+        21: "Hunter",
+        22: "Raider",
+        23: "Barbarian",
+        24: "Defender",
+        25: "Sentinel",
+        26: "Guardian",
+        27: "Warrior",
+        46: "Magmalord",
+    }
+
     REGIONS_480P = {
         "player1rank": (72, 91, 14, 12),
         "player1rank_full": (23, 82, 67, 21),
@@ -15,6 +96,8 @@ class PlayerRank:
 
     REGIONS_720P = {
         "player1rank": (108, 137, 21, 18),
+        "player1rank_full_vs": (315, 437, 86, 34 - 16),
+        "player2rank_full_vs": (1136, 437, 86, 34 - 16),
         "player1rank_full": (
             int(23 * 1.5) - 10,
             int(82 * 1.5) - 6,
@@ -28,14 +111,9 @@ class PlayerRank:
             int(67 * 1.5) + 10,
             int(21 * 1.5) + 6,
         ),
+        "player1rank_small": (383, 452, 17, 12),
+        "player2rank_small": (1203, 452, 17, 12),
     }
-
-    # REGIONS_720P = {
-    # "player1rank": (72*1.5, 91*1.5, 14*1.5, 12*1.5),
-    # "player1rank_full": (23*1.5, 82*1.5, 165, 55),
-    # "player2rank": (820*1.5, 91*1.5, 14*1.5, 12*1.5),
-    # "player2rank_full": (1718, 80, 165, 55),
-    # }
 
     frame = None
     frame_height = None
@@ -47,10 +125,21 @@ class PlayerRank:
             44: cv2.imread("assets/test_images/480p/rank/44.jpg"),
         }
 
+        self.japanese_rank_titles = {}
+
+        self.youtube_video_title = None
+
+    def set_youtube_video_title(self, title):
+        self.youtube_video_title = title
+
     def set_frame(self, frame):
         """Sets the image to extract data from"""
         self.frame = frame
-        self.frame_height = frame.shape[0]
+        original_height = self.frame.shape[0]
+        if original_height != 720:
+            self.frame = cv2.resize(self.frame, (1280, 720))
+
+        self.frame_height = self.frame.shape[0]
 
     def get_roi(self, region_name):
         """Returns ROI based on resolution"""
@@ -74,8 +163,50 @@ class PlayerRank:
             h = (int)(h * 2.25) - 10
         return (x, y, w, h)
 
+    @staticmethod
+    def is_numeric_string(var):
+        try:
+            float(var)
+            return True
+        except ValueError:
+            return False
+
     # min width 25
     def get_player_rank(self, player_num, debug_player_rank=False):
+
+        # short circuit with video title
+        if (
+            self.youtube_video_title is not None
+            and (
+                "【VFes  VF5us 高段位戦】" in self.youtube_video_title
+                or "【VFes高段位戦】" in self.youtube_video_title
+                or "名人戦" in self.youtube_video_title
+                or "【VFes / VF5us 高段位戦】" in self.youtube_video_title
+            )
+            and "VS" in self.youtube_video_title
+        ):
+            split = self.youtube_video_title.strip().split("V")
+            index = 0
+            if player_num == 2:
+                index = len(split) - 1
+            else:
+                index = len(split) - 2
+
+            if "鬼武帝" in split[index]:
+                return 40
+            if "龍武帝" in split[index]:
+                return 41
+            if "轟雷神" in split[index]:
+                return 42
+            if "爆焔神" in split[index]:
+                return 43
+            if "天翔神" in split[index]:
+                return 44
+            if "幻冥神" in split[index]:
+                return 45
+            if "超煌神" in split[index]:
+                return 46
+
         FULL_REGION = f"player{player_num}rank_full"
         FULL_REGION_ROI = self.get_roi(FULL_REGION)
 
@@ -87,21 +218,14 @@ class PlayerRank:
         full_roi = self.frame[full_y : full_y + full_h, full_x : full_x + full_w]
 
         white_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 50)
-        purple_count = vf_cv.CvHelper.count_pixels("#7600b9", full_roi)
         grey = vf_cv.CvHelper.count_pixels("#908f95", full_roi)
         dark_purple_count = vf_cv.CvHelper.count_pixels("#3a165e", full_roi, 15)
-        teal_count = vf_cv.CvHelper.count_pixels("#558784", full_roi)
         grellow_count = vf_cv.CvHelper.count_pixels("#8e9a52", full_roi)
-        gold_count = vf_cv.CvHelper.count_pixels("#e2cb87", full_roi)
         ry = vf_cv.CvHelper.count_pixels("#cc5b31", full_roi)
-        black_count = vf_cv.CvHelper.count_pixels("#000000", full_roi, 5)
         yg = vf_cv.CvHelper.count_pixels("#6a8b8e", full_roi, 10)
         green_gold = vf_cv.CvHelper.count_pixels("#8b752b", full_roi, 10)
         orange = vf_cv.CvHelper.count_pixels("#c26e30", full_roi, 15)
         mint = vf_cv.CvHelper.count_pixels("#8bcc98", full_roi, 10)
-
-        # full_roi_bw = self.frame[full_y-10 : full_y + full_h+10, full_x-10 : full_x + full_w+10]
-        # full_roi_bw = cv2.cvtColor(full_roi_bw, cv2.COLOR_BGR2GRAY)
 
         debug_string = f"{self.frame_height}_mint{mint}_gg{green_gold}_{orange}_gre{grellow_count}_ry{ry}_wc{white_count}_g{grey}_dp{dark_purple_count}_yg{yg}"
 
@@ -110,490 +234,183 @@ class PlayerRank:
                 debug_string,
                 full_roi,
             )
+
+            # print(debug_string)
             # cv2.imshow("bw", full_roi_bw)
             cv2.waitKey()
 
-        if self.frame_height == 360:
-            if self.frame_height == 360 and mint > 5:
-                return 45
+        ##########################
+        ## second roi
+        ##########################
+        (x, y, w, h) = self.get_roi(f"player{player_num}rank_full_vs")
 
-            if 10 <= grellow_count <= 40 and 100 <= white_count <= 140 and grey > 200:
-                return 40
+        frame_copy = self.frame.copy()
 
-            if yg >= 15:
-                return 40
+        roi = frame_copy[y : y + h, x : x + w]
+        all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
+            roi, np.array([195, 185, 185])
+        )
 
-            if green_gold >= 2 and dark_purple_count >= 2:
-                return 41
+        imagem = cv2.bitwise_not(all_white_roi)
 
-            if orange >= 15:
-                return 43
+        text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+        text = text.replace("sth", "5th")
+        text = text.replace("Sth", "5th")
+        text = text.replace("Ist", "1st")
+        text = text.replace("Tst", "1st")
+        text = text.replace("tst", "1st")
+        text = text.replace("6ti", "6th")
+        text = text.replace("Ath", "4th")
 
-            if orange > 5 and grellow_count < 110 and 90 <= ry <= 130:
-                return 43
+        kyu_pattern = r"(\d{1,2})th"
+        if "rd" in text:
+            kyu_pattern = r"(\d{1,2})rd"
+        if "st" in text:
+            kyu_pattern = r"(\d{1,2})st"
+        if "nd" in text:
+            kyu_pattern = r"(\d{1,2})nd"
 
-            if orange > 1 and grellow_count < 64 and 60 <= ry <= 110:
-                return 43
+        matches = re.findall(kyu_pattern, text)
 
-            if (
-                185 - 10 <= grellow_count <= 185 + 10
-                and 40 <= white_count <= 78
-                and grey > 50
-            ):
-                return 41
+        is_dan = False
 
-            if 128 <= grellow_count <= 148 and 40 <= white_count <= 100 and grey > 50:
-                return 41
+        if debug_player_rank:
+            print(f"{x} {y} {w} {h} {text}")
+            print("kyu matches")
+            print(matches)
+            cv2.imshow(f"player rank full {self.frame_height}", self.frame)
+            cv2.imshow(f"rank [{text}]", imagem)
+            cv2.imshow(f"roi [{text}]", roi)
+            cv2.waitKey()
 
-            if (
-                108 - 10 <= grellow_count <= 125 + 10
-                and 46 <= white_count <= 145
-                and grey > 50
-            ):
-                return 41
+        if "st dan" in text:
+            return 11
 
-            if (
-                145 - 10 <= grellow_count <= 145 + 10
-                and 113 <= white_count <= 133
-                and grey > 130
-            ):
-                return 41
+        if "Darh" in text:
+            return 23
 
-            if 100 <= grellow_count <= 154 and grey < 40 and 27 <= white_count <= 82:
-                return 44
+        if "Wart" in text:
+            return 27
 
-            if 100 <= grellow_count <= 154 and grey < 130 and 13 <= white_count <= 23:
-                return 44
+        if "Raider" in text:
+            return 22
 
-        if self.frame_height == 1080:
-            if (
-                576 - 10 <= grellow_count <= 576 + 10
-                and ry <= 20
-                and 1073 - 10 <= white_count <= 1073 + 10
-                and 729 - 10 <= grey <= 729 + 10
-                and 10 <= dark_purple_count <= 50
-            ):
-                return 41
+        if "arrior" in text:
+            return 27
 
-            if (
-                442 - 10 <= grellow_count <= 459 + 10
-                and ry <= 50
-                and 1252 - 10 <= white_count <= 1252 + 10
-                and 554 - 10 <= grey <= 667
-                and 10 <= dark_purple_count <= 50
-            ):
-                return 41
+        if "Hunter" in text:
+            return 21
 
-            if (
-                574 - 10 <= grellow_count <= 574 + 10
-                and ry <= 50
-                and 1108 - 10 <= white_count <= 1108 + 10
-                and 755 - 10 <= grey <= 755 + 10
-                and 10 <= dark_purple_count <= 50
-            ):
-                return 41
+        if "i" in text and "23" in text:
+            return 23
 
-            if (
-                178 <= grellow_count <= 198
-                and ry <= 5
-                and 750 <= white_count <= 1890
-                and 1000 <= grey <= 1280
-            ):
-                return 40
-
-            if (
-                178 <= grellow_count <= 198
-                and ry <= 5
-                and 790 <= white_count <= 810
-                and 1156 - 10 <= grey <= 1156 + 10
-                and 565 - 10 <= dark_purple_count <= 565 + 10
-            ):
-                return 40
-
-            if (
-                82 <= grellow_count <= 82
-                and ry <= 135
-                and 1198 <= white_count <= 1198
-                and 204 - 10 <= grey <= 204 + 10
-                and 549 - 10 <= dark_purple_count <= 549 + 10
-            ):
-                return 42
-
-            if (
-                105 - 10 <= grellow_count <= 105 - 10
-                and 71 - 10 <= ry <= 71 + 10
-                and 281 - 10 <= white_count <= 281 + 10
-                and 214 - 10 <= grey <= 214 + 10
-                and 291 - 10 <= dark_purple_count <= 291 + 10
-            ):
-                return 42
-
-        if (
-            self.frame_height == 480
-            and 25 <= grellow_count <= 35
-            and ry == 0
-            and 350 <= white_count <= 370
-            and 240 <= grey <= 260
-        ):
-            return 40
-
-        if (
-            self.frame_height == 480
-            and 96 <= grellow_count <= 116
-            and ry == 0
-            and white_count <= 20
-            and 540 <= grey <= 560
-            and dark_purple_count > 15
-        ):
-            return 39
-
-        if (
-            self.frame_height == 720
-            and 500 <= grellow_count <= 760
-            and ry < 20
-            and 430 <= white_count <= 660
-            and 500 <= grey <= 980
-            and 130 <= dark_purple_count <= 190
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 507 - 10 <= grellow_count <= 507 + 10
-            and ry < 15
-            and 648 - 10 <= white_count <= 648 + 10
-            and 570 - 10 <= grey <= 570 + 10
-            and dark_purple_count > 25
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 444 - 10 <= grellow_count <= 444 + 10
-            and ry < 15
-            and 1011 - 10 <= white_count <= 1011 + 10
-            and 524 - 10 <= grey <= 524 + 10
-            and dark_purple_count > 5
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 444 - 10 <= grellow_count <= 1200 + 10
-            and ry < 15
-            and 600 - 10 <= white_count <= 1011 + 10
-            and 524 - 10 <= grey <= 650 + 10
-            and dark_purple_count > 125
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 400 - 10 <= grellow_count <= 457 + 10
-            and ry < 20
-            and 800 - 10 <= white_count <= 1100 + 10
-            and 500 - 10 <= grey <= 575 + 10
-            and dark_purple_count > 125
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 215 <= grellow_count <= 225
-            and ry > 700
-            and white_count > 1000
-            and 178 <= grey <= 198
-        ):
-            return 43
-
-        if (
-            self.frame_height == 720
-            and 435 <= grellow_count <= 435
-            and 420 <= ry <= 460
-            and 220 <= white_count <= 260
-            and 160 <= grey <= 180
-            and dark_purple_count < 20
-        ):
-            return 43
-
-        if (
-            self.frame_height == 720
-            and 401 - 10 <= grellow_count <= 401 + 10
-            and 435 - 10 < ry < 435 + 10
-            and 262 - 10 <= white_count <= 262 + 10
-            and 116 - 10 <= grey <= 116 + 10
-            and dark_purple_count < 15
-        ):
-            return 43
-
-        if (
-            self.frame_height == 720
-            and 427 - 10 <= grellow_count <= 427 + 10
-            and 91 - 10 < ry < 91 + 10
-            and 896 - 10 <= white_count <= 896 + 10
-            and 156 - 10 <= grey <= 156 + 10
-            and dark_purple_count < 30
-        ):
-            return 44
-
-        if (
-            self.frame_height == 720
-            and 300 - 10 <= grellow_count <= 557 + 10
-            and 91 - 10 < ry < 110 + 10
-            and 245 - 10 <= white_count <= 667 + 10
-            and 130 - 10 <= grey <= 273 + 10
-            and dark_purple_count < 30
-        ):
-            return 44
-
-        if (
-            self.frame_height == 720
-            and 577 - 10 <= grellow_count <= 637 + 10
-            and 88 - 10 < ry < 97 + 10
-            and 353 - 10 <= white_count <= 447 + 10
-            and 223 - 10 <= grey <= 223 + 10
-            and dark_purple_count < 30
-        ):
-            return 44
-
-        if (
-            self.frame_height == 720
-            and 486 - 10 <= grellow_count <= 486 + 10
-            and 119 - 10 < ry < 119 + 10
-            and 327 - 10 <= white_count <= 327 + 10
-            and 165 - 10 <= grey <= 165 + 10
-            and dark_purple_count < 15
-        ):
-            return 44
-
-        if (
-            self.frame_height == 720
-            and 281 - 10 <= grellow_count <= 281 + 10
-            and 71 - 10 < ry < 71 + 10
-            and 1384 <= white_count <= 1394 + 10
-            and 93 <= grey <= 113
-            and dark_purple_count < 25
-        ):
-            return 44
-
-        if (
-            self.frame_height == 720
-            and 300 - 10 <= grellow_count <= 471 + 10
-            and 400 - 10 < ry < 410 + 10
-            and 228 - 10 <= white_count <= 228 + 50
-            and 121 <= grey <= 315
-            and dark_purple_count < 15
-        ):
-            return 43
-
-        if (
-            self.frame_height == 720
-            and 300 - 10 <= grellow_count <= 300 + 10
-            and 375 - 10 < ry < 375 + 10
-            and 228 - 10 <= white_count <= 228 + 10
-            and 190 <= grey <= 210
-            and dark_purple_count < 15
-        ):
-            return 43
-
-        if (
-            self.frame_height == 720
-            and 395 - 10 <= grellow_count <= 395 + 10
-            and ry < 10
-            and 654 - 10 < white_count < 654 + 10
-            and 495 <= grey <= 515
-            and 140 - 10 < dark_purple_count < 140 + 10
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 584 - 10 <= grellow_count <= 745
-            and ry < 5
-            and 430 - 10 < white_count < 440 + 10
-            and 960 <= grey <= 994 + 10
-            and 127 - 10 < dark_purple_count < 127 + 10
-        ):
-            return 41
-
-        if (
-            self.frame_height == 720
-            and 406 - 10 <= grellow_count <= 416
-            and ry < 5
-            and 1190 < white_count < 1210
-            and 418 <= grey <= 438
-            and 151 - 10 < dark_purple_count < 151 + 10
-        ):
-            return 41
-
-        # if (
-        # dark_purple_count > 100
-        # and teal_count > 100
-        # and grellow_count > 100
-        # and black_count < 50
-        # ):
-        # return 39
-
-        if (
-            self.frame_height == 720
-            and 582 <= grellow_count <= 612
-            and 67 <= ry <= 87
-            and 270 <= white_count <= 290
-            and 120 <= grey <= 140
-        ):
-            return 44
-
-        if (
-            self.frame_height == 1080
-            and grellow_count > 220
-            and ry > 630
-            and white_count < 1100
-            and grey < 250
-        ):
-            return 43
-
-        if (
-            self.frame_height == 1080
-            and grellow_count > 165
-            and ry > 620
-            and white_count < 350
-            and grey < 180
-            and dark_purple_count < 20
-        ):
-            return 43
-
-        if (
-            self.frame_height == 360
-            and 17 - 3 <= grellow_count <= 17 + 3
-            and 11 - 3 <= ry <= 11 + 3
-        ):
-            return 42
-
-        if self.frame_height == 360 and 115 - 3 <= grellow_count <= 115 + 3 and ry < 5:
-            return 41
-
-        if grellow_count > 100 and ry > 100 and white_count < 100 and grey < 50:
-            return 43
-
-        if purple_count > 8:
-            return 42
-
-        for retry in range(0, 9):
-
-            if retry == 8:
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[37]
+        is_kyu = "k" in text
+        if is_kyu and len(matches) > 0 and PlayerRank.is_numeric_string(matches[0]):
+            if debug_player_rank:
+                print(
+                    f"returning kyu {(int(matches[0]))}  returning {11-int(matches[0])}"
                 )
+            return 11 - int(matches[0])
 
-                if compares > 38:
-                    return 37
+        is_dan = "d" in text
+        fifth = len(matches) > 0 and matches[0] == "5"
 
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[43]
+        if (
+            is_dan
+            and len(matches) > 0
+            and PlayerRank.is_numeric_string(matches[0])
+            and (matches[0]) != "5"  # skip for 5th 9th
+        ):
+            if debug_player_rank:
+                print(
+                    f"returning dan {(int(matches[0]))}  returning {10+int(matches[0])}"
                 )
+            return 10 + int(matches[0])
 
-                if compares > 38:
-                    return 43
+        text = re.sub("[^0-9]", "", text)
 
-                compares = vf_cv.CvHelper.compare_images_histogram(
-                    full_roi, self.rank_images[44]
-                )
 
-                if compares > 38:
-                    return 44
+        # Retry with red texg
+        #80171e
+        frame_copy = self.frame.copy()
 
-                raise UnrecognizePlayerRankException(debug_string)
-                # return 0
+        roi = frame_copy[y : y + h, x : x + w]
+        all_white_roi = vf_cv.CvHelper.all_but_maroon(roi)
+        text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
+        if ("Manquisher" in text):
+            return 34
+        
+        if (debug_player_rank):
+            print(f"red retry [{text}]")
+            cv2.imshow(f"red retry [{text}] ", all_white_roi)        
+            cv2.waitKey()
+        
+        # retry shatterer
+        frame_copy = self.frame.copy()
+        roi = frame_copy[y : y + h, x : x + w]
+        shat_cnt = vf_cv.CvHelper.count_pixels("#ad522d", roi, override_tolerance=10)
+        #all_white_roi = vf_cv.CvHelper.all_but_shatterer(roi)
+        #text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
+        
+        if (debug_player_rank):
+            print(f"shat retry [{text}] {shat_cnt}")
+            cv2.imshow(f"shat retry [{text}] {shat_cnt}", all_white_roi)        
+            cv2.waitKey()
+        
+        # retry with small
+        if (
+            matches is None
+            or len(matches) == 0
+            or not text.isnumeric()
+            or (matches[0]) == "5"
+        ):  # skip for 5th 9th:
+            (x, y, w, h) = self.get_roi(f"player{player_num}rank_small")
 
-            ##########################
-            ## second roi
-            ##########################
-            (x, y, w, h) = REGULAR_REGION_ROI
-            if retry == 1:
-                w = w - 3
-                x = x + 2
-            elif retry == 2:
-                x = x - 29
-                y = y - 10
-            elif retry == 6 and player_num == 1:
-                w = w + 10
-            elif retry == 6 and player_num == 2:
-                x = x - 5
-                w = w + 5
-                h = h + 3
-            elif retry == 7 and player_num == 2:
-                x = x - 2
-                w = w + 2
-            elif retry == 7 and player_num == 1:
-                y = y - 1
-                w = w - 1
-                x = x + 3
-            elif retry == 8 and player_num == 1:
-                y = y + 1
-                h = h - 3
-                x = x + 2
+            if debug_player_rank:
+                print(f"retru rpo {x} {y} {w} {h}")
+            frame_copy = self.frame.copy()
+            roi = frame_copy[y : y + h, x : x + w]
 
-            roi = self.frame[y : y + h, x : x + w]
             all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-                roi, np.array([100, 100, 105])
+                roi, np.array([165, 160, 160])
             )
 
+            all_white_roi = cv2.cvtColor(all_white_roi, cv2.COLOR_BGR2GRAY)
+
             imagem = cv2.bitwise_not(all_white_roi)
+            imagem = vf_cv.CvHelper.add_white_column(imagem, 5, True)
+            imagem = vf_cv.CvHelper.add_white_row(imagem, 5)
 
-            text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+            text = pytesseract.image_to_string(
+                imagem,
+                timeout=2,
+                config="--psm 7 -c tessedit_char_whitelist=0123456789",
+            )
+            text = text.strip()
 
-            text = re.sub("[^0-9]", "", text)
+            if debug_player_rank:
+                print(f"retry player rank: {x} {y} {w} {h} {text}")
+                print("kyu matches")
+                print(matches)
+                cv2.imshow(f"player rank full {self.frame_height}", self.frame)
+                cv2.imshow(f"rank [{text}]", imagem)
+                cv2.imshow(f"roi [{text}]", roi)
+                cv2.waitKey()
 
-            if not text.isnumeric() or int(text) < 10:
-                continue
+            if fifth and is_dan and text == "14":
+                return 19
 
-            greyCount = vf_cv.CvHelper.count_pixels("#7c7a82", roi)
-
-            rank_int = int(text)
-            if rank_int == 38 and white_count == 8:
-                return 39
-
-            if rank_int > 46 and retry < 3:
-                continue
-
-            if (rank_int >= 40 and greyCount > 130) and rank_int <= 56:
-                continue
-
-            if rank_int < 0 or rank_int > 46:
-                continue
-
-            if grellow_count > 150 and ry > 60 and rank_int < 30:
-                continue
-
-            if gold_count > 300 and rank_int < 36:
-                continue
-
-            if (
-                grey < 400
-                and rank_int > 36
-                and white_count > 230
-                and grellow_count < 30
-            ):
-                continue
-
-            if rank_int == 35 and gold_count > 200:
-                continue
-
-            if (
-                rank_int > 41
-                and gold_count > 300
-                and teal_count > 10
-                and grellow_count > 200
-            ):
-                continue
-
-            if rank_int == 0:
+            if not text.isnumeric():
                 raise UnrecognizePlayerRankException(debug_string)
 
-            return rank_int
+        rank_int = int(text)
+        if (shat_cnt >= 15 and rank_int == 3):
+            return 31
+        
+        if rank_int <= 0 or rank_int > 46:
+            raise UnrecognizePlayerRankException(debug_string)
 
-        raise UnrecognizePlayerRankException(debug_string)
-        # return 0
+        return rank_int
 
 
 class UnrecognizePlayerRankException(Exception):
