@@ -791,7 +791,8 @@ class Timer:
 
         if (
             self.frame_height == 360
-            and height > 5
+            and height > 6
+            and width > 5
             and self.thresholded_image[5, 5] != 0
             and self.thresholded_image[5 + 1, 5] != 0
         ):
