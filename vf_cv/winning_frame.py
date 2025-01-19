@@ -15,7 +15,7 @@ class WinningFrame:
         "player1_rounds": (307, 50, 55, 15),
         "player2_rounds": (475, 50, 80, 15),
         "player1_health": (111, 33, 265, 8),
-        "player2_health": (483, 36, 265, 8),
+        "player2_health": (483, 33, 265, 8),
         "stage": (342, 295, 200, 25),
         "player1ringname": (43, 315, 209, 18),
         "player2ringname": (589, 315, 209, 18),
@@ -27,6 +27,11 @@ class WinningFrame:
         "excellent": (75, 200, 700, 80),
         "ro": (185, 204, 484, 80),
         "to": (185, 204, 484, 80),
+    }
+
+    REGIONS_1080P = {
+        "player1_health": (244, 74, 600, 18),
+        "player2_health": (1084, 74, 600, 18),
     }
 
     def set_frame(self, frame):
@@ -64,11 +69,18 @@ class WinningFrame:
             x += 75
             w -= 375
         elif self.frame_height == 1080:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 2.25)
-            y = (int)(y * 2.25)
-            w = (int)(w * 2.25)
-            h = (int)(h * 2.25)
+            if "health" not in region_name:
+                (x, y, w, h) = self.REGIONS_480P[region_name]
+                x = (int)(x * 2.25)
+                y = (int)(y * 2.25)
+                w = (int)(w * 2.25)
+                h = (int)(h * 2.25)
+            else:
+                (x, y, w, h) = self.REGIONS_1080P[region_name]
+                x = (int)(x)
+                y = (int)(y)
+                w = (int)(w)
+                h = (int)(h)
         return (x, y, w, h)
 
     def is_ringout(self, debug=False):
@@ -297,8 +309,8 @@ class WinningFrame:
         return False
 
     def is_excellent(self, debug_excellent=False):
-        (p1green, p1black, p1grey) = self.get_player_health(1)
-        (p2green, p2black, p2grey) = self.get_player_health(2)
+        (p1green, p1black, p1grey, p1white, p1red) = self.get_player_health(1)
+        (p2green, p2black, p2grey, p2white, p2red) = self.get_player_health(2)
 
         p1excellent = p1black <= 2 and p1grey <= 2
         p2excellent = p2black <= 2 and p2grey <= 2
@@ -441,13 +453,26 @@ class WinningFrame:
 
         return False
 
-    def get_player_health(self, player_num):
+    def get_player_health(self, player_num, debug_player_health=False):
         region_name = f"player{player_num}_health"
         (x, y, w, h) = self.get_roi(region_name)
 
         roi = self.frame[y : y + h, x : x + w]
-        green_health = vf_cv.CvHelper.count_pixels("#30c90e", roi, override_tolerance=5)
-        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=5)
-        grey_health = vf_cv.CvHelper.count_pixels("#1c211d", roi, override_tolerance=5)
 
-        return [green_health, black_health, grey_health]
+        green_health = vf_cv.CvHelper.count_pixels(
+            "#30c90e", roi, override_tolerance=75
+        )
+        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=5)
+        grey_health = 0
+        white_health = vf_cv.CvHelper.count_pixels(
+            "#FFFFFF", roi, override_tolerance=25
+        )
+        red_health = vf_cv.CvHelper.count_pixels("#FF0000", roi, override_tolerance=150)
+
+        if debug_player_health == True:
+            cv2.imshow(
+                f"{self.frame_height}p g[{green_health}] b[{black_health}] {grey_health} w[{white_health}] r[{red_health}]",
+                roi,
+            )
+            cv2.waitKey()
+        return [green_health, black_health, grey_health, white_health, red_health]
