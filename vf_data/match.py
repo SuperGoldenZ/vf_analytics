@@ -4,6 +4,7 @@ import csv
 import io
 import hashlib
 from datetime import timedelta
+from datetime import datetime
 
 import vf_data.round
 import vf_cv.player_rank
@@ -138,6 +139,7 @@ class Match:
         self.id = self.make_id()
 
         for current_round in self.rounds:
+
             writer.writerow(
                 [
                     self.video_id,
@@ -156,6 +158,9 @@ class Match:
                     current_round.remaining_time,
                     current_round.player1_drink_points_at_start,
                     current_round.player2_drink_points_at_start,
+                    current_round.first_strike_player_num,
+                    round(current_round.max_combos[1] * 100),
+                    round(current_round.max_combos[2] * 100),
                     current_round.get_youtube_url(self.video_id),
                 ]
             )
@@ -163,14 +168,39 @@ class Match:
         return output.getvalue()
 
     def to_youtube_title(self):
-        player1rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
-            self.player1rank
-        ]
-        player2rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
-            self.player2rank
-        ]
+        player1rank_english = None
+        player2rank_english = None
+
+        try:
+            player1rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+                self.player1rank
+            ]
+            player2rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+                self.player2rank
+            ]
+        except Exception as e:
+            player1rank_english = "n/a"
+            player2rank_english = "n/a"
 
         return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} \\"{self.player1ringname}\\" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} \\"{self.player2ringname}\\" - {self.stage}'
+
+    def to_file_title(self):
+        player1rank_english = None
+        player2rank_english = None
+
+        try:
+            player1rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+                self.player1rank
+            ]
+            player2rank_english = vf_cv.player_rank.PlayerRank.ENGLISH_NAMES[
+                self.player2rank
+            ]
+        except Exception as e:
+            player1rank_english = "n/a"
+            player2rank_english = "n/a"
+
+        time_str = datetime.now().strftime("%Y%m%d%H:%M:%S")
+        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} "{self.player1ringname}" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} "{self.player2ringname}" - {self.stage} {time_str}'
 
     def to_ffmpeg_copy_command(self):
         if self.video_url is None or "youtube" in self.video_url:
@@ -191,3 +221,7 @@ class Match:
 
         dest_dir = "/mnt/sdb/Users/alexa/Videos/2024Q4 Open Beta/Matches/"
         return f'ffmpeg -y -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
+
+    def get_video_filename(self):
+        dest_dir = "/mnt/sdb/Users/alexa/Videos/vfes/"
+        return f"{dest_dir}{self.to_file_title()}.mkv"
