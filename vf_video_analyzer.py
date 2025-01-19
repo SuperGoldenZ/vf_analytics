@@ -1,6 +1,8 @@
 import os
+import shutil
+
 from timeit import default_timer as timer
-import queue
+
 import logging
 import argparse
 import pathlib
@@ -13,6 +15,9 @@ import vf_data
 import vf_data.match
 import youtube_helper
 import vf_cv.config
+import time
+
+from obs import ObsHelper
 from datetime import datetime
 
 config: vf_cv.Config = vf_cv.Config.load_config("default.cfg")
@@ -23,6 +28,14 @@ FORCE_SINGLE_MATCH_PER_VIDEO = False
 STOP_ON_FIRST_ERROR = False
 PROCESS_VS_ONLY = False
 PROCESS_SHUN_ONLY = False
+
+obs_helper = None
+try:
+    obs_helper = ObsHelper()
+except Exception as e:
+    print("could not init obs helper")
+    print(e)
+    print(traceback.format_exc())
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -106,6 +119,8 @@ def is_youtube_url(url):
 
 
 def analyze_video(url, cam=-1, process_vs_only=False):
+    global obs_helper
+
     print(f"\n=========\nAnalyze video {url} - START")
     start = timer()
 
@@ -304,7 +319,20 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                     cam=cam,
                     frame_count=frame_count,
                     start_frame=processed,
+                    obs_helper=obs_helper,
                 )  # Extract a frame every 7 seconds
+
+                try:
+                    time.sleep(5)
+                    old_filename = obs_helper.stop_recording()
+                    # os.rename(old_filename, match_analyzer.match.get_video_filename())
+                    shutil.copy(old_filename, match_analyzer.match.get_video_filename())
+                    os.remove(old_filename)
+                except Exception as e:
+                    logger.error("Could not stop recording")
+                    logger.error(e)
+                    logger.error(traceback.format_exc())
+
             except vf_cv.PrematureMatchFinishException as e:
                 error_message = str(e)
                 print(
