@@ -4,13 +4,8 @@ class Round:
     EX = 3
     TO = 4
 
-    VICTORIES = {
-        KO: "KO",
-        RO: "RO",
-        EX: "EX",
-        TO: "TO"
-    }
-    
+    VICTORIES = {KO: "KO", RO: "RO", EX: "EX", TO: "TO"}
+
     def __init__(self):
         self.winning_player_num = 0
         self.remaining_time = 0
@@ -19,9 +14,13 @@ class Round:
         self.seconds = 0
         self.player1_drink_points_at_start = None
         self.player2_drink_points_at_start = None
-        
+        self.first_strike_player_num = None
+
+        # todo make this only two
+        self.max_combos = [0, 0, 0]
+
     def get_victory(self):
         return self.VICTORIES[self.victory]
-    
+
     def get_youtube_url(self, video_id):
         return f"https://www.youtube.com/watch?v={video_id}&t={self.seconds}"
