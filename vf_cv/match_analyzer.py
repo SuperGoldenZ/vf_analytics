@@ -19,7 +19,7 @@ import vf_cv.vs_screen
 import vf_cv.revo
 import vf_cv.video_capture_async
 import vf_cv.config
-
+from obs import ObsHelper
 
 class State(Enum):
     BEFORE_VS = 0
@@ -86,14 +86,11 @@ class MatchAnalyzer:
         self.process_vs_only = process_vs_only
         self.config = config
         self.round_start_count = None
+        self.obs_helper:ObsHelper = None
 
     @profile
     def analyze_next_match(
-        self,
-        video_id="n/a",
-        cam=-1,
-        frame_count=None,
-        start_frame=0,
+        self, video_id="n/a", cam=-1, frame_count=None, start_frame=0, obs_helper:ObsHelper=None
     ):
         self.match = vf_data.Match()
 
@@ -119,6 +116,7 @@ class MatchAnalyzer:
         self.match.video_id = video_id
 
         self.skip_frames = 0
+        self.obs_helper = obs_helper
 
         result = None
 
@@ -136,6 +134,8 @@ class MatchAnalyzer:
             if result is None:
                 time.sleep(5)
                 result = self.get_next_frame(cam, video_id, actual_count)
+
+        self.save_cam_frame("cam_test")
 
         while cam != -1 or (
             ((self.cap.frames_read < end_frame or cam != -1))
@@ -319,7 +319,7 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{self.cap.frames_read}_{suffix}")
-                + ".png"
+                + ".webp"
             )
         else:
             time_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -328,11 +328,13 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{time_str}_{suffix}")
-                + ".png"
+                + ".webp"
             )
 
         if not os.path.isfile(original_out_filename):
-            cv2.imwrite(original_out_filename, self.frame)
+            cv2.imwrite(
+                original_out_filename, self.frame, [cv2.IMWRITE_WEBP_QUALITY, 100]
+            )
 
     @profile
     def process_before_vs(self):
@@ -343,11 +345,6 @@ class MatchAnalyzer:
         if self.vs_screen.is_vs_ver1():
             stage = self.vs_screen.get_stage()
             print(f"\tVS screen got stage {stage}")
-            if stage is None:
-                self.save_cam_frame("invalid_is_vs")
-
-        if self.config.save_all_images:
-            self.save_cam_frame("invalid_is_vs")
 
         if stage is not None:
             formatted_match_id = "%02d" % (self.matches_processed + 1,)
@@ -361,11 +358,20 @@ class MatchAnalyzer:
                 self.match.vs_frame_seconds = 1
 
             print("\tsetting state to vs")
+            try:
+                self.obs_helper.start_recording()
+            except Exception as e:
+                print(f"could not start recording {e}")
+                print(traceback.format_exc())
+                self.logger.error(f"could not start recording {e}")
+                self.logger.error(traceback.format_exc())
+
             self.state = State.VS_SCREEN
             self.logger.debug(
                 f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
             )
         else:
+            #self.save_cam_frame("before_vs_invalid_stage")
             self.count += int(self.frame_rate * self.interval * 40)
             del self.frame
             del self.original_frame
@@ -459,12 +465,12 @@ class MatchAnalyzer:
             if self.process_vs_only:
                 return True
 
-            if self.config.cam_int != -1:
-                self.skip_frames = self.frame_rate * 25
-            else:
-                self.skip_frames = (int)(25 / self.interval)
+            # if self.config.cam_int != -1:
+            # self.skip_frames = self.frame_rate * 25
+            # else:
+            # self.skip_frames = (int)(25 / self.interval)
 
-            self.save_cam_frame("start")
+            # self.save_cam_frame("start")
 
             del self.frame
             del self.original_frame
@@ -481,12 +487,16 @@ class MatchAnalyzer:
 
         try:
             self.time_seconds = self.time_cv.get_time_seconds()
+            if self.time_seconds == "44" or self.time_seconds == "43":
+                self.state = State.BEFORE_ENDROUND
+                self.save_cam_frame("round_start")
+                return
         except vf_cv.UnrecognizeTimeDigitException as e:
-            self.save_cam_frame("unrecognized_time_digit")
-            raise e
+            return
+        except IndexError as e:
+            return
 
-        if not self.skip_beginning_of_round():
-
+            # if not self.skip_beginning_of_round():
             # Will consider round started after not endround (but really beginning of)
             # if (not self.time_cv.is_endround_other(False)):
             self.state = State.BEFORE_ENDROUND
@@ -505,6 +515,24 @@ class MatchAnalyzer:
         # self.winning_round.set_frame(self.frame)
 
         self.winning_frame.set_frame(self.frame)
+        for player_num in range(1, 3):
+            (green, black, grey, white, red) = self.winning_frame.get_player_health(
+                player_num
+            )
+            if self.current_round.first_strike_player_num == None:
+                if red > 0 or white > 0 or black > 0 or grey > 0:
+                    self.current_round.first_strike_player_num = 3 - player_num
+                    self.save_cam_frame(
+                        f"first_strike_p{self.current_round.first_strike_player_num}"
+                    )
+                    break
+            if white > 0 or red > 0:
+                damage_percent = (red + white) / (red + black + green + grey + white)
+                if damage_percent > self.current_round.max_combos[3 - player_num]:
+                    self.current_round.max_combos[3 - player_num] = damage_percent
+                    self.save_cam_frame(
+                        f"damage_for_p{3-player_num}_{round(damage_percent*100)}"
+                    )
 
         possible_to_or_ro = self.winning_frame.is_ringout(False)
 
@@ -752,10 +780,10 @@ class MatchAnalyzer:
         if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
             print(f"\t\tcreating new round {self.current_round.num}")
             self.current_round = vf_data.Round()
-            if self.config.cam_int == -1:
-                self.skip_frames = 10 / self.interval
-            else:
-                self.skip_frames = 10 * self.frame_rate
+            # if self.config.cam_int == -1:
+            # self.skip_frames = 10 / self.interval
+            # else:
+            # self.skip_frames = 10 * self.frame_rate
 
             self.time_matches = 0
             self.time_seconds = None
