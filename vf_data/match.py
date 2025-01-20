@@ -159,8 +159,8 @@ class Match:
                     current_round.player1_drink_points_at_start,
                     current_round.player2_drink_points_at_start,
                     current_round.first_strike_player_num,
-                    round(current_round.max_combos[1] * 100),
-                    round(current_round.max_combos[2] * 100),
+                    round(current_round.max_damage[1]),
+                    round(current_round.max_damage[2] * 100),
                     current_round.get_youtube_url(self.video_id),
                 ]
             )
@@ -179,8 +179,8 @@ class Match:
                 self.player2rank
             ]
         except Exception as e:
-            player1rank_english = "n/a"
-            player2rank_english = "n/a"
+            player1rank_english = "na"
+            player2rank_english = "na"
 
         return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} \\"{self.player1ringname}\\" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} \\"{self.player2ringname}\\" - {self.stage}'
 
@@ -196,8 +196,8 @@ class Match:
                 self.player2rank
             ]
         except Exception as e:
-            player1rank_english = "n/a"
-            player2rank_english = "n/a"
+            player1rank_english = "na"
+            player2rank_english = "na"
 
         time_str = datetime.now().strftime("%Y%m%d%H:%M:%S")
         return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} "{self.player1ringname}" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} "{self.player2ringname}" - {self.stage} {time_str}'
