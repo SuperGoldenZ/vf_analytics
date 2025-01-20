@@ -21,6 +21,7 @@ import vf_cv.video_capture_async
 import vf_cv.config
 from obs import ObsHelper
 
+
 class State(Enum):
     BEFORE_VS = 0
     VS_SCREEN = 1
@@ -86,11 +87,16 @@ class MatchAnalyzer:
         self.process_vs_only = process_vs_only
         self.config = config
         self.round_start_count = None
-        self.obs_helper:ObsHelper = None
+        self.obs_helper: ObsHelper = None
 
     @profile
     def analyze_next_match(
-        self, video_id="n/a", cam=-1, frame_count=None, start_frame=0, obs_helper:ObsHelper=None
+        self,
+        video_id="n/a",
+        cam=-1,
+        frame_count=None,
+        start_frame=0,
+        obs_helper: ObsHelper = None,
     ):
         self.match = vf_data.Match()
 
@@ -371,7 +377,7 @@ class MatchAnalyzer:
                 f"{self.match.video_id} {self.count:13d} - got stage {stage} and setting to vs {self.match.player1character} vs {self.match.player2character}"
             )
         else:
-            #self.save_cam_frame("before_vs_invalid_stage")
+            # self.save_cam_frame("before_vs_invalid_stage")
             self.count += int(self.frame_rate * self.interval * 40)
             del self.frame
             del self.original_frame
@@ -504,6 +510,65 @@ class MatchAnalyzer:
                 f"\tState = BEFORE_ENDROUND (start looking for the end of the round) at {self.time_seconds} seconds"
             )
 
+    def process_damage_data(self, player_num):
+        (green, black, grey, white, red) = self.winning_frame.get_player_health(
+            player_num
+        )
+
+        if white == 0 and red == 0:
+            self.current_round.current_combo_damage[3 - player_num] = 0
+            self.current_round.combo_hits[3 - player_num] = 0
+
+            try:
+                self.obs_helper.hide_text_overlay(3 - player_num)
+            except Exception as e:
+                self.logger.debug(f"OBS exception occured {e}")
+
+        if self.current_round.first_strike_player_num == None:
+            if red > 0 or white > 0 or black > 0 or grey > 0:
+
+                try:
+                    self.obs_helper.first_strike(3 - player_num)
+                except Exception as e:
+                    self.logger.debug(f"OBS exception occured {e}")
+
+                self.current_round.first_strike_player_num = 3 - player_num
+                self.save_cam_frame(
+                    f"first_strike_p{self.current_round.first_strike_player_num}"
+                )
+                return
+
+        if white > 0 or red > 0:
+            damage_percent = (red + white) / (red + black + green + white)
+            damage_percent_int = round(damage_percent * 100)
+
+            if (
+                damage_percent_int
+                > self.current_round.current_combo_damage[3 - player_num] + 2
+            ):
+
+                if damage_percent_int > self.current_round.max_damage[3 - player_num]:
+                    self.current_round.max_damage[3 - player_num] = damage_percent_int
+
+                self.current_round.combo_hits[3 - player_num] = (
+                    self.current_round.combo_hits[3 - player_num] + 1
+                )
+
+                if self.current_round.combo_hits[3 - player_num] >= 2:
+                    try:
+                        self.obs_helper.combo(
+                            playernum=3 - player_num,
+                            hits=self.current_round.combo_hits[3 - player_num],
+                            damage=damage_percent_int,
+                        )
+                    except Exception as e:
+                        self.logger.debug(f"OBS exception occured {e}")
+
+                self.current_round.current_combo_damage[3 - player_num] = (
+                    damage_percent_int
+                )
+                self.save_cam_frame(f"damage_for_p{3-player_num}_{damage_percent_int}")
+
     @profile
     def process_before_endround(self):
         self.old_time_seconds = self.time_seconds
@@ -516,23 +581,7 @@ class MatchAnalyzer:
 
         self.winning_frame.set_frame(self.frame)
         for player_num in range(1, 3):
-            (green, black, grey, white, red) = self.winning_frame.get_player_health(
-                player_num
-            )
-            if self.current_round.first_strike_player_num == None:
-                if red > 0 or white > 0 or black > 0 or grey > 0:
-                    self.current_round.first_strike_player_num = 3 - player_num
-                    self.save_cam_frame(
-                        f"first_strike_p{self.current_round.first_strike_player_num}"
-                    )
-                    break
-            if white > 0 or red > 0:
-                damage_percent = (red + white) / (red + black + green + grey + white)
-                if damage_percent > self.current_round.max_combos[3 - player_num]:
-                    self.current_round.max_combos[3 - player_num] = damage_percent
-                    self.save_cam_frame(
-                        f"damage_for_p{3-player_num}_{round(damage_percent*100)}"
-                    )
+            self.process_damage_data(player_num)
 
         possible_to_or_ro = self.winning_frame.is_ringout(False)
 
@@ -794,8 +843,21 @@ class MatchAnalyzer:
                 self.logger.debug("skipping because of cam")
             self.state = State.BEFORE_FIGHT
             print("\tState = BEFORE_FIGHT (start looking for start of fight)")
+
+            try:
+                self.obs_helper.hide_text_overlay(1)
+                self.obs_helper.hide_text_overlay(2)
+            except Exception as e:
+                self.logger.debug(f"OBS exception occured {e}")
+
         else:
             self.count += 1
+            try:
+                self.obs_helper.hide_text_overlay(1)
+                self.obs_helper.hide_text_overlay(2)
+            except Exception as e:
+                self.logger.debug(f"OBS exception occured {e}")
+
             return True
 
         if self.match.get_round_num() > 5:
