@@ -98,17 +98,14 @@ class WinningRound:
             return 0
 
         lr = vf_cv.CvHelper.count_pixels("#af0614", roi, 10)
-        if self.frame_height == 720 and (lr > 150):
-            print("short circuit return 7206")
+        if self.frame_height == 720 and (lr > 150):            
             return 0
 
-        if self.frame_height == 720 and (lr > 50 and pink > 30):
-            print("short circuit return 7205")
+        if self.frame_height == 720 and (lr > 50 and pink > 30):            
             return 0
 
         dark_blue = vf_cv.CvHelper.count_pixels("#0000c8", roi, 20)
-        if self.frame_height == 720 and dark_blue > 250:
-            print("short circuit return 7204")
+        if self.frame_height == 720 and dark_blue > 250:            
             return 0
 
         darker_blue = vf_cv.CvHelper.count_pixels("#101e5e", roi, 5)
@@ -122,8 +119,7 @@ class WinningRound:
             and dark_blue > 100
             and pink > 50
             and maroon > 40
-        ):
-            print("short circuit return 7202")
+        ):            
             return 0
 
         if (
@@ -132,12 +128,10 @@ class WinningRound:
             and pink > 50
             and maroon > 100
             and maroon_2 > 80
-        ):
-            print("short circuit return 7201")
+        ):            
             return 0
 
-        if self.frame_height == 720 and pink > 70 and maroon > 40 and maroon_2 > 40:
-            print("short circuit return 720")
+        if self.frame_height == 720 and pink > 70 and maroon > 40 and maroon_2 > 40:            
             return 0
 
         other_dark_blue = vf_cv.CvHelper.count_pixels("#1b2ff1", roi, 5)

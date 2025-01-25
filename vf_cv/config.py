@@ -7,7 +7,11 @@ class Config:
         self.save_all_images = False
         self.dont_save_any_images = False
         self.save_video_snippets = False
+        self.auto_record = False
         self.cam_int = -1
+        self.process_streamed_videos = True
+        self.video_download_folder = None
+        self.save_image_format = None
 
     @staticmethod
     def load_config(file_path):
@@ -32,4 +36,13 @@ class Config:
 
         config.cam_int = config_parser.getint("Settings", "cam_int")
 
+        config.auto_record = config_parser.getboolean("OBS", "auto_record")
+
+        config.process_streamed_videos = config_parser.getboolean("YouTube", "process_streamed_videos")
+
+        config.video_download_folder = config_parser.get(
+            "YouTube", "video_download_folder"
+        )
+
+        config.save_image_format = config_parser.get("Settings", "save_image_format")
         return config

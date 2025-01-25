@@ -6,7 +6,9 @@ import hashlib
 from datetime import timedelta
 from datetime import datetime
 
+import vf_data.frame
 import vf_data.round
+import vf_data.win_probability
 import vf_cv.player_rank
 
 
@@ -31,6 +33,8 @@ class Match:
         self.date = None
         self.video_url = None
         self.video_frame_rate = None
+
+        self.win_probability = vf_data.WinProbability()
 
     def got_all_vs_info(self):
         """Returns true if the match has all data that we are expecting to process"""
@@ -138,7 +142,45 @@ class Match:
         self.vs_frame_to_string(writer)
         self.id = self.make_id()
 
-        for current_round in self.rounds:
+        for current_round in self.rounds:            
+            last_p1_health = None
+            last_p2_health = None
+
+            self.win_probability.generate_win_prob_chart_with_single_line(round_number=current_round.num, stage=self.stage, frame_data=current_round.frames)
+
+            for frame in current_round.frames[:-1]:                
+                fr:vf_data.Frame = frame
+
+
+                writer.writerow(
+                [
+                    self.video_id,
+                    self.id,
+                    self.date,
+                    self.stage,
+                    self.player1ringname,
+                    self.player1rank,
+                    self.player1character,
+                    self.player2ringname,
+                    self.player2rank,
+                    self.player2character,
+                    current_round.num,
+                    current_round.winning_player_num,
+                    None,
+                    fr.time_seconds_remaining,
+                    current_round.player1_drink_points_at_start,
+                    current_round.player2_drink_points_at_start,
+                    current_round.first_strike_player_num,
+                    round(current_round.max_damage[1]),
+                    round(current_round.max_damage[2] * 100),
+                    current_round.get_youtube_url(self.video_id),                    
+                    fr.p1info.health,
+                    fr.p2info.health,
+                ]
+                )
+
+                last_p1_health = fr.p1info.health
+                last_p2_health = fr.p2info.health
 
             writer.writerow(
                 [
@@ -161,7 +203,9 @@ class Match:
                     current_round.first_strike_player_num,
                     round(current_round.max_damage[1]),
                     round(current_round.max_damage[2] * 100),
-                    current_round.get_youtube_url(self.video_id),
+                    current_round.get_youtube_url(self.video_id),                    
+                    last_p1_health,
+                    last_p2_health
                 ]
             )
 

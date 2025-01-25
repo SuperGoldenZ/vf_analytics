@@ -1339,7 +1339,7 @@ class Timer:
         original_height = self.frame.shape[0]
         self.resized = False
 
-        if original_height == 1080 or original_height == 720:
+        if original_height == 1080 or original_height == 720:            
             self.frame = cv2.resize(self.frame, (640, 360))
             self.resized = True
 

@@ -23,9 +23,13 @@ class ObsHelper:
         )
         return None
 
-    def set_item_source(self, item_name="P1Text", text="Default"):
-        input_settings = self.cl.get_input_settings(item_name).input_settings
+    def set_item_source(self, item_name="P1Text", text="Default", color = "0x000000FF"):
+        input_settings = self.cl.get_input_settings(item_name).input_settings        
         input_settings["text"] = text
+        input_settings["color"] = int(color,16)
+        input_settings["color1"] = int(color,16)
+        input_settings["color2"] = int(color,16)
+        
         self.cl.set_input_settings(
             name=item_name, settings=input_settings, overlay=True
         )
@@ -39,14 +43,28 @@ class ObsHelper:
         return stop_result.output_path
 
     def first_strike(self, playernum):
-        self.set_item_source(f"P{playernum}Text", "First\nStrike!")
+        self.set_item_source(f"P{playernum}Text", "First\nStrike!", color="0xFF000000")
+        self.set_item_source(f"P{playernum}Text Background", color="0x7DD1D1D1")
         self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
         self.set_item_visible(
             scene_name="vf no text", item_name=f"P{playernum}Text Background"
         )
 
+    def catbas(self, playernum):
+        self.set_item_source(f"P{playernum}Text", "CAT\nBAS", color="0xFF0000FF")
+        self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
+        self.set_item_visible(
+            scene_name="vf no text", item_name=f"P{playernum}Text Background"
+        )        
+
     def combo(self, playernum, hits, damage):
-        self.set_item_source(f"P{playernum}Text", f"{hits} hits\n{damage}%")
+        if (hits == 1):
+            self.set_item_source(f"P{playernum}Text", f"{hits} hit\n{damage}%", color="0xFFFFFFFF")
+            self.set_item_source(f"P{playernum}Text Background", f"{hits} hit\n{damage}%", color="0xFF0000FF")
+        else:
+            self.set_item_source(f"P{playernum}Text", f"{hits} hits\n{damage}%", color="0xFF000000")  
+            self.set_item_source(f"P{playernum}Text Background", f"{hits} hit\n{damage}%", color="0x7DD1D1D1")
+
         self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
         self.set_item_visible(
             scene_name="vf no text", item_name=f"P{playernum}Text Background"
@@ -61,3 +79,13 @@ class ObsHelper:
             item_name=f"P{playernum}Text Background",
             visibility=False,
         )
+
+    def win_probability_visibility(self, visibility):
+        try:
+            self.set_item_visible(
+                scene_name="vf no text",
+                item_name=f"Win Probability",
+                visibility=visibility,
+            )
+        except:
+            return

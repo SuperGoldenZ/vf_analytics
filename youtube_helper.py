@@ -18,12 +18,12 @@ RESOLUTION_360P = "360p"
 STREAM_SEARCH = [    
     #{"resolution": "360p", "fps": 30},
     #{"resolution": "480p", "fps": 30},
-    {"resolution": "720p", "fps": 30},
-    {"resolution": "720p", "fps": 60},
     {"resolution": "1080p", "fps": 30},
-    {"resolution": "360p", "fps": 60},
-    {"resolution": "480p", "fps": 60},    
     {"resolution": "1080p", "fps": 60},
+    {"resolution": "720p", "fps": 30},
+    {"resolution": "720p", "fps": 60},    
+    {"resolution": "360p", "fps": 60},
+    {"resolution": "480p", "fps": 60},        
 ]
 
 STREAM_SEARCH_VS_ONLY = [
@@ -67,9 +67,11 @@ def get_stream(url, youtube_auth=True, process_vs_only=False):
 
 # Step 1: Download the YouTube video
 def download_video(ys, vid):
-    output_path = f"assets/videos/{vid}.mp4"
-    ys.download(filename=output_path)
-    return output_path
+    filename = f"{vid}.mp4"
+    output_path = f"assets/videos/"
+    logger.info(f"Downloading video to {output_path}")
+    result = ys.download(output_path=output_path, filename=filename)
+    return result
 
 
 def get_youtube_video_id(url):

@@ -23,7 +23,6 @@ from datetime import datetime
 config: vf_cv.Config = vf_cv.Config.load_config("default.cfg")
 
 FORCE_DELETE_VIDEO = True
-PROCESS_STREAMED_VIDEOS = True
 FORCE_SINGLE_MATCH_PER_VIDEO = False
 STOP_ON_FIRST_ERROR = False
 PROCESS_VS_ONLY = False
@@ -48,8 +47,6 @@ logging.basicConfig(
 resize_video = False
 youtube_auth = True
 force_append = False
-video_folder_param = None
-
 
 def get_available_devices():
     index = 0
@@ -180,20 +177,18 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             resolution = ys.resolution
             vf_analytics.resolution = resolution
 
-            if video_folder_param is not None:
-                video_folder = video_folder_param
-            else:
-                video_folder = f"/mnt/sdb/Users/alexa/Videos/vf_analytics/{video_id}/"
+            video_folder = f"{config.video_download_folder}"
+            if not os.path.exists(video_folder) and not config.process_streamed_videos:
+                os.makedirs(video_folder, exist_ok=True)
+            
             video_path = (
-                f"/mnt/sdb/Users/alexa/Videos/vf_analytics/{video_id}/video.mp4"
+                f"{config.video_download_folder}{video_id}.mp4"
             )
 
-            if not os.path.exists(video_folder) and not PROCESS_STREAMED_VIDEOS:
-                os.makedirs(video_folder, exist_ok=True)
 
             if (
                 not os.path.isfile(video_path)
-                and not PROCESS_STREAMED_VIDEOS
+                and not config.process_streamed_videos
                 and "youtube" in url
             ):
                 try:
@@ -208,7 +203,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                         # os.rename(temp_path, video_path)
                         return
                     else:
-                        raise Exception(f"{temp_path} not found as expected")
+                        raise Exception(f"{temp_path} not found as expected, cannot rename to {video_path}")
                     # if resolution != "480p" and resize_video:
                     # ffmpeg.input(temp_path).output(
                     # video_path, vf="scale=854:480"
@@ -222,9 +217,9 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                     print(ys)
                     print(repr(e))
                     return None
-            elif not PROCESS_STREAMED_VIDEOS:
+            elif not config.process_streamed_videos:
                 print(
-                    f"Not downloading because exists: {video_path} and process steram {PROCESS_STREAMED_VIDEOS}"
+                    f"Not downloading because exists: {video_path} and process steram {config.process_streamed_videos}"
                 )
         else:
             video_path = f"assets/videos/{video_id}_{resolution}/video.mp4"
@@ -244,7 +239,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
 
     try:
         if video_path is not None:
-            if PROCESS_STREAMED_VIDEOS and saved_video_resolution == 0:
+            if config.process_streamed_videos and saved_video_resolution == 0:
                 # print(f"Processing strem for {ys.url}")
                 cap = vf_cv.video_capture_async.VideoCaptureAsync(ys.url)
             elif os.path.isfile(video_path):
@@ -282,7 +277,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             youtube_video_title = read_video_title(video_id)
 
         if cam == -1:
-            jpg_folder = f"{config.images_output_folder}{video_id}_{resolution}"
+            jpg_folder = f"{config.images_output_folder}{video_id}"
         else:
             time_str = datetime.now().strftime("%Y%m%d%H%M%S")
             jpg_folder = f"{config.images_output_folder}cam{time_str}"
@@ -322,16 +317,17 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                     obs_helper=obs_helper,
                 )  # Extract a frame every 7 seconds
 
-                try:
-                    time.sleep(5)
-                    old_filename = obs_helper.stop_recording()
-                    # os.rename(old_filename, match_analyzer.match.get_video_filename())
-                    shutil.copy(old_filename, match_analyzer.match.get_video_filename())
-                    os.remove(old_filename)
-                except Exception as e:
-                    logger.error("Could not stop recording")
-                    logger.error(e)
-                    logger.error(traceback.format_exc())
+                if config.auto_record:
+                    try:                    
+                        time.sleep(5)                    
+                        old_filename = obs_helper.stop_recording()
+                        # os.rename(old_filename, match_analyzer.match.get_video_filename())
+                        shutil.copy(old_filename, match_analyzer.match.get_video_filename())
+                        os.remove(old_filename)
+                    except Exception as e:
+                        logger.error("Could not stop recording")
+                        logger.error(e)
+                        logger.error(traceback.format_exc())
 
             except vf_cv.PrematureMatchFinishException as e:
                 error_message = str(e)

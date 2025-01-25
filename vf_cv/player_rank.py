@@ -99,7 +99,7 @@ class PlayerRank:
         40: "Lionheart",
         41: "Dragonfang",
         42: "God Of Thunder",
-        43: "God Of Flame",
+        43: "Magmalord",
         44: "Searing Sky God",
         46: "Magmalord",
     }
