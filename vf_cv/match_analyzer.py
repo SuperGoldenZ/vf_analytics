@@ -7,7 +7,6 @@ from enum import Enum
 from datetime import datetime
 import cv2
 import threading
-import subprocess
 
 from line_profiler import profile
 
@@ -547,7 +546,7 @@ class MatchAnalyzer:
         if self.current_round.first_strike_player_num == None:
             if red > 0 or white > 0 or black > 0 or grey > 0:
 
-                try:                    
+                try:
                     self.obs_helper.first_strike(3 - player_num)
                     self.obs_helper.win_probability_visibility(True)
                 except Exception as e:
@@ -628,9 +627,9 @@ class MatchAnalyzer:
 
         if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
             try:
-                frames_read = len(self.current_round.frames)+1
+                frames_read = len(self.current_round.frames) + 1
 
-                if (hasattr(self.cap, "frames_read")):
+                if hasattr(self.cap, "frames_read"):
                     frames_read = self.cap.frames_read
 
                 image_filename = (
@@ -640,6 +639,8 @@ class MatchAnalyzer:
                         frame_data=self.current_round.frames,
                         frame_num=frames_read,
                         save_to_file=True,
+                        p1character=self.match.player1character,
+                        p2character=self.match.player2character,
                     )
                 )
             except Exception as e:
@@ -665,10 +666,10 @@ class MatchAnalyzer:
 
             return False
 
-        if  not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:            
-            frames_read = len(self.current_round.frames)+1
-            
-            if (hasattr(self.cap, "frames_read")):
+        if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
+            frames_read = len(self.current_round.frames) + 1
+
+            if hasattr(self.cap, "frames_read"):
                 frames_read = self.cap.frames_read
 
             p1health = self.winning_frame.get_player_health_percent(1)
@@ -698,7 +699,7 @@ class MatchAnalyzer:
                         self.old_time_seconds = self.time_cv.get_time_seconds()
                     except vf_cv.UnrecognizeTimeDigitException as e:
                         self.save_cam_frame("unrecognized_time_digit")
-                        raise e
+
                     self.time_seconds = self.old_time_seconds
                     print(f"\t\tset old time seconds {self.old_time_seconds}")
                     self.count += 10
@@ -906,11 +907,27 @@ class MatchAnalyzer:
             print(f"\t\tcreating new round {self.current_round.num}")
             old_round_frames = len(self.current_round.frames)
 
+            try:
+                image_filename = (
+                    self.win_probability.generate_win_prob_chart_with_single_line(
+                        round_number=(self.match.get_round_num() - 1),
+                        stage=self.match.stage,
+                        frame_data=self.current_round.frames,
+                        frame_num=0,
+                        save_to_file=True,
+                        p1character=self.match.player1character,
+                        p2character=self.match.player2character,
+                        winner_player_number=self.current_round.winning_player_num,
+                    )
+                )
+            except:
+                self.logger.error("could not save with winner")
+
             self.current_round = vf_data.Round()
 
             self.hide_win_prob_later(3)
 
-            if (hasattr(self.cap, "frames_read")):
+            if hasattr(self.cap, "frames_read"):
                 self.current_round.start_frame_num = self.cap.frames_read
             else:
                 self.current_round.start_frame_num = old_round_frames
@@ -1018,14 +1035,14 @@ class MatchAnalyzer:
     def remaining_video(self):
         return self.cap.queue.qsize() > 0
 
-
     def hide_win_prob_later(self, delay):
-        def target():            
+        def target():
             time.sleep(delay)  # Wait for the specified delay
-            self.obs_helper.win_probability_visibility(False)            
+            self.obs_helper.win_probability_visibility(False)
 
         thread = threading.Thread(target=target)
         thread.start()
+
 
 class PrematureMatchFinishException(Exception):
     pass
