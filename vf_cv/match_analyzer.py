@@ -1040,7 +1040,8 @@ class MatchAnalyzer:
     def hide_win_prob_later(self, delay):
         def target():
             time.sleep(delay)  # Wait for the specified delay
-            self.obs_helper.win_probability_visibility(False)
+            if (self.obs_helper is not None):
+                self.obs_helper.win_probability_visibility(False)
 
         thread = threading.Thread(target=target)
         thread.start()
