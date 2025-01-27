@@ -49,7 +49,7 @@ class Config:
 
         config.save_image_format = config_parser.get("Settings", "save_image_format")
 
-        config.save_win_probability_image = config_parser.get(
+        config.save_win_probability_image = config_parser.getboolean(
             "Settings", "save_win_probability_image"
         )
         return config
