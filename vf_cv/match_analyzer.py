@@ -632,17 +632,18 @@ class MatchAnalyzer:
                 if hasattr(self.cap, "frames_read"):
                     frames_read = self.cap.frames_read
 
-                image_filename = (
-                    self.win_probability.generate_win_prob_chart_with_single_line(
-                        round_number=self.match.get_round_num(),
-                        stage=self.match.stage,
-                        frame_data=self.current_round.frames,
-                        frame_num=frames_read,
-                        save_to_file=True,
-                        p1character=self.match.player1character,
-                        p2character=self.match.player2character,
+                if self.config.save_win_probability_image:
+                    image_filename = (
+                        self.win_probability.generate_win_prob_chart_with_single_line(
+                            round_number=self.match.get_round_num(),
+                            stage=self.match.stage,
+                            frame_data=self.current_round.frames,
+                            frame_num=frames_read,
+                            save_to_file=True,
+                            p1character=self.match.player1character,
+                            p2character=self.match.player2character,
+                        )
                     )
-                )
             except Exception as e:
                 print(e)
                 repr(e)
@@ -908,18 +909,19 @@ class MatchAnalyzer:
             old_round_frames = len(self.current_round.frames)
 
             try:
-                image_filename = (
-                    self.win_probability.generate_win_prob_chart_with_single_line(
-                        round_number=(self.match.get_round_num() - 1),
-                        stage=self.match.stage,
-                        frame_data=self.current_round.frames,
-                        frame_num=0,
-                        save_to_file=True,
-                        p1character=self.match.player1character,
-                        p2character=self.match.player2character,
-                        winner_player_number=self.current_round.winning_player_num,
+                if self.config.save_win_probability_image:
+                    image_filename = (
+                        self.win_probability.generate_win_prob_chart_with_single_line(
+                            round_number=(self.match.get_round_num() - 1),
+                            stage=self.match.stage,
+                            frame_data=self.current_round.frames,
+                            frame_num=0,
+                            save_to_file=True,
+                            p1character=self.match.player1character,
+                            p2character=self.match.player2character,
+                            winner_player_number=self.current_round.winning_player_num,
+                        )
                     )
-                )
             except:
                 self.logger.error("could not save with winner")
 
