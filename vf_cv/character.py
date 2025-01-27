@@ -259,7 +259,7 @@ class Character:
 
             text = pytesseract.image_to_string(
                 thresholded_image,
-                config="--psm 7 -c tessedit_char_whitelist=ABCDEFGIJKLMNOPQRSTUVWXYZ\ abcdefghijklmnopqrstuvwxyz",
+                config="--psm 7 -c tessedit_char_whitelist=ABCDEFGIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\ ",
             ).strip()
 
             if debug_character:
