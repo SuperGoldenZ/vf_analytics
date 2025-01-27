@@ -136,51 +136,73 @@ class Match:
 
         return m.hexdigest()
 
+    def get_winning_player_num(self):
+        result = 0
+        player_wins_so_far = [0, 0]
+        for current_round in self.rounds:
+            player_wins_so_far[current_round.winning_player_num - 1] += 1
+
+        if player_wins_so_far[0] == 3:
+            result = 1
+        elif player_wins_so_far[1] == 3:
+            result = 2
+
+        return result
+
     def __str__(self):
         output = io.StringIO()
         writer = csv.writer(output, quoting=csv.QUOTE_NONE, escapechar="\\")
         self.vs_frame_to_string(writer)
         self.id = self.make_id()
 
-        for current_round in self.rounds:            
+        player_wins_so_far = [0, 0]
+        winning_player_num = self.get_winning_player_num()
+
+        for current_round in self.rounds:
             last_p1_health = None
             last_p2_health = None
 
-            self.win_probability.generate_win_prob_chart_with_single_line(round_number=current_round.num, stage=self.stage, frame_data=current_round.frames)
+            self.win_probability.generate_win_prob_chart_with_single_line(
+                round_number=current_round.num,
+                stage=self.stage,
+                frame_data=current_round.frames,
+            )
 
-            for frame in current_round.frames[:-1]:                
-                fr:vf_data.Frame = frame
-
+            for frame in current_round.frames[:-1]:
+                fr: vf_data.Frame = frame
 
                 writer.writerow(
-                [
-                    self.video_id,
-                    self.id,
-                    self.date,
-                    self.stage,
-                    self.player1ringname,
-                    self.player1rank,
-                    self.player1character,
-                    self.player2ringname,
-                    self.player2rank,
-                    self.player2character,
-                    current_round.num,
-                    current_round.winning_player_num,
-                    None,
-                    fr.time_seconds_remaining,
-                    current_round.player1_drink_points_at_start,
-                    current_round.player2_drink_points_at_start,
-                    current_round.first_strike_player_num,
-                    round(current_round.max_damage[1]),
-                    round(current_round.max_damage[2] * 100),
-                    current_round.get_youtube_url(self.video_id),                    
-                    fr.p1info.health,
-                    fr.p2info.health,
-                ]
+                    [
+                        self.video_id,
+                        self.id,
+                        self.date,
+                        self.stage,
+                        self.player1ringname,
+                        self.player1rank,
+                        self.player1character,
+                        self.player2ringname,
+                        self.player2rank,
+                        self.player2character,
+                        current_round.num,
+                        current_round.winning_player_num,
+                        None,
+                        fr.time_seconds_remaining,
+                        current_round.player1_drink_points_at_start,
+                        current_round.player2_drink_points_at_start,
+                        current_round.first_strike_player_num,
+                        fr.p1info.health,
+                        fr.p2info.health,
+                        player_wins_so_far[0],
+                        player_wins_so_far[1],
+                        winning_player_num,
+                        current_round.get_youtube_url(self.video_id),
+                    ]
                 )
 
                 last_p1_health = fr.p1info.health
                 last_p2_health = fr.p2info.health
+
+            player_wins_so_far[current_round.winning_player_num - 1] += 1
 
             writer.writerow(
                 [
@@ -201,11 +223,12 @@ class Match:
                     current_round.player1_drink_points_at_start,
                     current_round.player2_drink_points_at_start,
                     current_round.first_strike_player_num,
-                    round(current_round.max_damage[1]),
-                    round(current_round.max_damage[2] * 100),
-                    current_round.get_youtube_url(self.video_id),                    
                     last_p1_health,
-                    last_p2_health
+                    last_p2_health,
+                    player_wins_so_far[0],
+                    player_wins_so_far[1],
+                    winning_player_num,
+                    current_round.get_youtube_url(self.video_id),
                 ]
             )
 
