@@ -6,7 +6,7 @@ import time
 from enum import Enum
 from datetime import datetime
 import cv2
-
+import threading
 
 from line_profiler import profile
 
@@ -19,6 +19,10 @@ import vf_cv.vs_screen
 import vf_cv.revo
 import vf_cv.video_capture_async
 import vf_cv.config
+
+
+from vf_data.win_probability import WinProbability
+
 from obs import ObsHelper
 
 
@@ -87,7 +91,9 @@ class MatchAnalyzer:
         self.process_vs_only = process_vs_only
         self.config = config
         self.round_start_count = None
-        self.obs_helper: ObsHelper = None
+        self.obs_helper = None
+        self.win_probability: WinProbability = WinProbability()
+        self.start_time = None
 
     @profile
     def analyze_next_match(
@@ -96,7 +102,7 @@ class MatchAnalyzer:
         cam=-1,
         frame_count=None,
         start_frame=0,
-        obs_helper: ObsHelper = None,
+        obs_helper=None,
     ):
         self.match = vf_data.Match()
 
@@ -142,17 +148,23 @@ class MatchAnalyzer:
                 result = self.get_next_frame(cam, video_id, actual_count)
 
         self.save_cam_frame("cam_test")
-
+        self.start_time = time.time()
         while cam != -1 or (
             ((self.cap.frames_read < end_frame or cam != -1))
             and self.frame is not None
             and result is not None
         ):
+            if (time.time() - self.start_time) > 60 * 6:
+                raise PrematureMatchFinishException(
+                    f"Too much time {(time.time() - self.start_time)} has passed"
+                )
+
             actual_count = result
 
             debug_beta = False
-            if self.state != State.BEFORE_VS and vf_cv.revo.REVO.is_beta_screen(
-                self.frame, debug_beta
+            if (
+                self.state != State.BEFORE_VS
+                and vf_cv.revo.REVO.is_virtua_fighter_screen(self.frame, debug_beta)
             ):
                 self.save_cam_frame("revo")
                 raise PrematureMatchFinishException("Found Revo BETA Frame")
@@ -325,7 +337,7 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{self.cap.frames_read}_{suffix}")
-                + ".webp"
+                + f".{self.config.save_image_format}"
             )
         else:
             time_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -334,13 +346,16 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{time_str}_{suffix}")
-                + ".webp"
+                + f".{self.config.save_image_format}"
             )
 
         if not os.path.isfile(original_out_filename):
-            cv2.imwrite(
-                original_out_filename, self.frame, [cv2.IMWRITE_WEBP_QUALITY, 100]
-            )
+            if self.config.save_image_format == "webp":
+                cv2.imwrite(
+                    original_out_filename, self.frame, [cv2.IMWRITE_WEBP_QUALITY, 100]
+                )
+            else:
+                cv2.imwrite(original_out_filename, self.frame)
 
     @profile
     def process_before_vs(self):
@@ -364,13 +379,14 @@ class MatchAnalyzer:
                 self.match.vs_frame_seconds = 1
 
             print("\tsetting state to vs")
-            try:
-                self.obs_helper.start_recording()
-            except Exception as e:
-                print(f"could not start recording {e}")
-                print(traceback.format_exc())
-                self.logger.error(f"could not start recording {e}")
-                self.logger.error(traceback.format_exc())
+            if self.config.auto_record:
+                try:
+                    self.obs_helper.start_recording()
+                except Exception as e:
+                    print(f"could not start recording {e}")
+                    print(traceback.format_exc())
+                    self.logger.error(f"could not start recording {e}")
+                    self.logger.error(traceback.format_exc())
 
             self.state = State.VS_SCREEN
             self.logger.debug(
@@ -493,13 +509,23 @@ class MatchAnalyzer:
 
         try:
             self.time_seconds = self.time_cv.get_time_seconds()
-            if self.time_seconds == "44" or self.time_seconds == "43":
+            if (
+                self.time_seconds == "44"
+                or self.time_seconds == "43"
+                or self.time_seconds == "42"
+                or self.time_seconds == "41"
+            ):
                 self.state = State.BEFORE_ENDROUND
                 self.save_cam_frame("round_start")
                 return
-        except vf_cv.UnrecognizeTimeDigitException as e:
+            else:
+                if self.config.save_all_images:
+                    self.save_cam_frame(f"before_fight_{self.time_seconds}")
+        except vf_cv.InvalidTimeException:
             return
-        except IndexError as e:
+        except vf_cv.UnrecognizeTimeDigitException:
+            return
+        except IndexError:
             return
 
             # if not self.skip_beginning_of_round():
@@ -523,14 +549,21 @@ class MatchAnalyzer:
                 self.obs_helper.hide_text_overlay(3 - player_num)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
+                print(f"OBS exception occured {e}")
+                print(traceback.format_exc())
 
         if self.current_round.first_strike_player_num == None:
             if red > 0 or white > 0 or black > 0 or grey > 0:
 
                 try:
                     self.obs_helper.first_strike(3 - player_num)
+                    self.obs_helper.win_probability_visibility(True)
                 except Exception as e:
                     self.logger.debug(f"OBS exception occured {e}")
+                    self.logger.debug(traceback.format_exc())
+                    print(f"OBS exception occured {e}")
+                    print(traceback.format_exc())
 
                 self.current_round.first_strike_player_num = 3 - player_num
                 self.save_cam_frame(
@@ -546,7 +579,6 @@ class MatchAnalyzer:
                 damage_percent_int
                 > self.current_round.current_combo_damage[3 - player_num] + 2
             ):
-
                 if damage_percent_int > self.current_round.max_damage[3 - player_num]:
                     self.current_round.max_damage[3 - player_num] = damage_percent_int
 
@@ -554,20 +586,30 @@ class MatchAnalyzer:
                     self.current_round.combo_hits[3 - player_num] + 1
                 )
 
-                if self.current_round.combo_hits[3 - player_num] >= 2:
+                if self.current_round.combo_hits[3 - player_num] >= 2 or (
+                    damage_percent_int >= 34
+                    and self.current_round.combo_hits[3 - player_num] == 1
+                ):
                     try:
                         self.obs_helper.combo(
                             playernum=3 - player_num,
                             hits=self.current_round.combo_hits[3 - player_num],
                             damage=damage_percent_int,
                         )
+
+                        # Hide other players overlay just in case
+                        self.obs_helper.hide_text_overlay(playernum=player_num)
                     except Exception as e:
                         self.logger.debug(f"OBS exception occured {e}")
+                        self.logger.debug(traceback.format_exc())
+                        print(f"OBS exception occured {e}")
+                        print(traceback.format_exc())
 
                 self.current_round.current_combo_damage[3 - player_num] = (
                     damage_percent_int
                 )
-                self.save_cam_frame(f"damage_for_p{3-player_num}_{damage_percent_int}")
+
+                debug_string = f"p{3-player_num}_{self.current_round.combo_hits[3 - player_num]}_hits_{damage_percent_int}_dmg"
 
     @profile
     def process_before_endround(self):
@@ -584,10 +626,48 @@ class MatchAnalyzer:
             self.process_damage_data(player_num)
 
         possible_to_or_ro = self.winning_frame.is_ringout(False)
+        is_endround_other = self.time_cv.is_endround_other()
+
+        time_seconds = None
+
+        try:
+            time_seconds = self.time_cv.get_time_seconds()
+        except (
+            vf_cv.UnexpectedTimeException,
+            vf_cv.InvalidTimeException,
+            vf_cv.UnrecognizeTimeDigitException,
+        ) as e:
+            self.save_cam_frame("bad_time")
+            self.logger.debug(f"bad_time {e}")
+
+        if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
+            try:
+                frames_read = len(self.current_round.frames) + 1
+
+                if hasattr(self.cap, "frames_read"):
+                    frames_read = self.cap.frames_read
+
+                if self.config.save_win_probability_image:
+                    image_filename = (
+                        self.win_probability.generate_win_prob_chart_with_single_line(
+                            round_number=self.match.get_round_num(),
+                            stage=self.match.stage,
+                            frame_data=self.current_round.frames,
+                            frame_num=frames_read,
+                            save_to_file=True,
+                            p1character=self.match.player1character,
+                            p2character=self.match.player2character,
+                        )
+                    )
+            except Exception as e:
+                print(e)
+                repr(e)
+                self.logger.error("Could not show image")
 
         if possible_to_or_ro:
             try:
-                self.old_time_seconds = self.time_cv.get_time_seconds()
+                # self.old_time_seconds = self.time_cv.get_time_seconds()
+                self.old_time_seconds = time_seconds
             except vf_cv.UnrecognizeTimeDigitException as e:
                 self.save_cam_frame("unrecognized_time_digit")
                 raise e
@@ -602,6 +682,21 @@ class MatchAnalyzer:
 
             return False
 
+        if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
+            frames_read = len(self.current_round.frames) + 1
+
+            if hasattr(self.cap, "frames_read"):
+                frames_read = self.cap.frames_read
+
+            p1health = self.winning_frame.get_player_health_percent(1)
+            p2health = self.winning_frame.get_player_health_percent(2)
+            self.current_round.add_frame(
+                frame_id=frames_read,
+                p1health=p1health,
+                p2health=p2health,
+                time_remaining_seconds=time_seconds,
+            )
+
         if self.config.save_all_images:
             self.save_cam_frame("process_before_endround_many")
         # check green text area for possbile ringout and timeout
@@ -614,15 +709,13 @@ class MatchAnalyzer:
         # print(f"\tprocessing fight {self.cap.frames_read - self.round_start_count}  {(self.cap.frames_read - self.round_start_count) / self.frame_rate}")
         try:
             debug_endround_other = False
-            if not possible_to_or_ro and self.time_cv.is_endround_other(
-                debug_endround_other
-            ):
+            if not possible_to_or_ro and is_endround_other:
                 if self.old_time_seconds is None:
                     try:
                         self.old_time_seconds = self.time_cv.get_time_seconds()
                     except vf_cv.UnrecognizeTimeDigitException as e:
                         self.save_cam_frame("unrecognized_time_digit")
-                        raise e
+
                     self.time_seconds = self.old_time_seconds
                     print(f"\t\tset old time seconds {self.old_time_seconds}")
                     self.count += 10
@@ -828,11 +921,33 @@ class MatchAnalyzer:
 
         if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
             print(f"\t\tcreating new round {self.current_round.num}")
+            old_round_frames = len(self.current_round.frames)
+
+            try:
+                if self.config.save_win_probability_image:
+                    image_filename = (
+                        self.win_probability.generate_win_prob_chart_with_single_line(
+                            round_number=(self.match.get_round_num() - 1),
+                            stage=self.match.stage,
+                            frame_data=self.current_round.frames,
+                            frame_num=0,
+                            save_to_file=True,
+                            p1character=self.match.player1character,
+                            p2character=self.match.player2character,
+                            winner_player_number=self.current_round.winning_player_num,
+                        )
+                    )
+            except:
+                self.logger.error("could not save with winner")
+
             self.current_round = vf_data.Round()
-            # if self.config.cam_int == -1:
-            # self.skip_frames = 10 / self.interval
-            # else:
-            # self.skip_frames = 10 * self.frame_rate
+
+            self.hide_win_prob_later(3)
+
+            if hasattr(self.cap, "frames_read"):
+                self.current_round.start_frame_num = self.cap.frames_read
+            else:
+                self.current_round.start_frame_num = old_round_frames
 
             self.time_matches = 0
             self.time_seconds = None
@@ -849,14 +964,16 @@ class MatchAnalyzer:
                 self.obs_helper.hide_text_overlay(2)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
-
+                self.logger.debug(traceback.format_exc())
         else:
             self.count += 1
             try:
                 self.obs_helper.hide_text_overlay(1)
                 self.obs_helper.hide_text_overlay(2)
+                self.hide_win_prob_later(5)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
 
             return True
 
@@ -935,6 +1052,15 @@ class MatchAnalyzer:
 
     def remaining_video(self):
         return self.cap.queue.qsize() > 0
+
+    def hide_win_prob_later(self, delay):
+        def target():
+            time.sleep(delay)  # Wait for the specified delay
+            if self.obs_helper is not None:
+                self.obs_helper.win_probability_visibility(False)
+
+        thread = threading.Thread(target=target)
+        thread.start()
 
 
 class PrematureMatchFinishException(Exception):

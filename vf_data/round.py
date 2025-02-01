@@ -1,3 +1,9 @@
+"""Contains information about a VF round"""
+
+from vf_data.frame import Frame
+from vf_data.frame_player_info import FramePlayerInfo
+
+
 class Round:
     KO = 1
     RO = 2
@@ -17,10 +23,31 @@ class Round:
         self.first_strike_player_num = None
 
         # todo make this only two
-        self.max_combos = [0, 0, 0]
+        self.current_combo_damage = [0, 0, 0]
+        self.combo_hits = [0, 0, 0]
+        self.max_damage = [0, 0, 0]
+
+        self.frames = []
+
+        self.start_frame_num = 0
 
     def get_victory(self):
         return self.VICTORIES[self.victory]
 
     def get_youtube_url(self, video_id):
         return f"https://www.youtube.com/watch?v={video_id}&t={self.seconds}"
+
+    def add_frame(self, frame_id, p1health, p2health, time_remaining_seconds):
+        p1info = FramePlayerInfo()
+        p1info.health = p1health
+
+        p2info = FramePlayerInfo()
+        p2info.health = p2health
+
+        frame = Frame(frame_id=frame_id)
+        frame.p1info = p1info
+        frame.p2info = p2info
+        #frame.time_seconds_remaining = self.start_frame_num-frame_id
+        frame.time_seconds_remaining = time_remaining_seconds
+
+        self.frames.append(frame)

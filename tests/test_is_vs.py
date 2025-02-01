@@ -1,6 +1,18 @@
 import pytest
 import cv2
 import vf_cv.vs_screen
+import vf_cv.revo
+
+test_data = ["assets/test_images/1080p/virtua_fighter.png"]
+
+
+@pytest.mark.parametrize("image_filename", test_data)
+def test_is_vf(image_filename):
+    vs_image = cv2.imread(image_filename)
+    result = vf_cv.REVO.is_virtua_fighter_screen(vs_image, True)
+
+    assert result == True
+
 
 test_data = [
     ["assets/test_images/720p/stage/statues_01.png", "Statues"],
@@ -76,9 +88,9 @@ def test_is_vs(image_filename, expected_stage_name):
 
     DEBUG = False
     vs_screen = vf_cv.vs_screen.VsScreen()
-    
+
     vs_screen.set_frame(vs_image)
-    
+
     actual_is_vs = vs_screen.is_vs_ver1(DEBUG)
     expected_actual_vs = expected_stage_name is not None
     assert (

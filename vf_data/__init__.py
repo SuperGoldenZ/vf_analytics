@@ -10,3 +10,5 @@ __js_url__ = None
 
 from vf_data.round import Round
 from vf_data.match import Match
+from vf_data.frame import Frame
+from vf_data.win_probability import WinProbability

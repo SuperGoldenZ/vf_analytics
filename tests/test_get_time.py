@@ -34,6 +34,7 @@ def test_other(image_filename):
 
 
 test_data_720p = [
+    [f"{DIR}1080p/time/png/44.png", "44", 1080, True],
     [f"{DIR}1080p/time/webp/19_02.webp", "19", 1080, False],
     [f"{DIR}1080p/time/webp/19_01.webp", "19", 1080, False],
     [f"{DIR}1080p/time/webp/28_45.webp", "28", 1080, False],

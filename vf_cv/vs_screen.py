@@ -298,7 +298,7 @@ class VsScreen:
 
         imagem = cv2.bitwise_not(all_white_roi)
 
-        text = pytesseract.image_to_string(imagem, config="--psm 6")
+        text = pytesseract.image_to_string(imagem, config="--psm 7")
         text = str.replace(text, "\n\x0c", "").upper()
 
         if debug_stage:
@@ -307,43 +307,46 @@ class VsScreen:
             cv2.imshow(f"{height} original roi", roi)
             cv2.waitKey()
 
-        if text == "WATER FALLS":
+        if "WATER FALLS" in text:
             return "Waterfalls"
 
-        if text == "ISLAND":
+        if "ISLAND" in text:
             return "Island"
 
-        if text == "SSFAND":
+        if "SSFAND" in text:
             return "Island"
 
-        if text == "TAMPIA":
+        if "TAMPIA" in text:
             return "Temple"
 
         if len(text) == 6 and "LAND" in text:
             return "Island"
 
-        if "ARENA" == text:
+        if "ARENA" in text:
             return "Arena"
 
-        if "PALCE" == text:
+        if "PALCE" in text:
             return "Palace"
 
-        if "AURORA" == text:
+        if "AURORA" in text:
             return "Aurora"
 
-        if "TEMPLE" == text:
+        if "TEMPLE" in text:
             return "Temple"
 
-        if "SUMO RING" == text:
+        if "SUMO" in text:
             return "Sumo Ring"
 
-        if "RUINS" == text:
+        if "SUMO RING" in text:
+            return "Sumo Ring"
+
+        if "RUINS" in text:
             return "Ruins"
 
         if "STATUES" in text or "STAT" in text:
             return "Statues"
 
-        if "GREAT WALL" == text:
+        if "GREAT WALL" in text:
             return "Great Wall"
 
         if "WALL" in text:
@@ -352,10 +355,10 @@ class VsScreen:
         if "CITY" in text:
             return "City"
 
-        if "TERRACE" == text:
+        if "TERRACE" in text:
             return "Terrace"
 
-        if "RIVER" == text:
+        if "RIVER" in text:
             return "River"
 
         if "FALL" in text:
@@ -376,13 +379,13 @@ class VsScreen:
         if "BROKEN" in text or "House" in text:
             return "Broken House"
 
-        if "GENESIS" == text:
+        if "GENESIS" in text:
             return "Genesis"
 
-        if "SHRINE" == text:
+        if "SHRINE" in text:
             return "Shrine"
 
-        if text == "TRAINING ROOM":
+        if "TRAINING ROOM" in text:
             return "Training Room"
 
         if "SNOW" in text:
@@ -397,4 +400,5 @@ class VsScreen:
         if "RUINS" in text:
             return "Ruins"
 
+        print(f"unrecognized stage {text}")
         return None
