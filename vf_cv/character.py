@@ -259,11 +259,13 @@ class Character:
 
             text = pytesseract.image_to_string(
                 thresholded_image,
-                config="--psm 7 -c tessedit_char_whitelist=ABCDEFGIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\ ",
+                config="--psm 7 -c tessedit_char_whitelist=ABCDEFGIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ",
             ).strip()
 
             if debug_character:
                 print(f"got text [{text}]")
+            if "Rafale" in text:
+                return "Lion"
             if "Ejleen" in text:
                 return "Eileen"
             if "Tagan Kirin" in text:
