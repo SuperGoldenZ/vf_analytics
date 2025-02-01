@@ -8,7 +8,6 @@ from datetime import datetime
 
 import vf_data.frame
 import vf_data.round
-import vf_data.win_probability
 import vf_cv.player_rank
 
 
@@ -33,8 +32,6 @@ class Match:
         self.date = None
         self.video_url = None
         self.video_frame_rate = None
-
-        self.win_probability = vf_data.WinProbability()
 
     def got_all_vs_info(self):
         """Returns true if the match has all data that we are expecting to process"""
@@ -161,12 +158,6 @@ class Match:
         for current_round in self.rounds:
             last_p1_health = None
             last_p2_health = None
-
-            self.win_probability.generate_win_prob_chart_with_single_line(
-                round_number=current_round.num,
-                stage=self.stage,
-                frame_data=current_round.frames,
-            )
 
             for frame in current_round.frames[:-1]:
                 fr: vf_data.Frame = frame
