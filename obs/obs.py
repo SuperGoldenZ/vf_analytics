@@ -1,18 +1,18 @@
 import obsws_python as obs
+import traceback
 
 
 class ObsHelper:
-    SECRET = "aYohxiPj0IIS58Nt"
+    SECRET = "iiXm59Yq0HOTSvYj"
+    SCENE_NAME = "REVO"
 
     def __init__(self):
         self.cl = obs.ReqClient(
-            host="localhost", port=4455, password=self.SECRET, timeout=3
+            host="192.168.56.1", port=4455, password=self.SECRET, timeout=3
         )
 
-    def set_item_visible(
-        self, visibility=True, scene_name="vf no text", item_name="P1Text"
-    ):
-        scene_items = self.cl.get_scene_item_list("vf no text").scene_items
+    def set_item_visible(self, visibility=True, scene_name=ObsHelper.SCENE_NAME, item_name="P1Text"):
+        scene_items = self.cl.get_scene_item_list(scene_name).scene_items
         item_id = None
         for item in scene_items:
             if item["sourceName"] == item_name:
@@ -23,13 +23,13 @@ class ObsHelper:
         )
         return None
 
-    def set_item_source(self, item_name="P1Text", text="Default", color = "0x000000FF"):
-        input_settings = self.cl.get_input_settings(item_name).input_settings        
+    def set_item_source(self, item_name="P1Text", text="Default", color="0x000000FF"):
+        input_settings = self.cl.get_input_settings(item_name).input_settings
         input_settings["text"] = text
-        input_settings["color"] = int(color,16)
-        input_settings["color1"] = int(color,16)
-        input_settings["color2"] = int(color,16)
-        
+        input_settings["color"] = int(color, 16)
+        input_settings["color1"] = int(color, 16)
+        input_settings["color2"] = int(color, 16)
+
         self.cl.set_input_settings(
             name=item_name, settings=input_settings, overlay=True
         )
@@ -45,37 +45,49 @@ class ObsHelper:
     def first_strike(self, playernum):
         self.set_item_source(f"P{playernum}Text", "First\nStrike!", color="0xFF000000")
         self.set_item_source(f"P{playernum}Text Background", color="0x7DD1D1D1")
-        self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
+        self.set_item_visible(scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text")
         self.set_item_visible(
-            scene_name="vf no text", item_name=f"P{playernum}Text Background"
+            scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text Background"
         )
 
     def catbas(self, playernum):
         self.set_item_source(f"P{playernum}Text", "CAT\nBAS", color="0xFF0000FF")
-        self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
+        self.set_item_visible(scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text")
         self.set_item_visible(
-            scene_name="vf no text", item_name=f"P{playernum}Text Background"
-        )        
+            scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text Background"
+        )
 
     def combo(self, playernum, hits, damage):
-        if (hits == 1):
-            self.set_item_source(f"P{playernum}Text", f"{hits} hit\n{damage}%", color="0xFFFFFFFF")
-            self.set_item_source(f"P{playernum}Text Background", f"{hits} hit\n{damage}%", color="0xFF0000FF")
+        if hits == 1:
+            self.set_item_source(
+                f"P{playernum}Text", f"{hits} hit\n{damage}%", color="0xFFFFFFFF"
+            )
+            self.set_item_source(
+                f"P{playernum}Text Background",
+                f"{hits} hit\n{damage}%",
+                color="0xFF0000FF",
+            )
         else:
-            self.set_item_source(f"P{playernum}Text", f"{hits} hits\n{damage}%", color="0xFF000000")  
-            self.set_item_source(f"P{playernum}Text Background", f"{hits} hit\n{damage}%", color="0x7DD1D1D1")
+            self.set_item_source(
+                f"P{playernum}Text", f"{hits} hits\n{damage}%", color="0xFF000000"
+            )
+            self.set_item_source(
+                f"P{playernum}Text Background",
+                f"{hits} hit\n{damage}%",
+                color="0x7DD1D1D1",
+            )
 
-        self.set_item_visible(scene_name="vf no text", item_name=f"P{playernum}Text")
+        self.set_item_visible(scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text")
         self.set_item_visible(
-            scene_name="vf no text", item_name=f"P{playernum}Text Background"
+            scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text Background"
         )
 
     def hide_text_overlay(self, playernum):
         self.set_item_visible(
-            scene_name="vf no text", item_name=f"P{playernum}Text", visibility=False
+            scene_name=ObsHelper.SCENE_NAME, item_name=f"P{playernum}Text", visibility=False
         )
         self.set_item_visible(
-            scene_name="vf no text",
+            scene_name=ObsHelper.SCENE_NAME,
             item_name=f"P{playernum}Text Background",
             visibility=False,
         )
@@ -83,9 +95,11 @@ class ObsHelper:
     def win_probability_visibility(self, visibility):
         try:
             self.set_item_visible(
-                scene_name="vf no text",
+                scene_name=ObsHelper.SCENE_NAME,
                 item_name=f"Win Probability",
                 visibility=visibility,
             )
-        except:
+        except Exception as e:
+            print(f"OBS exception occured {e}")
+            print(traceback.format_exc())
             return
