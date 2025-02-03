@@ -1047,7 +1047,7 @@ class Timer:
         # return False
 
         if self.frame_height == 360:
-            if width > 12 and self.thresholded_image[6, 12] != 0:
+            if width > 12 and height > 6 and self.thresholded_image[6, 12] != 0:
                 # print("six - false 01")
                 return False
 

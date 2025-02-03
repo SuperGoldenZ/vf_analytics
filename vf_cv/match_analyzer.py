@@ -91,8 +91,9 @@ class MatchAnalyzer:
         self.process_vs_only = process_vs_only
         self.config = config
         self.round_start_count = None
-        self.obs_helper: ObsHelper = None
-        self.win_probability = WinProbability()
+        self.obs_helper = None
+        self.win_probability: WinProbability = WinProbability()
+        self.start_time = None
 
     @profile
     def analyze_next_match(
@@ -101,7 +102,7 @@ class MatchAnalyzer:
         cam=-1,
         frame_count=None,
         start_frame=0,
-        obs_helper: ObsHelper = None,
+        obs_helper=None,
     ):
         self.match = vf_data.Match()
 
@@ -147,17 +148,23 @@ class MatchAnalyzer:
                 result = self.get_next_frame(cam, video_id, actual_count)
 
         self.save_cam_frame("cam_test")
-
+        self.start_time = time.time()
         while cam != -1 or (
             ((self.cap.frames_read < end_frame or cam != -1))
             and self.frame is not None
             and result is not None
         ):
+            if (time.time() - self.start_time) > 60 * 6:
+                raise PrematureMatchFinishException(
+                    f"Too much time {(time.time() - self.start_time)} has passed"
+                )
+
             actual_count = result
 
             debug_beta = False
-            if self.state != State.BEFORE_VS and vf_cv.revo.REVO.is_beta_screen(
-                self.frame, debug_beta
+            if (
+                self.state != State.BEFORE_VS
+                and vf_cv.revo.REVO.is_virtua_fighter_screen(self.frame, debug_beta)
             ):
                 self.save_cam_frame("revo")
                 raise PrematureMatchFinishException("Found Revo BETA Frame")
@@ -542,6 +549,9 @@ class MatchAnalyzer:
                 self.obs_helper.hide_text_overlay(3 - player_num)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
+                print(f"OBS exception occured {e}")
+                print(traceback.format_exc())
 
         if self.current_round.first_strike_player_num == None:
             if red > 0 or white > 0 or black > 0 or grey > 0:
@@ -551,6 +561,9 @@ class MatchAnalyzer:
                     self.obs_helper.win_probability_visibility(True)
                 except Exception as e:
                     self.logger.debug(f"OBS exception occured {e}")
+                    self.logger.debug(traceback.format_exc())
+                    print(f"OBS exception occured {e}")
+                    print(traceback.format_exc())
 
                 self.current_round.first_strike_player_num = 3 - player_num
                 self.save_cam_frame(
@@ -588,13 +601,15 @@ class MatchAnalyzer:
                         self.obs_helper.hide_text_overlay(playernum=player_num)
                     except Exception as e:
                         self.logger.debug(f"OBS exception occured {e}")
+                        self.logger.debug(traceback.format_exc())
+                        print(f"OBS exception occured {e}")
+                        print(traceback.format_exc())
 
                 self.current_round.current_combo_damage[3 - player_num] = (
                     damage_percent_int
                 )
 
                 debug_string = f"p{3-player_num}_{self.current_round.combo_hits[3 - player_num]}_hits_{damage_percent_int}_dmg"
-                self.save_cam_frame(debug_string)
 
     @profile
     def process_before_endround(self):
@@ -949,7 +964,7 @@ class MatchAnalyzer:
                 self.obs_helper.hide_text_overlay(2)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
-
+                self.logger.debug(traceback.format_exc())
         else:
             self.count += 1
             try:
@@ -958,6 +973,7 @@ class MatchAnalyzer:
                 self.hide_win_prob_later(5)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
 
             return True
 
@@ -1040,7 +1056,7 @@ class MatchAnalyzer:
     def hide_win_prob_later(self, delay):
         def target():
             time.sleep(delay)  # Wait for the specified delay
-            if (self.obs_helper is not None):
+            if self.obs_helper is not None:
                 self.obs_helper.win_probability_visibility(False)
 
         thread = threading.Thread(target=target)

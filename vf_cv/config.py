@@ -13,6 +13,7 @@ class Config:
         self.video_download_folder = None
         self.save_image_format = None
         self.save_win_probability_image = False
+        self.refresh_replay = False
 
     @staticmethod
     def load_config(file_path):
@@ -52,4 +53,7 @@ class Config:
         config.save_win_probability_image = config_parser.getboolean(
             "Settings", "save_win_probability_image"
         )
+
+        config.refresh_replay = config_parser.getboolean("Settings", "refresh_replay")
+
         return config
