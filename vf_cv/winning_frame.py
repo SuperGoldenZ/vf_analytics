@@ -35,7 +35,7 @@ class WinningFrame:
     }
 
     REGIONS_1080P = {
-        "player1_health": (244, 74, 600, 18),
+        "player1_health": (245, 74, 600, 18),
         "player2_health": (1084, 74, 600, 18),
     }
 
