@@ -2,7 +2,8 @@
 
 from vf_data.frame_player_info import FramePlayerInfo
 
-class Frame():
+
+class Frame:
 
     def __init__(self, frame_id):
         self.p1info = FramePlayerInfo()
@@ -12,3 +13,5 @@ class Frame():
         self.win_prob_player1 = None
         self.win_prob_player2 = None
         self.elapsed_time = 0
+        self.last_frame_in_round = False
+        self.winning_player_number = 0
