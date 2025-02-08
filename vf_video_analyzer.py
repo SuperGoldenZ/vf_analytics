@@ -31,7 +31,7 @@ PROCESS_SHUN_ONLY = False
 
 obs_helper = None
 try:
-    obs_helper = ObsHelper()
+    obs_helper = ObsHelper(display_text=config.display_text)
 except Exception as e:
     print("could not init obs helper")
     print(e)
@@ -261,17 +261,7 @@ def analyze_video(url, cam=-1, process_vs_only=False):
             print(f"\t{frame_rate}FPS")
             frame_count = cap.get_frame_count()
             logger.debug(f"{frame_count} at {frame_rate} FPS")
-        else:
-            cap = cv2.VideoCapture(cam)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-            if not cap.isOpened():
-                print(f"Failed to open CAM {cam}")
-                return
 
-            frame_rate = cap.get(cv2.CAP_PROP_FPS)
-            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            print(f"opened cam {cam} {frame_rate}FPS")
         youtube_video_title = None
         if ys is not None:
             youtube_video_title = ys.title
@@ -312,13 +302,60 @@ def analyze_video(url, cam=-1, process_vs_only=False):
         processed = 0
         matches_processed = 0
         frames_processed = -1
+        first = True
         while frames_processed != 0:
-            print(
-                f"\n\n==========================\nProcessing match {match_analyzer.matches_processed}"
-            )
             try:
-                if config.refresh_replay:
-                    WindowController.reload_watch_screen()
+                if config.auto_record and not first:
+                    try:
+                        print("\tStop recording")
+                        time.sleep(5)
+                        old_filename = obs_helper.stop_recording()
+                        time.sleep(2)
+                        if old_filename is not False:
+                            shutil.copy(
+                                old_filename,
+                                match_analyzer.match.get_video_filename(
+                                    dest_dir=config.video_download_folder
+                                ),
+                            )
+                            os.remove(old_filename)
+                    except Exception as e:
+                        print(f"\tCould not stop recording {e}")
+                        logger.error("Could not stop recording")
+                        logger.error(e)
+                        logger.error(traceback.format_exc())
+
+                if config.refresh_replay and not first:
+                    print("\tRefresh main screen")
+                    try:
+                        WindowController.reload_watch_screen()
+                    except Exception as e:
+                        print(f"\tCould not refresh watch screen {e}")
+                        logger.error("Could not refresh screen")
+                        logger.error(e)
+                        logger.error(traceback.format_exc())
+
+                first = False
+                print(
+                    f"\n\n==========================\nProcessing match {match_analyzer.matches_processed}"
+                )
+                if video_path is None:
+                    if cap is not None:
+                        cap.release()
+
+                    cap = cv2.VideoCapture(cam)
+                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+                    if not cap.isOpened():
+                        print(f"Failed to open CAM {cam}")
+                        return
+
+                    frame_rate = cap.get(cv2.CAP_PROP_FPS)
+                    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    print(f"\tOpened cam {cam} {frame_rate}FPS")
+                    match_analyzer.cap = cap
+                    match_analyzer.frame = 0
+                    match_analyzer.frame_rate = frame_rate
 
                 frames_processed = match_analyzer.analyze_next_match(
                     video_id=video_id,
@@ -333,9 +370,14 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                         time.sleep(5)
                         old_filename = obs_helper.stop_recording()
                         # os.rename(old_filename, match_analyzer.match.get_video_filename())
-                        shutil.copy(
-                            old_filename, match_analyzer.match.get_video_filename()
-                        )
+                        time.sleep(2)
+                        if old_filename is not False:
+                            shutil.copy(
+                                old_filename,
+                                match_analyzer.match.get_video_filename(
+                                    dest_dir=config.video_download_folder
+                                ),
+                            )
                         os.remove(old_filename)
                     except Exception as e:
                         logger.error("Could not stop recording")
@@ -445,6 +487,13 @@ def analyze_video(url, cam=-1, process_vs_only=False):
                 if STOP_ON_FIRST_ERROR:
                     exit("index_error")
                 match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            except RuntimeError as e:
+                print(f"Runtime error occured {e}")
+                match_analyzer.matches_processed = match_analyzer.matches_processed + 1
+                continue
+            except Exception as e:
+                print(f"Other error occured {e}")
                 continue
             if process_vs_only:
                 print_csv_match_only(match_analyzer.match)
