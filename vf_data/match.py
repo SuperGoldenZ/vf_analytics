@@ -178,8 +178,8 @@ class Match:
                         current_round.winning_player_num,
                         None,
                         fr.time_seconds_remaining,
-                        current_round.player1_drink_points_at_start,
-                        current_round.player2_drink_points_at_start,
+                        fr.p1info.drinks,
+                        fr.p2info.drinks,
                         current_round.first_strike_player_num,
                         fr.p1info.health,
                         fr.p2info.health,
@@ -240,7 +240,7 @@ class Match:
             player1rank_english = "na"
             player2rank_english = "na"
 
-        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} \\"{self.player1ringname}\\" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} \\"{self.player2ringname}\\" - {self.stage}'
+        return f"【VF5 REVO】{player1rank_english} (Lv{self.player1rank}) {self.player1character} {self.player1ringname} VS {player2rank_english} (Lv{self.player2rank}) {self.player2character} {self.player2ringname}"
 
     def to_file_title(self):
         player1rank_english = None
@@ -257,8 +257,14 @@ class Match:
             player1rank_english = "na"
             player2rank_english = "na"
 
-        time_str = datetime.now().strftime("%Y%m%d%H:%M:%S")
-        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} "{self.player1ringname}" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} "{self.player2ringname}" - {self.stage} {time_str}'
+        self.player1character = self.player1character.replace("/", "")
+        self.player2character = self.player2character.replace("/", "")
+
+        self.player1character = self.player1character.replace("|", "")
+        self.player2character = self.player2character.replace("|", "")
+
+        time_str = datetime.now().strftime("%Y%m%d%H%M%S")
+        return f"【VF5 REVO】{player1rank_english} (Lv{self.player1rank}) {self.player1character} {self.player1ringname} VS {player2rank_english} (Lv{self.player2rank}) {self.player2character} {self.player2ringname}"
 
     def to_ffmpeg_copy_command(self):
         if self.video_url is None or "youtube" in self.video_url:
@@ -280,6 +286,5 @@ class Match:
         dest_dir = "/mnt/sdb/Users/alexa/Videos/2024Q4 Open Beta/Matches/"
         return f'ffmpeg -y -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
 
-    def get_video_filename(self):
-        dest_dir = "/mnt/sdb/Users/alexa/Videos/vfes/"
+    def get_video_filename(self, dest_dir="assets/videos/"):
         return f"{dest_dir}{self.to_file_title()}.mkv"
