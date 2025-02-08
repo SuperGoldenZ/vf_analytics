@@ -14,6 +14,7 @@ class Config:
         self.save_image_format = None
         self.save_win_probability_image = False
         self.refresh_replay = False
+        self.display_text = False
 
     @staticmethod
     def load_config(file_path):
@@ -55,5 +56,7 @@ class Config:
         )
 
         config.refresh_replay = config_parser.getboolean("Settings", "refresh_replay")
+
+        config.display_text = config_parser.getboolean("OBS", "display_text")
 
         return config
