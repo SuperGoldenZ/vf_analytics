@@ -3,6 +3,7 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
+
 class Data:
     """Methods for processing VF data for machine learning"""
 
@@ -26,8 +27,12 @@ class Data:
 
         data["health_diff"] = data["P1 Health"] - data["P2 Health"]
         data["rank_diff"] = data["Player 1 Rank"] - data["Player 2 Rank"]
+
+        if data["Time Remaining When Round Ended"] is None:
+            data["Time Remaining When Round Ended"] = 45
+
         data["health_time_interaction"] = data["health_diff"] * (
-            45 - data["Time Remaining When Round Ended"]
+            45 - int(data["Time Remaining When Round Ended"])
         )
         data = Data.encode(data)
         return data
@@ -36,46 +41,71 @@ class Data:
     def get_x_features(data):
         """Retruns x features of the dataset"""
         return data[
-        [
-            "P1 Health",
-            "P2 Health",
-            "health_diff",
-            "Time Remaining When Round Ended",        
-            "Player 1 Rank",
-            "Player 2 Rank",
-            "rank_diff",
-            "P1 Rounds Won So Far",
-            "P2 Rounds Won So Far",
-            "Stage_encoded",
-            "health_time_interaction",
+            [
+                "P1 Health",
+                "P2 Health",
+                "health_diff",
+                "Time Remaining When Round Ended",
+                "Player 1 Rank",
+                "Player 2 Rank",
+                "rank_diff",
+                "P1 Rounds Won So Far",
+                "P2 Rounds Won So Far",
+                "Stage_encoded",
+                "health_time_interaction",
+            ]
         ]
-    ]
 
     @staticmethod
     def get_linear_features():
         """Return linear features"""
-        return ["P1 Health", "P2 Health", "health_diff", "Time Remaining When Round Ended", "rank_diff", "health_time_interaction"]
+        return [
+            "P1 Health",
+            "P2 Health",
+            "health_diff",
+            "Time Remaining When Round Ended",
+            "rank_diff",
+            "health_time_interaction",
+        ]
 
     @staticmethod
     def get_nonlinear_features():
         """Return nonlinear features"""
-        return ["Player 1 Rank", "Player 2 Rank", "P1 Rounds Won So Far", "P2 Rounds Won So Far"]
+        return [
+            "Player 1 Rank",
+            "Player 2 Rank",
+            "P1 Rounds Won So Far",
+            "P2 Rounds Won So Far",
+        ]
 
     @staticmethod
-    def create_test_data_frame(p1health, p2health, time_remaining, p1rank, p2rank, p1rounds_won_so_far = 0, p2_rounds_won_so_far = 0):
+    def create_test_data_frame(
+        p1health,
+        p2health,
+        time_remaining,
+        p1rank,
+        p2rank,
+        p1rounds_won_so_far=0,
+        p2rounds_won_so_far=0,
+        stage="Octagon",
+    ):
         """For creating a test frame"""
+
+        if time_remaining is None:
+            time_remaining = 45
+
         new_data = pd.DataFrame(
             {
                 "P1 Health": [p1health],
                 "P2 Health": [p2health],
                 "health_diff": [p1health - p2health],
                 "Time Remaining When Round Ended": [time_remaining],
-                "Stage": ["Octagon"],
+                "Stage": [stage],
                 "Player 1 Rank": [p1rank],
                 "Player 2 Rank": [p2rank],
                 "rank_diff": [0],
                 "P1 Rounds Won So Far": [p1rounds_won_so_far],
-                "P2 Rounds Won So Far": [p2_rounds_won_so_far],                        
+                "P2 Rounds Won So Far": [p2rounds_won_so_far],
             }
         )
 
@@ -83,7 +113,7 @@ class Data:
         del new_data["Stage"]
 
         new_data["health_time_interaction"] = [
-            (p1health - p2health) * (45 - time_remaining)
+            (p1health - p2health) * (45 - int(time_remaining))
         ]
 
         return new_data
