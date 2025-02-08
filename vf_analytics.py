@@ -132,7 +132,7 @@ def get_player_rank_black(player_num, frame):
     # cv2.imshow("rank", frame)
     # cv2.waitKey()
 
-    text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+    text = pytesseract.image_to_string(imagem, timeout=3, config="--psm 7")
 
     # text = str.replace(text, "\n\x0c", "")
     # text = str.replace(text, "\x0c", "")
