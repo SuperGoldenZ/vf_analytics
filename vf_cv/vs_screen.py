@@ -391,6 +391,9 @@ class VsScreen:
         if "SNOW" in text:
             return "Snow Mountain"
 
+        if "LACE" in text:
+            return "Palace"
+
         if "PALACE" in text:
             return "Palace"
 
@@ -400,5 +403,4 @@ class VsScreen:
         if "RUINS" in text:
             return "Ruins"
 
-        print(f"unrecognized stage {text}")
         return None
