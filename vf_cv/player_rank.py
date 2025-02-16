@@ -153,8 +153,8 @@ class PlayerRank:
         """Sets the image to extract data from"""
         self.frame = frame
         original_height = self.frame.shape[0]
-        if original_height != 720:
-            self.frame = cv2.resize(self.frame, (1280, 720))
+        #if original_height != 720:
+            #self.frame = cv2.resize(self.frame, (1280, 720))
 
         self.frame_height = self.frame.shape[0]
 
@@ -173,11 +173,11 @@ class PlayerRank:
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_720P[region_name]
         elif self.frame_height == 1080:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 2.25)
-            y = (int)(y * 2.25)
-            w = (int)(w * 2.25)
-            h = (int)(h * 2.25) - 10
+            (x, y, w, h) = self.REGIONS_720P[region_name]
+            x = (int)(x * 1.5)
+            y = (int)(y * 1.5)
+            w = (int)(w * 1.5)
+            h = (int)(h * 1.5)
         return (x, y, w, h)
 
     @staticmethod
@@ -292,7 +292,7 @@ class PlayerRank:
         is_dan = False
 
         if debug_player_rank:
-            print(f"{x} {y} {w} {h} {text}")
+            print(f"{x} {y} {w} {h} [{text}]")
             print("kyu matches")
             print(matches)
             cv2.imshow(f"player rank full {self.frame_height}", self.frame)
