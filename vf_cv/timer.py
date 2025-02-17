@@ -61,8 +61,6 @@ class Timer:
         self.message = ""
         self.resized = False
 
-        # self._model = load_model('best_model.keras')
-
     def set_frame(self, frame, stage=None):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -1331,7 +1329,6 @@ class Timer:
 
         return True
 
-    @profile
     def get_time_seconds(self, debug_time=False):
         """Returns number of seconds remaining in a round"""
 
