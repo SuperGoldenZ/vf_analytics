@@ -419,8 +419,8 @@ class PlayerRank:
                 print("kyu matches")
                 print(matches)
                 cv2.imshow(f"player rank full {self.frame_height}", self.frame)
-                cv2.imshow(f"rank [{text}]", imagem)
-                cv2.imshow(f"roi [{text}]", roi)
+                cv2.imshow(f"aw i [{text}]", imagem)
+                cv2.imshow(f"aw r [{text}]", roi)
                 cv2.waitKey()
 
             if fifth and is_dan and text == "14":
