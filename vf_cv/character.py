@@ -264,6 +264,9 @@ class Character:
 
             if debug_character:
                 print(f"got text [{text}]")
+
+            if "ural" in text:
+                return "Dural"
             if "Rafale" in text:
                 return "Lion"
             if "Ejleen" in text:
