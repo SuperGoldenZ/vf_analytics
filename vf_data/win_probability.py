@@ -17,28 +17,31 @@ from vf_ml.data import Data
 
 
 class WinProbability:
-    def __init__(self, process=False):
+    def __init__(self, process=True, version=1):
         self.round_model = None
         self.match_model = None
+        self.version = version
 
         if process:
             self.round_model = joblib.load(
-                "logistic_regression_round_win_probability_model.pkl"
+                f"logistic_regression_round_win_probability_model_v{version}.pkl"
             )
-            self.match_model = joblib.load("match_winner_logistic_regression.pkl")
+            self.match_model = joblib.load(
+                f"logistic_regression_match_win_probability_model_v{version}.pkl"
+            )
 
     def generate_win_prob_chart_with_single_line(
         self,
         round_number,
         stage,
         frame_data,
+        p1rank,
+        p2rank,
         frame_num=0,
         save_to_file=True,
         p1character="",
         p2character="",
         winner_player_number=None,
-        p1rank=1,
-        p2rank=1,
         p1rounds_won_so_far=0,
         p2rounds_won_so_far=0,
     ):
@@ -53,6 +56,8 @@ class WinProbability:
                 p2rank=p2rank,
                 p1rounds_won_so_far=p1rounds_won_so_far,
                 p2rounds_won_so_far=p2rounds_won_so_far,
+                p1drinks=frame.p1info.drinks,
+                p2drinks=frame.p2info.drinks,
             )
             frame.elapsed_time = 45 - int(frame.time_seconds_remaining)
             last_time_digit = 45 - int(frame.time_seconds_remaining)
@@ -129,9 +134,14 @@ class WinProbability:
         p1rounds_won_so_far,
         p2rounds_won_so_far,
         match_probability=False,
+        p1drinks=0,
+        p2drinks=0,
     ):
         if self.match_model is None or self.round_model is None:
-            return (1, 1)
+            return (0.5, 0.5)
+
+        if match_probability == False:
+            return (0.5, 0.5)
 
         new_data = Data.create_test_data_frame(
             p1health=p1health,
@@ -142,6 +152,9 @@ class WinProbability:
             p1rounds_won_so_far=p1rounds_won_so_far,
             p2rounds_won_so_far=p2rounds_won_so_far,
             stage=stage,
+            version=self.version,
+            p1drinks=p1drinks,
+            p2drinks=p2drinks,
         )
 
         if match_probability:
@@ -162,13 +175,13 @@ class WinProbability:
         round_number,
         stage,
         frame_data,
+        p1rank,
+        p2rank,
         frame_num=0,
         save_to_file=True,
         p1character="",
         p2character="",
         winner_player_number=None,
-        p1rank=1,
-        p2rank=1,
         p1rounds_won_so_far=0,
         p2rounds_won_so_far=0,
     ):
@@ -196,6 +209,8 @@ class WinProbability:
                 p1rounds_won_so_far=p1rounds_won_so_far,
                 p2rounds_won_so_far=p2rounds_won_so_far,
                 match_probability=True,
+                p1drinks=frame.p1info.drinks,
+                p2drinks=frame.p2info.drinks,
             )
             temp_frame_count += 1
 
