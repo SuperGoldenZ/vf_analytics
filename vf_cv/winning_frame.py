@@ -464,19 +464,26 @@ class WinningFrame:
 
         return False
 
-    def get_player_health(self, player_num, debug_player_health=False):
+    def get_player_health(
+        self, player_num, debug_player_health=False, override_frame=None
+    ):
         region_name = f"player{player_num}_health"
         (x, y, w, h) = self.get_roi(region_name)
 
-        roi = self.frame[y : y + h, x : x + w]
+        if override_frame is not None:
+            roi = override_frame[y : y + h, x : x + w]
+        else:
+            roi = self.frame[y : y + h, x : x + w]
 
         green_health = vf_cv.CvHelper.count_pixels(
             "#30c90e", roi, override_tolerance=75
         )
-        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=10)
+        black_health = vf_cv.CvHelper.count_pixels(
+            "#1d1d1d", roi, override_tolerance=10
+        )
         grey_health = 0
         white_health = vf_cv.CvHelper.count_pixels(
-            "#FFFFFF", roi, override_tolerance=25
+            "#f8dada", roi, override_tolerance=50
         )
         red_health = vf_cv.CvHelper.count_pixels("#FF0000", roi, override_tolerance=150)
 
@@ -498,7 +505,9 @@ class WinningFrame:
         green_health = vf_cv.CvHelper.count_pixels(
             "#30c90e", roi, override_tolerance=75
         )
-        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=10)
+        black_health = vf_cv.CvHelper.count_pixels(
+            "#1d1d1d", roi, override_tolerance=10
+        )
         grey_health = 0
         white_health = vf_cv.CvHelper.count_pixels(
             "#FFFFFF", roi, override_tolerance=25
@@ -514,10 +523,22 @@ class WinningFrame:
             cv2.waitKey()
 
         result = None
-        
+
         try:
-            result = round (((green_health) / (green_health + black_health + grey_health + white_health + red_health))*100)
+            result = round(
+                (
+                    (green_health)
+                    / (
+                        green_health
+                        + black_health
+                        + grey_health
+                        + white_health
+                        + red_health
+                    )
+                )
+                * 100
+            )
         except ZeroDivisionError:
             result = 0
-        
+
         return result
