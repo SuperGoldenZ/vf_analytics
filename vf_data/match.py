@@ -3,6 +3,8 @@
 import csv
 import io
 import hashlib
+import os
+
 from datetime import timedelta
 from datetime import datetime
 
@@ -287,4 +289,12 @@ class Match:
         return f'ffmpeg -y -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
 
     def get_video_filename(self, dest_dir="assets/videos/"):
-        return f"{dest_dir}{self.to_file_title()}.mkv"
+
+        if not os.path.isfile(f"{dest_dir}{self.to_file_title()}.mkv"):
+            return f"{dest_dir}{self.to_file_title()}.mkv"
+
+        count = 0
+        while os.path.isfile(f"{dest_dir}{self.to_file_title()}{count}.mkv"):
+            count += 1
+
+        return f"{dest_dir}{self.to_file_title()}{count}.mkv"
