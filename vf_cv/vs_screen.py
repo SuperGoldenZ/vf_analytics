@@ -31,6 +31,7 @@ class VsScreen:
         "player1_ringname": (98 - 5, 708 - 3, 442 + 5, 35),
         "player2_ringname": (1322 - 5, 708 - 3, 442 + 5, 35),
         "stage": (793, 660, 350, 50),
+        "accessing": (935, 525, 142, 39),
     }
 
     IS_VS_RED_COORDINATES = {
@@ -295,7 +296,6 @@ class VsScreen:
         roi = frame[y : y + h, x : x + w]
 
         all_white_roi = VsScreen.all_but_grey(roi)
-
         imagem = cv2.bitwise_not(all_white_roi)
 
         text = pytesseract.image_to_string(imagem, config="--psm 7")
@@ -404,3 +404,28 @@ class VsScreen:
             return "Ruins"
 
         return None
+
+    def is_accessing(self, debug_is_accessing=False):
+        region_name = "accessing"
+        frame = self.frame
+
+        height = frame.shape[0]  # Get the dimensions of the frame
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = frame[y : y + h, x : x + w]
+        all_white_roi = VsScreen.all_but_grey(roi)
+        imagem = cv2.bitwise_not(all_white_roi)
+
+        text = pytesseract.image_to_string(imagem, config="--psm 7")
+        if debug_is_accessing:
+            cv2.imshow(f"accessing {text}", imagem)
+            print(text)
+            cv2.waitKey()
+
+        if "Accessing" in text:
+            return True
+
+        if "Access" in text:
+            return True
+
+        return False
