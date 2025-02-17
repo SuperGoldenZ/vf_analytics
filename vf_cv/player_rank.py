@@ -153,8 +153,6 @@ class PlayerRank:
         """Sets the image to extract data from"""
         self.frame = frame
         original_height = self.frame.shape[0]
-        #if original_height != 720:
-            #self.frame = cv2.resize(self.frame, (1280, 720))
 
         self.frame_height = self.frame.shape[0]
 
@@ -265,7 +263,7 @@ class PlayerRank:
 
         roi = frame_copy[y : y + h, x : x + w]
         all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-            roi, np.array([195, 185, 185])
+            roi, np.array([135, 135, 135])
         )
 
         imagem = cv2.bitwise_not(all_white_roi)
@@ -303,6 +301,12 @@ class PlayerRank:
         if "st dan" in text:
             return 11
 
+        if "Sentinel" in text:
+            return 25
+
+        if "Sentinal" in text:
+            return 25
+
         if "Darh" in text:
             return 23
 
@@ -323,6 +327,12 @@ class PlayerRank:
 
         if "Ass" in text or "ass" in text:
             return 30
+
+        if "Vereran" in text:
+            return 28
+
+        if "Veteran" in text:
+            return 28
 
         if "i" in text and "23" in text:
             return 23
@@ -414,8 +424,27 @@ class PlayerRank:
             )
             text = text.strip()
 
+            if text == "":
+                print("retry again")
+                all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
+                    roi, np.array([135, 135, 135])
+                )
+
+                all_white_roi = cv2.cvtColor(all_white_roi, cv2.COLOR_BGR2GRAY)
+
+                imagem = cv2.bitwise_not(all_white_roi)
+                imagem = vf_cv.CvHelper.add_white_column(imagem, 5, True)
+                imagem = vf_cv.CvHelper.add_white_row(imagem, 5)
+
+                text = pytesseract.image_to_string(
+                    imagem,
+                    timeout=2,
+                    config="--psm 7 -c tessedit_char_whitelist=0123456789",
+                )
+                text = text.strip()
+
             if debug_player_rank:
-                print(f"retry player rank: {x} {y} {w} {h} {text}")
+                print(f"retry player rank: {x} {y} {w} {h} [{text}]")
                 print("kyu matches")
                 print(matches)
                 cv2.imshow(f"player rank full {self.frame_height}", self.frame)
