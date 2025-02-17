@@ -26,6 +26,7 @@ class Round:
         self.current_combo_damage = [0, 0, 0]
         self.combo_hits = [0, 0, 0]
         self.max_damage = [0, 0, 0]
+        self.combo_over = [True, True, True]
 
         self.frames = []
 
