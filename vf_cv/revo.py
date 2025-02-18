@@ -2,6 +2,7 @@
 
 import numpy as np
 import cv2
+import pytesseract
 import vf_cv.cv_helper
 
 
@@ -35,9 +36,53 @@ class REVO:
     }
 
     @staticmethod
+    def is_virtua_fighter_screen(image, debug):
+        roi = image.copy()
+        x, y, w, h = 372, 476, 1177, 126
+        cropped = roi[y : y + h, x : x + w]
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+
+        # Invert the grayscale image
+        inverted = cv2.bitwise_not(gray)
+
+        if inverted[48, 939] > 225:
+            return False
+
+        # Convert #f5f5f5 to a grayscale value (approximately 245)
+        threshold_value = int(0.85 * 255)  # Since #f5f5f5 is ~95% white
+
+        # Set all pixels darker than #f5f5f5 to black
+        _, processed = cv2.threshold(inverted, threshold_value, 255, cv2.THRESH_TOZERO)
+        text = pytesseract.image_to_string(processed, timeout=3, config="--psm 7")
+
+        if debug:
+            print(text)
+            cv2.imshow(f"vf {text}", processed)
+            cv2.waitKey()
+
+        if "tua" in text:
+            return True
+
+        if "Valrtua" in text:
+            return True
+
+        if "Fignter" in text:
+            return True
+
+        if "Virtua" in text:
+            return True
+
+        if "Fight" in text:
+            return True
+
+        return False
+
+    @staticmethod
     def is_beta_screen(image, debug):
         """Returns true if image is the Open Beta Splash Screen"""
-        # roi = image.copy()
+        roi = image.copy()
 
         frame_height = image.shape[0]
         for i in range(len(REVO.POINTS[frame_height])):

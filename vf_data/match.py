@@ -3,9 +3,12 @@
 import csv
 import io
 import hashlib
+import os
+
 from datetime import timedelta
 from datetime import datetime
 
+import vf_data.frame
 import vf_data.round
 import vf_cv.player_rank
 
@@ -132,13 +135,67 @@ class Match:
 
         return m.hexdigest()
 
+    def get_winning_player_num(self):
+        result = 0
+        player_wins_so_far = [0, 0]
+        for current_round in self.rounds:
+            player_wins_so_far[current_round.winning_player_num - 1] += 1
+
+        if player_wins_so_far[0] == 3:
+            result = 1
+        elif player_wins_so_far[1] == 3:
+            result = 2
+
+        return result
+
     def __str__(self):
         output = io.StringIO()
         writer = csv.writer(output, quoting=csv.QUOTE_NONE, escapechar="\\")
         self.vs_frame_to_string(writer)
         self.id = self.make_id()
 
+        player_wins_so_far = [0, 0]
+        winning_player_num = self.get_winning_player_num()
+
         for current_round in self.rounds:
+            last_p1_health = None
+            last_p2_health = None
+
+            for frame in current_round.frames[:-1]:
+                fr: vf_data.Frame = frame
+
+                writer.writerow(
+                    [
+                        self.video_id,
+                        self.id,
+                        self.date,
+                        self.stage,
+                        self.player1ringname,
+                        self.player1rank,
+                        self.player1character,
+                        self.player2ringname,
+                        self.player2rank,
+                        self.player2character,
+                        current_round.num,
+                        current_round.winning_player_num,
+                        None,
+                        fr.time_seconds_remaining,
+                        fr.p1info.drinks,
+                        fr.p2info.drinks,
+                        current_round.first_strike_player_num,
+                        fr.p1info.health,
+                        fr.p2info.health,
+                        player_wins_so_far[0],
+                        player_wins_so_far[1],
+                        winning_player_num,
+                        current_round.get_youtube_url(self.video_id),
+                    ]
+                )
+
+                last_p1_health = fr.p1info.health
+                last_p2_health = fr.p2info.health
+
+            player_wins_so_far[current_round.winning_player_num - 1] += 1
 
             writer.writerow(
                 [
@@ -159,8 +216,11 @@ class Match:
                     current_round.player1_drink_points_at_start,
                     current_round.player2_drink_points_at_start,
                     current_round.first_strike_player_num,
-                    round(current_round.max_damage[1]),
-                    round(current_round.max_damage[2] * 100),
+                    last_p1_health,
+                    last_p2_health,
+                    player_wins_so_far[0],
+                    player_wins_so_far[1],
+                    winning_player_num,
                     current_round.get_youtube_url(self.video_id),
                 ]
             )
@@ -182,7 +242,7 @@ class Match:
             player1rank_english = "na"
             player2rank_english = "na"
 
-        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} \\"{self.player1ringname}\\" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} \\"{self.player2ringname}\\" - {self.stage}'
+        return f"【VF5 REVO】{player1rank_english} (Lv{self.player1rank}) {self.player1character} {self.player1ringname} VS {player2rank_english} (Lv{self.player2rank}) {self.player2character} {self.player2ringname}"
 
     def to_file_title(self):
         player1rank_english = None
@@ -199,8 +259,14 @@ class Match:
             player1rank_english = "na"
             player2rank_english = "na"
 
-        time_str = datetime.now().strftime("%Y%m%d%H:%M:%S")
-        return f'【VF5 R.E.V.O. Ranked】{player1rank_english} (Lv. {self.player1rank}) {self.player1character} "{self.player1ringname}" VS {player2rank_english} (Lv. {self.player2rank}) {self.player2character} "{self.player2ringname}" - {self.stage} {time_str}'
+        self.player1character = self.player1character.replace("/", "")
+        self.player2character = self.player2character.replace("/", "")
+
+        self.player1character = self.player1character.replace("|", "")
+        self.player2character = self.player2character.replace("|", "")
+
+        time_str = datetime.now().strftime("%Y%m%d%H%M%S")
+        return f"【VF5 REVO】{player1rank_english} (Lv{self.player1rank}) {self.player1character} {self.player1ringname} VS {player2rank_english} (Lv{self.player2rank}) {self.player2character} {self.player2ringname}"
 
     def to_ffmpeg_copy_command(self):
         if self.video_url is None or "youtube" in self.video_url:
@@ -222,6 +288,13 @@ class Match:
         dest_dir = "/mnt/sdb/Users/alexa/Videos/2024Q4 Open Beta/Matches/"
         return f'ffmpeg -y -ss "{start_timestamp}" -i "{self.video_url}" -c copy -t {clip_duration} "{dest_dir}{self.to_youtube_title()}.mp4"'
 
-    def get_video_filename(self):
-        dest_dir = "/mnt/sdb/Users/alexa/Videos/vfes/"
-        return f"{dest_dir}{self.to_file_title()}.mkv"
+    def get_video_filename(self, dest_dir="assets/videos/"):
+
+        if not os.path.isfile(f"{dest_dir}{self.to_file_title()}.mkv"):
+            return f"{dest_dir}{self.to_file_title()}.mkv"
+
+        count = 0
+        while os.path.isfile(f"{dest_dir}{self.to_file_title()}{count}.mkv"):
+            count += 1
+
+        return f"{dest_dir}{self.to_file_title()}{count}.mkv"

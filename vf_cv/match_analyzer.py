@@ -6,7 +6,7 @@ import time
 from enum import Enum
 from datetime import datetime
 import cv2
-
+import threading
 
 from line_profiler import profile
 
@@ -19,6 +19,12 @@ import vf_cv.vs_screen
 import vf_cv.revo
 import vf_cv.video_capture_async
 import vf_cv.config
+import random
+
+import concurrent.futures
+
+from vf_data.win_probability import WinProbability
+
 from obs import ObsHelper
 
 
@@ -87,16 +93,20 @@ class MatchAnalyzer:
         self.process_vs_only = process_vs_only
         self.config = config
         self.round_start_count = None
-        self.obs_helper: ObsHelper = None
+        self.obs_helper = None
+        self.win_probability: WinProbability = WinProbability(version=2)
+        self.start_time = None
+        self.round_start_p1_rounds_won = 0
+        self.round_start_p2_rounds_won = 0
+        self.last_match = None
 
-    @profile
     def analyze_next_match(
         self,
         video_id="n/a",
         cam=-1,
         frame_count=None,
         start_frame=0,
-        obs_helper: ObsHelper = None,
+        obs_helper=None,
     ):
         self.match = vf_data.Match()
 
@@ -119,12 +129,26 @@ class MatchAnalyzer:
         self.state = State.BEFORE_VS
 
         self.current_round = vf_data.Round()
+
+        self.current_round.add_frame(0, 100, 100, 45, p1drinks=0, p2drinks=0)
+        self.save_win_probability_image_once()
+
         self.match.video_id = video_id
 
         self.skip_frames = 0
-        self.obs_helper = obs_helper
+        self.obs_helper: ObsHelper = obs_helper
+
+        self.obs_helper.win_probability_visibility(False)
+        self.obs_helper.vs_win_probability_visibility(False)
+        self.obs_helper.hide_text_overlay(1)
+        self.obs_helper.hide_text_overlay(2)
 
         result = None
+
+        try:
+            self.hide_win_prob_later(3)
+        except:
+            self.logger.debug("could not hide")
 
         if cam != -1:
             jpg_folder = "assets/jpg/cam"
@@ -138,38 +162,37 @@ class MatchAnalyzer:
             result = self.get_next_frame(cam, video_id, actual_count)
 
             if result is None:
-                time.sleep(5)
+                time.sleep(2)
                 result = self.get_next_frame(cam, video_id, actual_count)
 
         self.save_cam_frame("cam_test")
-
+        self.start_time = time.time()
         while cam != -1 or (
             ((self.cap.frames_read < end_frame or cam != -1))
             and self.frame is not None
             and result is not None
         ):
+            if (time.time() - self.start_time) > 60 * 6:
+                raise PrematureMatchFinishException(
+                    f"Too much time {(time.time() - self.start_time)} has passed"
+                )
+
             actual_count = result
 
             debug_beta = False
-            if self.state != State.BEFORE_VS and vf_cv.revo.REVO.is_beta_screen(
-                self.frame, debug_beta
+            if (
+                self.state != State.BEFORE_VS
+                and vf_cv.revo.REVO.is_virtua_fighter_screen(self.frame, debug_beta)
             ):
                 self.save_cam_frame("revo")
                 raise PrematureMatchFinishException("Found Revo BETA Frame")
 
             result = self.analyze_next_frame()
             if result is not None:
-                print("\t\tResult is not none, stopping to process match!")
+                print("\tEnd Match (result is not none)")
                 return result
 
-            # if (cam == -1):
             result = self.get_next_frame(cam, video_id, actual_count)
-            # else:
-            # result, frame = self.cap.read()
-            # if (ret):
-            # self.frame = frame
-            # cv2.imshow("cam", self.frame)
-            # cv2.waitKey()
 
             if result is None:
                 print("\tnext frame is none")
@@ -181,20 +204,16 @@ class MatchAnalyzer:
             print(f"returning 0 because {self.cap.frames_read} >= {end_frame}")
             return 0
 
-    @profile
     def get_next_frame(self, cam, video_id, actual_count):
         self.frame = None
 
         count_int = int(self.count)
 
-        # use epoch time for cam
         if self.config.cam_int != -1:
-            # count_int = int(time.time() * 1000)
-            # self.count = count_int
 
             if self.skip_frames > 0:
                 seconds_to_sleep = self.skip_frames / self.frame_rate
-                dt = datetime.now().strftime("%Y%m%d%H%M%S")
+                dt = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 print(
                     f"\t\t{dt} CAM sleeping START {self.skip_frames} frames, {seconds_to_sleep} seconds"
                 )
@@ -208,7 +227,7 @@ class MatchAnalyzer:
                         self.frame = frame
                     time.sleep(0.1)  # Optional: Sleep to reduce CPU usage
 
-                dt = datetime.now().strftime("%Y%m%d%H%M%S")
+                dt = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 print(f"\t\t{dt} CAM sleeping END")
 
                 # self.save_cam_frame(f"after_sleep_{self.skip_frames}")
@@ -241,7 +260,7 @@ class MatchAnalyzer:
                     if shun_drinks:
                         count_int += int(self.frame_rate)
             except:
-                time.sleep(5)
+                time.sleep(2)
 
                 self.frame = self.cap.read()
                 if not shun_drinks:
@@ -286,7 +305,7 @@ class MatchAnalyzer:
             self.process_before_endround()
         if self.state == State.ENDROUND and self.process_endround():
             print(
-                f"\t\tnect frame returning {self.count} because ENDROUND and process_endround"
+                f"\t\tnext frame returning {self.count} because ENDROUND and process_endround"
             )
             return self.count
 
@@ -325,7 +344,7 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{self.cap.frames_read}_{suffix}")
-                + ".webp"
+                + f".{self.config.save_image_format}"
             )
         else:
             time_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -334,25 +353,50 @@ class MatchAnalyzer:
                 self.jpg_folder
                 + f"/{self.matches_processed}/"
                 + str(f"{time_str}_{suffix}")
-                + ".webp"
+                + f".{self.config.save_image_format}"
             )
 
         if not os.path.isfile(original_out_filename):
-            cv2.imwrite(
-                original_out_filename, self.frame, [cv2.IMWRITE_WEBP_QUALITY, 100]
-            )
+            if self.config.save_image_format == "webp":
+                cv2.imwrite(
+                    original_out_filename, self.frame, [cv2.IMWRITE_WEBP_QUALITY, 100]
+                )
+            else:
+                cv2.imwrite(original_out_filename, self.frame)
 
-    @profile
     def process_before_vs(self):
         self.logger.debug(f"BEFORE - searching for vs frame count {self.count}")
         stage = None
-
+        if random.randint(1, 1000) == 1:
+            print("\tLooking for vs...")
+            self.save_cam_frame("looking_for_vs")
         self.vs_screen.set_frame(self.frame)
         if self.vs_screen.is_vs_ver1():
             stage = self.vs_screen.get_stage()
-            print(f"\tVS screen got stage {stage}")
 
-        if stage is not None:
+        if self.vs_screen.is_accessing() and self.last_match is not None:
+            print("is accessing, going to next match!")
+            self.state = State.BEFORE_FIGHT
+            self.match.stage = self.last_match.stage
+            self.match.player1character = self.last_match.player1character
+            self.match.player1ringname = self.last_match.player1ringname
+            self.match.player1rank = self.last_match.player1rank
+
+            self.match.player2character = self.last_match.player2character
+            self.match.player2ringname = self.last_match.player2ringname
+            self.match.player2rank = self.last_match.player2rank
+
+            # print(f"\tLv{self.match.player1rank} {self.match.player1character} VS Lv{self.match.player2rank} {self.match.player2character} {self.match.stage}")
+            if self.config.auto_record:
+                try:
+                    self.obs_helper.start_recording()
+                except Exception as e:
+                    print(f"could not start recording {e}")
+                    print(traceback.format_exc())
+                    self.logger.error(f"could not start recording {e}")
+                    self.logger.error(traceback.format_exc())
+
+        elif stage is not None:
             formatted_match_id = "%02d" % (self.matches_processed + 1,)
             self.match.id = f"{self.match.video_id}-{formatted_match_id}"
             self.match.stage = stage
@@ -363,14 +407,15 @@ class MatchAnalyzer:
             else:
                 self.match.vs_frame_seconds = 1
 
-            print("\tsetting state to vs")
-            try:
-                self.obs_helper.start_recording()
-            except Exception as e:
-                print(f"could not start recording {e}")
-                print(traceback.format_exc())
-                self.logger.error(f"could not start recording {e}")
-                self.logger.error(traceback.format_exc())
+            # print(f"\tLv{self.match.player1rank} {self.match.player1character} VS Lv{self.match.player2rank} {self.match.player2character} {self.match.stage}")
+            if self.config.auto_record:
+                try:
+                    self.obs_helper.start_recording()
+                except Exception as e:
+                    print(f"could not start recording {e}")
+                    print(traceback.format_exc())
+                    self.logger.error(f"could not start recording {e}")
+                    self.logger.error(traceback.format_exc())
 
             self.state = State.VS_SCREEN
             self.logger.debug(
@@ -392,12 +437,11 @@ class MatchAnalyzer:
             or self.time_seconds == "45"
         )
 
-    @profile
     def process_vs(self):
         # print(f"{self.count} processing vs {self.match.player1character} vs {self.match.player2character} on {self.match.stage}")
-        print("\tprocessing vs")
+        # print("\tprocessing vs")
         if self.match.player1character is None:
-            print("\t\tgetting character 1 name")
+            # print("\t\tgetting character 1 name")
             self.character.set_frame(self.frame)
             self.character.set_youtube_video_title(self.youtube_video_title)
 
@@ -409,7 +453,7 @@ class MatchAnalyzer:
                 )
 
         if self.match.player2character is None:
-            print("\t\tgetting character 2 name")
+            # print("\t\tgetting character 2 name")
             self.character.set_frame(self.frame)
             player2character = self.character.get_character_name(2)
             if player2character is not None:
@@ -419,7 +463,7 @@ class MatchAnalyzer:
                 )
 
         if self.match.stage is None:
-            print("\t\tgetting stage")
+            # print("\t\tgetting stage")
             self.logger.debug(
                 f"{self.match.video_id} {self.count:13d} - looking for stage"
             )
@@ -458,7 +502,37 @@ class MatchAnalyzer:
             self.match.player2ringname = self.vs_screen.get_ringname(2, False)
 
             self.state = State.BEFORE_FIGHT
-            print("\tState = BEFORE_FIGHT (start looking for start of fight)")
+            try:
+                (p1probability, p2probability) = (
+                    self.win_probability.get_win_probability(
+                        p1health=100,
+                        p2health=100,
+                        stage=self.match.stage,
+                        time_remaining=45,
+                        match_probability=True,
+                        p1rank=self.match.player1rank,
+                        p2rank=self.match.player2rank,
+                        p1rounds_won_so_far=0,
+                        p2rounds_won_so_far=0,
+                        p1drinks=0,
+                        p2drinks=0,
+                    )
+                )
+
+                self.obs_helper.vs_win_probability_visibility(True)
+                self.obs_helper.vs_win_probability(
+                    int(float(p1probability) * 100), int(float(p2probability) * 100)
+                )
+                self.hide_vs_prob_later(1.5)
+            except Exception as e:
+                self.logger.error(f"Could not get win probability {e}")
+
+            print(
+                f"\tLv{self.match.player1rank} {self.match.player1character} VS Lv{self.match.player2rank} {self.match.player2character} {self.match.stage}"
+            )
+            print("\tRound 1 start!")
+            print("\t\tState = BEFORE_FIGHT (start looking for start of fight)")
+            self.start_time = time.time()
             try:
                 self.round_start_count = self.cap.frames_read
             except Exception as e:
@@ -486,91 +560,194 @@ class MatchAnalyzer:
 
         return False
 
-    @profile
     def process_before_fight(self):
         self.time_cv.set_frame(self.frame, self.match.stage)
         self.old_time_seconds = self.time_seconds
 
         try:
+            self.winning_frame.set_frame(self.frame)
+            p1health = self.winning_frame.get_player_health_percent(1)
+            p2health = self.winning_frame.get_player_health_percent(2)
+
             self.time_seconds = self.time_cv.get_time_seconds()
-            if self.time_seconds == "44" or self.time_seconds == "43":
+            if (
+                self.time_seconds == "44"
+                or self.time_seconds == "43"
+                or self.time_seconds == "42"
+                or self.time_seconds == "41"
+            ) and (p1health > 90 and p2health > 90):
                 self.state = State.BEFORE_ENDROUND
+                self.save_win_probability_image_async()
+                if self.config.display_text:
+                    self.process_damage_async()
+
+                self.obs_helper.win_probability_visibility(True)
+                self.obs_helper.vs_win_probability_visibility(False)
+
+                print(
+                    f"\t\tState = BEFORE_ENDROUND (start looking for the end of the round) at {self.time_seconds} seconds"
+                )
                 self.save_cam_frame("round_start")
                 return
-        except vf_cv.UnrecognizeTimeDigitException as e:
+            else:
+                if self.config.save_all_images:
+                    self.save_cam_frame(f"before_fight_{self.time_seconds}")
+        except vf_cv.InvalidTimeException:
             return
-        except IndexError as e:
+        except vf_cv.UnrecognizeTimeDigitException:
+            return
+        except IndexError:
             return
 
             # if not self.skip_beginning_of_round():
             # Will consider round started after not endround (but really beginning of)
             # if (not self.time_cv.is_endround_other(False)):
             self.state = State.BEFORE_ENDROUND
-            print(
-                f"\tState = BEFORE_ENDROUND (start looking for the end of the round) at {self.time_seconds} seconds"
-            )
 
+    def process_damage_async(self):
+        def target_p1():
+            while self.state == State.BEFORE_ENDROUND:
+                self.process_damage_data(1)
+
+            if self.current_round.combo_hits[1] == 1:
+                self.obs_helper.hide_text_overlay(1)
+
+        def target_p2():
+            while self.state == State.BEFORE_ENDROUND:
+                self.process_damage_data(2)
+
+            if self.current_round.combo_hits[1] == 1:
+                self.obs_helper.hide_text_overlay(2)
+
+        def print_dmg():
+            while self.state == State.BEFORE_ENDROUND:
+                print(
+                    f"{datetime.today().strftime('%Y/%m/%d %H:%M:%S')}\t\t{self.current_round.combo_hits[2]} hits {self.current_round.current_combo_damage[1]:02d}% x {self.current_round.combo_hits[1]:02d} hits {self.current_round.current_combo_damage[2]:02d}"
+                )
+                time.sleep(0.25)
+
+        threadp1 = threading.Thread(target=target_p1)
+        threadp1.start()
+
+        threadp2 = threading.Thread(target=target_p2)
+        threadp2.start()
+
+        print_thread = threading.Thread(target=print_dmg)
+        print_thread.start()
+
+    @profile
     def process_damage_data(self, player_num):
+        # Get latest frame
+        override_frame = None
+        ret, frame = self.cap.read()
+        if ret:
+            override_frame = frame
+
+        # Get players health
         (green, black, grey, white, red) = self.winning_frame.get_player_health(
-            player_num
+            player_num, override_frame=override_frame
         )
 
+        other_player_num = 3 - player_num
+
+        # Check if player no longer taking damage
         if white == 0 and red == 0:
-            self.current_round.current_combo_damage[3 - player_num] = 0
-            self.current_round.combo_hits[3 - player_num] = 0
+            self.current_round.current_combo_damage[other_player_num] = 0
+            self.current_round.combo_hits[other_player_num] = 0
 
             try:
-                self.obs_helper.hide_text_overlay(3 - player_num)
+                self.obs_helper.hide_text_overlay(other_player_num)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
+                print(f"OBS exception occured {e}")
+                print(traceback.format_exc())
+            return 0
 
         if self.current_round.first_strike_player_num == None:
-            if red > 0 or white > 0 or black > 0 or grey > 0:
+            if red > 0 or white > 0:
+                damage_percent = (red + white) / (red + black + green + white)
+                damage_percent_int = round(damage_percent * 100)
 
                 try:
+                    print(
+                        f"{datetime.today().strftime('%Y/%m/%d %H:%M:%S')}\t\tstrike first!"
+                    )
                     self.obs_helper.first_strike(3 - player_num)
+
                 except Exception as e:
                     self.logger.debug(f"OBS exception occured {e}")
+                    self.logger.debug(traceback.format_exc())
+                    print(f"OBS exception occured {e}")
+                    print(traceback.format_exc())
 
-                self.current_round.first_strike_player_num = 3 - player_num
-                self.save_cam_frame(
-                    f"first_strike_p{self.current_round.first_strike_player_num}"
-                )
-                return
+                self.current_round.first_strike_player_num = other_player_num
 
         if white > 0 or red > 0:
             damage_percent = (red + white) / (red + black + green + white)
             damage_percent_int = round(damage_percent * 100)
-
-            if (
-                damage_percent_int
-                > self.current_round.current_combo_damage[3 - player_num] + 2
-            ):
-
-                if damage_percent_int > self.current_round.max_damage[3 - player_num]:
-                    self.current_round.max_damage[3 - player_num] = damage_percent_int
-
-                self.current_round.combo_hits[3 - player_num] = (
-                    self.current_round.combo_hits[3 - player_num] + 1
-                )
-
-                if self.current_round.combo_hits[3 - player_num] >= 2:
-                    try:
-                        self.obs_helper.combo(
-                            playernum=3 - player_num,
-                            hits=self.current_round.combo_hits[3 - player_num],
-                            damage=damage_percent_int,
-                        )
-                    except Exception as e:
-                        self.logger.debug(f"OBS exception occured {e}")
-
-                self.current_round.current_combo_damage[3 - player_num] = (
+            if damage_percent_int == 0:
+                self.current_round.current_combo_damage[other_player_num] = (
                     damage_percent_int
                 )
-                self.save_cam_frame(f"damage_for_p{3-player_num}_{damage_percent_int}")
+                self.current_round.combo_hits[other_player_num] = 0
+                return 0
+
+            combo_damage_increase = (
+                damage_percent_int
+                >= self.current_round.current_combo_damage[other_player_num] + 3
+            )
+
+            if combo_damage_increase:
+                self.current_round.current_combo_damage[other_player_num] = (
+                    damage_percent_int
+                )
+
+                if damage_percent_int > self.current_round.max_damage[other_player_num]:
+                    self.current_round.max_damage[other_player_num] = damage_percent_int
+
+                # if (self.current_round.combo_over[other_player_num]):
+                # self.current_round.current_combo_damage[other_player_num] = damage_percent_int
+                # self.current_round.combo_hits[other_player_num] = 0
+                # self.current_round.combo_over[other_player_num] = False
+                # return damage_percent_int
+
+                # if (self.current_round.combo_hits[other_player_num] == 0):
+                # print("\n")
+
+                self.current_round.combo_hits[other_player_num] = (
+                    self.current_round.combo_hits[other_player_num] + 1
+                )
+
+                if self.current_round.combo_hits[other_player_num] >= 2 or (
+                    damage_percent_int >= 34
+                    and self.current_round.combo_hits[other_player_num] == 1
+                ):
+                    try:
+                        self.obs_helper.combo(
+                            playernum=other_player_num,
+                            hits=self.current_round.combo_hits[other_player_num],
+                            damage=damage_percent_int,
+                        )
+
+                        # Hide other players overlay just in case
+                        self.obs_helper.hide_text_overlay(playernum=player_num)
+                    except Exception as e:
+                        self.logger.debug(f"OBS exception occured {e}")
+                        self.logger.debug(traceback.format_exc())
+                        print(f"OBS exception occured {e}")
+                        print(traceback.format_exc())
+
+                return damage_percent_int
+            # elif damage_percent_int <= self.current_round.current_combo_damage[other_player_num] - 3:
+            # self.current_round.combo_over[other_player_num] = True
+            # self.current_round.combo_hits[other_player_num] = 0
+            return 0
 
     @profile
     def process_before_endround(self):
+        self.obs_helper.win_probability_visibility(True)
+        self.obs_helper.vs_win_probability_visibility(False)
         self.old_time_seconds = self.time_seconds
 
         # if matches twice know endround and no need to get time seconds
@@ -580,14 +757,39 @@ class MatchAnalyzer:
         # self.winning_round.set_frame(self.frame)
 
         self.winning_frame.set_frame(self.frame)
-        for player_num in range(1, 3):
-            self.process_damage_data(player_num)
 
         possible_to_or_ro = self.winning_frame.is_ringout(False)
+        is_endround_other = self.time_cv.is_endround_other()
+
+        time_seconds = None
+
+        try:
+            time_seconds = self.time_cv.get_time_seconds()
+        except (
+            vf_cv.UnexpectedTimeException,
+            vf_cv.InvalidTimeException,
+            vf_cv.UnrecognizeTimeDigitException,
+        ) as e:
+            self.save_cam_frame("bad_time")
+            self.logger.debug(f"bad_time {e}")
+
+        if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
+            try:
+                frames_read = len(self.current_round.frames) + 1
+
+                if hasattr(self.cap, "frames_read"):
+                    frames_read = self.cap.frames_read
+
+            except Exception as e:
+                self.logger.error("Could not show image")
+                self.logger.error(traceback.format_exc())
+                print(e)
+                print(traceback.format_exc())
 
         if possible_to_or_ro:
             try:
-                self.old_time_seconds = self.time_cv.get_time_seconds()
+                # self.old_time_seconds = self.time_cv.get_time_seconds()
+                self.old_time_seconds = time_seconds
             except vf_cv.UnrecognizeTimeDigitException as e:
                 self.save_cam_frame("unrecognized_time_digit")
                 raise e
@@ -595,12 +797,39 @@ class MatchAnalyzer:
             self.time_seconds = self.old_time_seconds
 
             self.state = State.ENDROUND
-            print("\tState = ENDROUND (finish up round with who won)")
+            print("\t\tState = ENDROUND (finish up round with who won)")
 
             if self.config.save_all_images:
                 self.save_cam_frame("process_before_endround_pissble_to_ro")
 
             return False
+
+        if not hasattr(self.cap, "frames_read") or self.cap.frames_read % 2 == 0:
+            frames_read = len(self.current_round.frames) + 1
+
+            if hasattr(self.cap, "frames_read"):
+                frames_read = self.cap.frames_read
+
+            p1health = self.winning_frame.get_player_health_percent(1)
+            p2health = self.winning_frame.get_player_health_percent(2)
+
+            p1drinks = 0
+            p2drinks = 0
+
+            self.drinks.set_frame(self.frame)
+            if self.match.player1character == "Shun":
+                p1drinks = self.drinks.get_drink_points(1)
+            if self.match.player2character == "Shun":
+                p2drinks = self.drinks.get_drink_points(2)
+
+            self.current_round.add_frame(
+                frame_id=frames_read,
+                p1health=p1health,
+                p2health=p2health,
+                time_remaining_seconds=time_seconds,
+                p1drinks=p1drinks,
+                p2drinks=p2drinks,
+            )
 
         if self.config.save_all_images:
             self.save_cam_frame("process_before_endround_many")
@@ -612,17 +841,26 @@ class MatchAnalyzer:
         # also may want to break this process_fight into two stages - find endround and then process endround?
 
         # print(f"\tprocessing fight {self.cap.frames_read - self.round_start_count}  {(self.cap.frames_read - self.round_start_count) / self.frame_rate}")
+
+        (p1green, p1black, p1grey, p1white, p1red) = (
+            self.winning_frame.get_player_health(1)
+        )
+        (p2green, p2black, p2grey, p2white, p2red) = (
+            self.winning_frame.get_player_health(2)
+        )
+
+        if p1green == 0 or p2green == 0:
+            is_endround_other = True
+
         try:
             debug_endround_other = False
-            if not possible_to_or_ro and self.time_cv.is_endround_other(
-                debug_endround_other
-            ):
+            if not possible_to_or_ro and is_endround_other:
                 if self.old_time_seconds is None:
                     try:
                         self.old_time_seconds = self.time_cv.get_time_seconds()
                     except vf_cv.UnrecognizeTimeDigitException as e:
                         self.save_cam_frame("unrecognized_time_digit")
-                        raise e
+
                     self.time_seconds = self.old_time_seconds
                     print(f"\t\tset old time seconds {self.old_time_seconds}")
                     self.count += 10
@@ -646,7 +884,7 @@ class MatchAnalyzer:
 
                 self.state = State.ENDROUND
                 print(
-                    f"\tState = ENDROUND (finish up round with who won) with count + {int(self.frame_rate * 0.10)} "
+                    f"\t\tState = ENDROUND (finish up round with who won) with count + {int(self.frame_rate * 0.10)} "
                 )
 
                 if self.config.save_all_images:
@@ -725,6 +963,26 @@ class MatchAnalyzer:
         is_ro = self.winning_frame.is_ringout()
         self.winning_round.set_frame(self.frame)
         player_num = self.winning_round.is_winning_round(False, self.match.stage)
+
+        # In case cannot pickup winning player num, check by health
+        if player_num == 0:
+            if self.winning_frame.is_ko() or self.winning_frame.is_excellent():
+                (p1green, p1black, p1grey, p1white, p1red) = (
+                    self.winning_frame.get_player_health(1)
+                )
+                (p2green, p2black, p2grey, p2white, p2red) = (
+                    self.winning_frame.get_player_health(2)
+                )
+
+                if self.winning_frame.get_player_health_percent(1) == 0 or p1green == 0:
+                    player_num = 2
+                elif (
+                    self.winning_frame.get_player_health_percent(2) == 0 or p2green == 0
+                ):
+                    player_num = 1
+
+                print(f"\t\t\tresult of checking health for winner {player_num}")
+                self.save_cam_frame(f"health_check_{player_num}")
 
         if player_num == 0:
             self.count += 1
@@ -827,12 +1085,39 @@ class MatchAnalyzer:
         self.match.add_finished_round(self.current_round)
 
         if self.match.count_rounds_won(1) < 3 and self.match.count_rounds_won(2) < 3:
-            print(f"\t\tcreating new round {self.current_round.num}")
+            print(f"\tRound {self.current_round.num+1} start!")
+            old_round_frames = len(self.current_round.frames)
+
+            try:
+                self.save_win_probability_image_once()
+            except:
+                self.logger.error("could not save with winner")
+                self.logger.error(traceback.format_exc())
+
+            time.sleep(2)
+
             self.current_round = vf_data.Round()
-            # if self.config.cam_int == -1:
-            # self.skip_frames = 10 / self.interval
-            # else:
-            # self.skip_frames = 10 * self.frame_rate
+            p1drinks = 0
+            p2drinks = 0
+
+            self.drinks.set_frame(self.frame)
+            if self.match.player1character == "Shun":
+                p1drinks = self.drinks.get_drink_points(1)
+            if self.match.player2character == "Shun":
+                p2drinks = self.drinks.get_drink_points(2)
+
+            self.current_round.add_frame(
+                0, 100, 100, 45, p1drinks=p1drinks, p2drinks=p2drinks
+            )
+            self.round_start_p1_rounds_won = self.match.count_rounds_won(1)
+            self.round_start_p2_rounds_won = self.match.count_rounds_won(2)
+
+            self.hide_win_prob_later(1)
+
+            if hasattr(self.cap, "frames_read"):
+                self.current_round.start_frame_num = self.cap.frames_read
+            else:
+                self.current_round.start_frame_num = old_round_frames
 
             self.time_matches = 0
             self.time_seconds = None
@@ -842,22 +1127,26 @@ class MatchAnalyzer:
             except Exception as e:
                 self.logger.debug("skipping because of cam")
             self.state = State.BEFORE_FIGHT
-            print("\tState = BEFORE_FIGHT (start looking for start of fight)")
+            print("\t\tState = BEFORE_FIGHT (start looking for start of fight)")
 
             try:
                 self.obs_helper.hide_text_overlay(1)
                 self.obs_helper.hide_text_overlay(2)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
-
+                self.logger.debug(traceback.format_exc())
         else:
+            # match is over!
             self.count += 1
             try:
                 self.obs_helper.hide_text_overlay(1)
                 self.obs_helper.hide_text_overlay(2)
+                self.hide_win_prob_later(5)
             except Exception as e:
                 self.logger.debug(f"OBS exception occured {e}")
+                self.logger.debug(traceback.format_exc())
 
+            self.last_match = self.match
             return True
 
         if self.match.get_round_num() > 5:
@@ -935,6 +1224,150 @@ class MatchAnalyzer:
 
     def remaining_video(self):
         return self.cap.queue.qsize() > 0
+
+    def hide_win_prob_later(self, delay):
+        def target():
+            time.sleep(delay)  # Wait for the specified delay
+            if self.obs_helper is not None:
+                self.obs_helper.win_probability_visibility(False)
+                self.obs_helper.vs_win_probability_visibility(False)
+            self.save_win_probability_image_once()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+    def hide_vs_prob_later(self, delay):
+        def target():
+            time.sleep(delay)  # Wait for the specified delay
+            if self.obs_helper is not None:
+                self.obs_helper.vs_win_probability_visibility(False)
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+    def save_win_probability_image_once(self):
+        try:
+            if self.config.save_win_probability_image:
+                self.win_probability.generate_win_prob_chart_with_single_line(
+                    round_number=(self.match.get_round_num()),
+                    stage=self.match.stage,
+                    frame_data=self.current_round.frames,
+                    p1rank=self.match.player1rank,
+                    p2rank=self.match.player2rank,
+                    frame_num=0,
+                    save_to_file=True,
+                    p1character=self.match.player1character,
+                    p2character=self.match.player2character,
+                    winner_player_number=self.current_round.winning_player_num,
+                    p1rounds_won_so_far=self.round_start_p1_rounds_won,
+                    p2rounds_won_so_far=self.round_start_p2_rounds_won,
+                )
+
+                match_frame_data = []
+                x = 0
+
+                for round in self.match.rounds:
+                    for frame in round.frames:
+                        # frame.x = x
+                        match_frame_data.append(frame)
+                        x += 1
+                    match_frame_data[len(match_frame_data) - 1].last_frame_in_round = (
+                        True
+                    )
+                    match_frame_data[
+                        len(match_frame_data) - 1
+                    ].winning_player_number = round.winning_player_num
+
+                for frame in self.current_round.frames:
+                    match_frame_data.append(frame)
+                    x += 1
+
+                if self.state != State.ENDROUND:
+                    self.win_probability.generate_match_win_prob_chart_with_single_line(
+                        round_number=(self.match.get_round_num()),
+                        stage=self.match.stage,
+                        frame_data=match_frame_data,
+                        frame_num=0,
+                        p1rank=self.match.player1rank,
+                        p2rank=self.match.player2rank,
+                        save_to_file=True,
+                        p1character=self.match.player1character,
+                        p2character=self.match.player2character,
+                        winner_player_number=self.current_round.winning_player_num,
+                        p1rounds_won_so_far=self.round_start_p1_rounds_won,
+                        p2rounds_won_so_far=self.round_start_p2_rounds_won,
+                    )
+
+        except Exception as e:
+            self.logger.error(f"Could not save with winner: {e}")
+            self.logger.error(traceback.format_exc())
+
+    def save_win_probability_image(self):
+        try:
+            if self.config.save_win_probability_image:
+                while self.state == State.BEFORE_ENDROUND:
+                    self.win_probability.generate_win_prob_chart_with_single_line(
+                        round_number=(self.match.get_round_num()),
+                        stage=self.match.stage,
+                        frame_data=self.current_round.frames,
+                        p1rank=self.match.player1rank,
+                        p2rank=self.match.player2rank,
+                        frame_num=0,
+                        save_to_file=True,
+                        p1character=self.match.player1character,
+                        p2character=self.match.player2character,
+                        winner_player_number=self.current_round.winning_player_num,
+                        p1rounds_won_so_far=self.round_start_p1_rounds_won,
+                        p2rounds_won_so_far=self.round_start_p2_rounds_won,
+                    )
+
+                    time.sleep(0.5)
+                    match_frame_data = []
+                    x = 0
+
+                    for round in self.match.rounds:
+                        for frame in round.frames:
+                            match_frame_data.append(frame)
+                            x += 1
+                        match_frame_data[
+                            len(match_frame_data) - 1
+                        ].last_frame_in_round = True
+                        match_frame_data[
+                            len(match_frame_data) - 1
+                        ].winning_player_number = round.winning_player_num
+
+                    for frame in self.current_round.frames:
+                        match_frame_data.append(frame)
+                        x += 1
+
+                    if self.state != State.ENDROUND:
+                        self.win_probability.generate_match_win_prob_chart_with_single_line(
+                            round_number=(self.match.get_round_num()),
+                            stage=self.match.stage,
+                            frame_data=match_frame_data,
+                            p1rank=self.match.player1rank,
+                            p2rank=self.match.player2rank,
+                            frame_num=0,
+                            save_to_file=True,
+                            p1character=self.match.player1character,
+                            p2character=self.match.player2character,
+                            winner_player_number=self.current_round.winning_player_num,
+                            p1rounds_won_so_far=self.round_start_p1_rounds_won,
+                            p2rounds_won_so_far=self.round_start_p2_rounds_won,
+                        )
+
+                    time.sleep(1)
+
+        except Exception as e:
+            self.logger.error(f"Could not save with winner: {e}")
+            self.logger.error(traceback.format_exc())
+
+    def save_win_probability_image_async(self):
+        if not self.config.save_win_probability_image:
+            return False
+
+        thread = threading.Thread(target=self.save_win_probability_image)
+        thread.start()
 
 
 class PrematureMatchFinishException(Exception):

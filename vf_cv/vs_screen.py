@@ -31,6 +31,7 @@ class VsScreen:
         "player1_ringname": (98 - 5, 708 - 3, 442 + 5, 35),
         "player2_ringname": (1322 - 5, 708 - 3, 442 + 5, 35),
         "stage": (793, 660, 350, 50),
+        "accessing": (935, 525, 142, 39),
     }
 
     IS_VS_RED_COORDINATES = {
@@ -295,10 +296,9 @@ class VsScreen:
         roi = frame[y : y + h, x : x + w]
 
         all_white_roi = VsScreen.all_but_grey(roi)
-
         imagem = cv2.bitwise_not(all_white_roi)
 
-        text = pytesseract.image_to_string(imagem, config="--psm 6")
+        text = pytesseract.image_to_string(imagem, config="--psm 7")
         text = str.replace(text, "\n\x0c", "").upper()
 
         if debug_stage:
@@ -307,43 +307,46 @@ class VsScreen:
             cv2.imshow(f"{height} original roi", roi)
             cv2.waitKey()
 
-        if text == "WATER FALLS":
+        if "WATER FALLS" in text:
             return "Waterfalls"
 
-        if text == "ISLAND":
+        if "ISLAND" in text:
             return "Island"
 
-        if text == "SSFAND":
+        if "SSFAND" in text:
             return "Island"
 
-        if text == "TAMPIA":
+        if "TAMPIA" in text:
             return "Temple"
 
         if len(text) == 6 and "LAND" in text:
             return "Island"
 
-        if "ARENA" == text:
+        if "ARENA" in text:
             return "Arena"
 
-        if "PALCE" == text:
+        if "PALCE" in text:
             return "Palace"
 
-        if "AURORA" == text:
+        if "AURORA" in text:
             return "Aurora"
 
-        if "TEMPLE" == text:
+        if "TEMPLE" in text:
             return "Temple"
 
-        if "SUMO RING" == text:
+        if "SUMO" in text:
             return "Sumo Ring"
 
-        if "RUINS" == text:
+        if "SUMO RING" in text:
+            return "Sumo Ring"
+
+        if "RUINS" in text:
             return "Ruins"
 
         if "STATUES" in text or "STAT" in text:
             return "Statues"
 
-        if "GREAT WALL" == text:
+        if "GREAT WALL" in text:
             return "Great Wall"
 
         if "WALL" in text:
@@ -352,10 +355,10 @@ class VsScreen:
         if "CITY" in text:
             return "City"
 
-        if "TERRACE" == text:
+        if "TERRACE" in text:
             return "Terrace"
 
-        if "RIVER" == text:
+        if "RIVER" in text:
             return "River"
 
         if "FALL" in text:
@@ -376,17 +379,20 @@ class VsScreen:
         if "BROKEN" in text or "House" in text:
             return "Broken House"
 
-        if "GENESIS" == text:
+        if "GENESIS" in text:
             return "Genesis"
 
-        if "SHRINE" == text:
+        if "SHRINE" in text:
             return "Shrine"
 
-        if text == "TRAINING ROOM":
+        if "TRAINING ROOM" in text:
             return "Training Room"
 
         if "SNOW" in text:
             return "Snow Mountain"
+
+        if "LACE" in text:
+            return "Palace"
 
         if "PALACE" in text:
             return "Palace"
@@ -398,3 +404,28 @@ class VsScreen:
             return "Ruins"
 
         return None
+
+    def is_accessing(self, debug_is_accessing=False):
+        region_name = "accessing"
+        frame = self.frame
+
+        height = frame.shape[0]  # Get the dimensions of the frame
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = frame[y : y + h, x : x + w]
+        all_white_roi = VsScreen.all_but_grey(roi)
+        imagem = cv2.bitwise_not(all_white_roi)
+
+        text = pytesseract.image_to_string(imagem, config="--psm 7")
+        if debug_is_accessing:
+            cv2.imshow(f"accessing {text}", imagem)
+            print(text)
+            cv2.waitKey()
+
+        if "Accessing" in text:
+            return True
+
+        if "Access" in text:
+            return True
+
+        return False

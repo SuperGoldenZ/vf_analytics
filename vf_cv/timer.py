@@ -61,8 +61,6 @@ class Timer:
         self.message = ""
         self.resized = False
 
-        # self._model = load_model('best_model.keras')
-
     def set_frame(self, frame, stage=None):
         """Sets the image to extract data from"""
         self.frame = frame
@@ -649,6 +647,7 @@ class Timer:
 
             if (
                 height > 4
+                and width > 1
                 and self.thresholded_image[4, 1] == 0
                 and self.thresholded_image[4, 0] == 0
             ):
@@ -1047,7 +1046,7 @@ class Timer:
         # return False
 
         if self.frame_height == 360:
-            if width > 12 and self.thresholded_image[6, 12] != 0:
+            if width > 12 and height > 6 and self.thresholded_image[6, 12] != 0:
                 # print("six - false 01")
                 return False
 
@@ -1330,7 +1329,6 @@ class Timer:
 
         return True
 
-    @profile
     def get_time_seconds(self, debug_time=False):
         """Returns number of seconds remaining in a round"""
 

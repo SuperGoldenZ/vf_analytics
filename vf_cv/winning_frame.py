@@ -29,8 +29,13 @@ class WinningFrame:
         "to": (185, 204, 484, 80),
     }
 
+    REGIONS_720P = {
+        "player1_health": (163, 46, 400, 14),
+        "player2_health": (724, 48, 400, 14),
+    }
+
     REGIONS_1080P = {
-        "player1_health": (244, 74, 600, 18),
+        "player1_health": (245, 74, 600, 18),
         "player2_health": (1084, 74, 600, 18),
     }
 
@@ -51,6 +56,12 @@ class WinningFrame:
             h = (int)(h * 0.75)
         elif self.frame_height == 480:
             (x, y, w, h) = self.REGIONS_480P[region_name]
+        elif self.frame_height == 720 and "health" in region_name:
+            (x, y, w, h) = self.REGIONS_720P[region_name]
+            x = (int)(x)
+            y = (int)(y)
+            w = (int)(w)
+            h = (int)(h)
         elif self.frame_height == 720 and region_name != "to":
             (x, y, w, h) = self.REGIONS_480P[region_name]
             x = (int)(x * 1.5)
@@ -453,19 +464,26 @@ class WinningFrame:
 
         return False
 
-    def get_player_health(self, player_num, debug_player_health=False):
+    def get_player_health(
+        self, player_num, debug_player_health=False, override_frame=None
+    ):
         region_name = f"player{player_num}_health"
         (x, y, w, h) = self.get_roi(region_name)
 
-        roi = self.frame[y : y + h, x : x + w]
+        if override_frame is not None:
+            roi = override_frame[y : y + h, x : x + w]
+        else:
+            roi = self.frame[y : y + h, x : x + w]
 
         green_health = vf_cv.CvHelper.count_pixels(
             "#30c90e", roi, override_tolerance=75
         )
-        black_health = vf_cv.CvHelper.count_pixels("#1d1d1d", roi, override_tolerance=5)
+        black_health = vf_cv.CvHelper.count_pixels(
+            "#1d1d1d", roi, override_tolerance=10
+        )
         grey_health = 0
         white_health = vf_cv.CvHelper.count_pixels(
-            "#FFFFFF", roi, override_tolerance=25
+            "#f8dada", roi, override_tolerance=50
         )
         red_health = vf_cv.CvHelper.count_pixels("#FF0000", roi, override_tolerance=150)
 
@@ -476,3 +494,51 @@ class WinningFrame:
             )
             cv2.waitKey()
         return [green_health, black_health, grey_health, white_health, red_health]
+
+    def get_player_health_percent(self, player_num, debug_player_health=False):
+        """Returns the percentage of health a player has"""
+        region_name = f"player{player_num}_health"
+        (x, y, w, h) = self.get_roi(region_name)
+
+        roi = self.frame[y : y + h, x : x + w]
+
+        green_health = vf_cv.CvHelper.count_pixels(
+            "#30c90e", roi, override_tolerance=75
+        )
+        black_health = vf_cv.CvHelper.count_pixels(
+            "#1d1d1d", roi, override_tolerance=10
+        )
+        grey_health = 0
+        white_health = vf_cv.CvHelper.count_pixels(
+            "#FFFFFF", roi, override_tolerance=25
+        )
+        red_health = vf_cv.CvHelper.count_pixels("#FF0000", roi, override_tolerance=150)
+
+        if debug_player_health == True:
+            cv2.imshow("original", self.frame)
+            cv2.imshow(
+                f"{self.frame_height}p g[{green_health}] b[{black_health}] {grey_health} w[{white_health}] r[{red_health}]",
+                roi,
+            )
+            cv2.waitKey()
+
+        result = None
+
+        try:
+            result = round(
+                (
+                    (green_health)
+                    / (
+                        green_health
+                        + black_health
+                        + grey_health
+                        + white_health
+                        + red_health
+                    )
+                )
+                * 100
+            )
+        except ZeroDivisionError:
+            result = 0
+
+        return result

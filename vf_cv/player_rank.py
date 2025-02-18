@@ -99,7 +99,7 @@ class PlayerRank:
         40: "Lionheart",
         41: "Dragonfang",
         42: "God Of Thunder",
-        43: "God Of Flame",
+        43: "Magmalord",
         44: "Searing Sky God",
         46: "Magmalord",
     }
@@ -153,8 +153,6 @@ class PlayerRank:
         """Sets the image to extract data from"""
         self.frame = frame
         original_height = self.frame.shape[0]
-        if original_height != 720:
-            self.frame = cv2.resize(self.frame, (1280, 720))
 
         self.frame_height = self.frame.shape[0]
 
@@ -173,11 +171,11 @@ class PlayerRank:
         elif self.frame_height == 720:
             (x, y, w, h) = self.REGIONS_720P[region_name]
         elif self.frame_height == 1080:
-            (x, y, w, h) = self.REGIONS_480P[region_name]
-            x = (int)(x * 2.25)
-            y = (int)(y * 2.25)
-            w = (int)(w * 2.25)
-            h = (int)(h * 2.25) - 10
+            (x, y, w, h) = self.REGIONS_720P[region_name]
+            x = (int)(x * 1.5)
+            y = (int)(y * 1.5)
+            w = (int)(w * 1.5)
+            h = (int)(h * 1.5)
         return (x, y, w, h)
 
     @staticmethod
@@ -265,12 +263,12 @@ class PlayerRank:
 
         roi = frame_copy[y : y + h, x : x + w]
         all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
-            roi, np.array([195, 185, 185])
+            roi, np.array([135, 135, 135])
         )
 
         imagem = cv2.bitwise_not(all_white_roi)
 
-        text = pytesseract.image_to_string(imagem, timeout=2, config="--psm 7")
+        text = pytesseract.image_to_string(imagem, timeout=3, config="--psm 7")
         text = text.replace("sth", "5th")
         text = text.replace("Sth", "5th")
         text = text.replace("Ist", "1st")
@@ -292,7 +290,7 @@ class PlayerRank:
         is_dan = False
 
         if debug_player_rank:
-            print(f"{x} {y} {w} {h} {text}")
+            print(f"{x} {y} {w} {h} [{text}]")
             print("kyu matches")
             print(matches)
             cv2.imshow(f"player rank full {self.frame_height}", self.frame)
@@ -302,6 +300,12 @@ class PlayerRank:
 
         if "st dan" in text:
             return 11
+
+        if "Sentinel" in text:
+            return 25
+
+        if "Sentinal" in text:
+            return 25
 
         if "Darh" in text:
             return 23
@@ -318,8 +322,26 @@ class PlayerRank:
         if "Hunter" in text:
             return 21
 
+        if "Guard" in text or "dian" in text:
+            return 26
+
+        if "Ass" in text or "ass" in text:
+            return 30
+
+        if "Vereran" in text:
+            return 28
+
+        if "Veteran" in text:
+            return 28
+
         if "i" in text and "23" in text:
             return 23
+
+        if "quisher" in text:
+            return 34
+
+        if "Berserker" in text:
+            return 29
 
         is_kyu = "k" in text
         if is_kyu and len(matches) > 0 and PlayerRank.is_numeric_string(matches[0]):
@@ -346,34 +368,31 @@ class PlayerRank:
 
         text = re.sub("[^0-9]", "", text)
 
-
         # Retry with red texg
-        #80171e
+        # 80171e
         frame_copy = self.frame.copy()
 
         roi = frame_copy[y : y + h, x : x + w]
         all_white_roi = vf_cv.CvHelper.all_but_maroon(roi)
-        text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
-        if ("Manquisher" in text):
+        text = pytesseract.image_to_string(all_white_roi, timeout=3, config="--psm 7")
+        if "quisher" in text:
             return 34
-        
-        if (debug_player_rank):
+
+        if debug_player_rank:
             print(f"red retry [{text}]")
-            cv2.imshow(f"red retry [{text}] ", all_white_roi)        
+            cv2.imshow(f"red retry [{text}] ", all_white_roi)
             cv2.waitKey()
-        
+
         # retry shatterer
         frame_copy = self.frame.copy()
         roi = frame_copy[y : y + h, x : x + w]
         shat_cnt = vf_cv.CvHelper.count_pixels("#ad522d", roi, override_tolerance=10)
-        #all_white_roi = vf_cv.CvHelper.all_but_shatterer(roi)
-        #text = pytesseract.image_to_string(all_white_roi, timeout=2, config="--psm 7")
-        
-        if (debug_player_rank):
+
+        if debug_player_rank:
             print(f"shat retry [{text}] {shat_cnt}")
-            cv2.imshow(f"shat retry [{text}] {shat_cnt}", all_white_roi)        
+            cv2.imshow(f"shat retry [{text}] {shat_cnt}", all_white_roi)
             cv2.waitKey()
-        
+
         # retry with small
         if (
             matches is None
@@ -405,13 +424,32 @@ class PlayerRank:
             )
             text = text.strip()
 
+            if text == "":
+                print("retry again")
+                all_white_roi = vf_cv.CvHelper.all_but_white_vftv(
+                    roi, np.array([135, 135, 135])
+                )
+
+                all_white_roi = cv2.cvtColor(all_white_roi, cv2.COLOR_BGR2GRAY)
+
+                imagem = cv2.bitwise_not(all_white_roi)
+                imagem = vf_cv.CvHelper.add_white_column(imagem, 5, True)
+                imagem = vf_cv.CvHelper.add_white_row(imagem, 5)
+
+                text = pytesseract.image_to_string(
+                    imagem,
+                    timeout=2,
+                    config="--psm 7 -c tessedit_char_whitelist=0123456789",
+                )
+                text = text.strip()
+
             if debug_player_rank:
-                print(f"retry player rank: {x} {y} {w} {h} {text}")
+                print(f"retry player rank: {x} {y} {w} {h} [{text}]")
                 print("kyu matches")
                 print(matches)
                 cv2.imshow(f"player rank full {self.frame_height}", self.frame)
-                cv2.imshow(f"rank [{text}]", imagem)
-                cv2.imshow(f"roi [{text}]", roi)
+                cv2.imshow(f"aw i [{text}]", imagem)
+                cv2.imshow(f"aw r [{text}]", roi)
                 cv2.waitKey()
 
             if fifth and is_dan and text == "14":
@@ -421,9 +459,9 @@ class PlayerRank:
                 raise UnrecognizePlayerRankException(debug_string)
 
         rank_int = int(text)
-        if (shat_cnt >= 15 and rank_int == 3):
+        if shat_cnt >= 15 and rank_int == 3:
             return 31
-        
+
         if rank_int <= 0 or rank_int > 46:
             raise UnrecognizePlayerRankException(debug_string)
 
